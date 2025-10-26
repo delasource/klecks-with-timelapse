@@ -19,6 +19,15 @@ const ALPHA_SQUARE = 3;
 
 const TWO_PI = 2 * Math.PI;
 
+const spacingSpline = new BB.SplineInterpolator([
+    [0, 15],
+    [8, 7],
+    [14, 4],
+    [30, 3],
+    [50, 2.7],
+    [100, 2],
+]);
+
 export type TPenBrushConfig = {
     size: number;
     sizePressure: boolean;
@@ -567,6 +576,9 @@ export class PenBrush {
     setBrushConfig(config: Partial<TPenBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
+            if (!config.spacing) {
+                this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
+            }
         }
         if (config.opacity !== undefined) {
             this.setOpacity(config.opacity);

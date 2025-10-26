@@ -183,8 +183,10 @@ export class ProjectViewport {
         // this.ctx.imageSmoothingEnabled = false;
 
         if (this.drawBackground) {
-            this.ctx.fillStyle = isDark ? 'rgb(33, 33, 33)' : 'rgb(158,158,158)';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            // We want transparent background
+            // this.ctx.fillStyle = isDark ? 'rgb(33, 33, 33)' : 'rgb(158,158,158)';
+            // this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
         } else {
             this.ctx.fillStyle = this.pattern;
             this.ctx.fillRect(0, 0, this.width, this.height);

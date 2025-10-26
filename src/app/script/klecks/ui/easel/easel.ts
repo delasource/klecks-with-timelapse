@@ -518,7 +518,7 @@ export class Easel<GToolId extends string> {
                 const mat = createMatrixFromTransform(transform);
                 const canvasPoint = applyToPoint(inverse(mat), viewportPoint);
                 const newScale = BB.clamp(
-                    transform.scale * Math.pow(1 + 4 / 10, -e.deltaY),
+                    transform.scale * Math.pow(1 + 2 / 10, -e.deltaY),
                     EASEL_MIN_SCALE,
                     EASEL_MAX_SCALE,
                 );

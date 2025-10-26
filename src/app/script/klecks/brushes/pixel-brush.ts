@@ -13,11 +13,17 @@ import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d
 import { boundsOverlap, boundsToRect, integerBounds, updateBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
+const spacingSpline = new BB.SplineInterpolator([
+    [0.5, 0.45],
+    [100, 4],
+]);
+
 export type TPixelBrushConfig = {
     size: number;
     sizePressure: boolean;
     opacity: number;
     opacityPressure: boolean;
+    spacing: number;
     lockAlpha: boolean;
     isEraser: boolean;
     useDither: boolean;
@@ -579,6 +585,7 @@ export class PixelBrush {
             sizePressure: this.settingHasSizePressure,
             opacity: this.settingOpacity,
             opacityPressure: this.settingHasOpacityPressure,
+            spacing: this.settingSpacing,
             lockAlpha: this.settingLockLayerAlpha,
             isEraser: this.settingIsEraser,
             useDither: this.settingUseDither,
@@ -589,6 +596,9 @@ export class PixelBrush {
     setBrushConfig(config: Partial<TPixelBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
+            if (!config.spacing) {
+                this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
+            }
         }
         if (config.opacity !== undefined) {
             this.setOpacity(config.opacity);
@@ -610,6 +620,9 @@ export class PixelBrush {
         }
         if (config.color !== undefined) {
             this.setColor(config.color);
+        }
+        if (config.spacing !== undefined) {
+            this.setSpacing(config.spacing);
         }
     }
 }

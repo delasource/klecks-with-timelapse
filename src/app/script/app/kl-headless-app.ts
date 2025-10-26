@@ -1,4 +1,4 @@
-import { randomUuid } from '../bb/base/base';
+import { css, randomUuid } from '../bb/base/base';
 import { canvasToBlob } from '../bb/base/canvas';
 import { BB } from '../bb/bb';
 import { ColorConverter, HSV, RGB } from '../bb/color/color';
@@ -166,6 +166,11 @@ export type TKlHeadlessAppParams = {
     updateUiCallback: (uiState: TKlHeadlessUiState) => void;
     showStatusMessageCallback: (message: string) => void;
     isDrawingCallback?: (isDrawing: boolean) => void;
+    initialViewport?: {
+        canvasWidth?: number;
+    };
+    canvasWidth?: number;
+    canvasHeight?: number;
 }
 
 const exportType: TExportType = 'png';
@@ -390,26 +395,33 @@ export class KlHeadlessApp {
         this.showStatusMessageCallback = p.showStatusMessageCallback;
         if (p.isDrawingCallback) this.isDrawingCallback = p.isDrawingCallback;
 
+        // UI is full browser size
+        this.uiWidth = Math.max(0, window.innerWidth);
+        this.uiHeight = Math.max(0, window.innerHeight);
+        this.rootEl = BB.el({
+            className: 'g-root',
+            css: {
+                display: 'absolute',
+                left: '0',
+                top: '0',
+                right: '0',
+                bottom: '0',
+            },
+        });
+
         // default 2048, unless your screen is bigger than that (that computer then probably has the horsepower for that)
         // but not larger than 4096 - a fairly arbitrary decision
         const maxCanvasSize = Math.min(
             4096,
             Math.max(2048, Math.max(window.screen.width, window.screen.height)),
         );
-        this.rootEl = BB.el({
-            className: 'g-root',
-            css: {
-                display: 'block',
-                width: '100%',
-                height: '100%',
-            },
-        });
-        // TODO how to get actual size
-        this.uiWidth = Math.max(0, window.innerWidth);
-        this.uiHeight = Math.max(0, window.innerHeight);
+        const desiredWidth = p.canvasWidth ?? this.uiWidth;
+        const desiredHeight = p.canvasHeight ?? this.uiHeight;
+        const initialWidth = Math.max(10, Math.min(maxCanvasSize, desiredWidth));
+        const initialHeight = Math.max(10, Math.min(maxCanvasSize, desiredHeight));
 
         const oldestComposed = projectToComposed(
-            p.project ?? getDefaultProjectOptions(randomUuid(), this.uiWidth, this.uiHeight),
+            p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight),
         );
 
         this.klHistory = new KlHistory({
@@ -437,14 +449,15 @@ export class KlHeadlessApp {
         this.currentLayer = this.klCanvas.getLayer(
             this.klCanvas.getLayerCount() - 1,
         );
+        this.uiState.currentLayerId = this.currentLayer.id;
 
         // create brushes
         Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
-            console.log('create brush', brushId);
             const brush = new brushType();
-            brush.setHistory(this.klHistory);
-            // this.setBrushConfig({ size: brush.getSize() });
             this.brushes[brushId] = brush;
+            this.uiState.brushConfig[brushId] = brush.getBrushConfig();
+            brush.setHistory(this.klHistory);
+            // this.setBrushConfig(brush.getBrushConfig());
         });
 
         // Draw Event Chain 1:
@@ -576,7 +589,6 @@ export class KlHeadlessApp {
             },
         });
 
-
         const shapeTool = new ShapeTool({
             onShape: (isDone, x1, y1, x2, y2, angleRad) => {
                 const layerIndex = this.currentLayer.index;
@@ -626,7 +638,6 @@ export class KlHeadlessApp {
             },
         });
 
-
         const gradientTool = new GradientTool({
             onGradient: (isDone, x1, y1, x2, y2, angleRad) => {
                 const layerIndex = this.currentLayer.index;
@@ -665,6 +676,7 @@ export class KlHeadlessApp {
         });
 
         const easelHand = new EaselHand({});
+
         const easelShape = new EaselShape({
             onDown: (p, angleRad) => {
                 shapeTool.onDown(p.x, p.y, angleRad);
@@ -796,18 +808,24 @@ export class KlHeadlessApp {
                 this.redo(true);
             },
         });
-        /*css(this.easel.getElement(), {
+
+        css(this.easel.getElement(), {
             position: 'absolute',
             left: '0',
             top: '0',
-        });*/
+        });
+
+        BB.append(this.rootEl, [this.easel.getElement()]);
+
         this.easelProjectUpdater = new EaselProjectUpdater({
             klCanvas: this.klCanvas,
             easel: this.easel,
         });
+
         this.klHistory.addListener(() => {
             this.easelProjectUpdater.update();
         });
+
         DIALOG_COUNTER.subscribe((count) => {
             this.easel.setIsFrozen(count > 0);
         });
@@ -903,6 +921,7 @@ export class KlHeadlessApp {
                     this.applyUncommitted();
                     this.easel.setTool('brush');
                     this.uiState.tool = 'brush';
+                    this.setCurrentBrush('EraserBrush');
                     this.updateUi();
                 }
                 if (comboStr === 'b') {
@@ -912,9 +931,8 @@ export class KlHeadlessApp {
                     this.easel.setTool('brush');
                     this.uiState.tool = 'brush';
                     if (prevMode === 'brush') {
-                        this.uiState.currentBrushId = this.getNextBrushId();
+                        this.setCurrentBrush(this.getNextBrushId());
                     }
-                    this.setBrushConfig({});
                 }
                 if (comboStr === 'g') {
                     event.preventDefault();
@@ -961,10 +979,6 @@ export class KlHeadlessApp {
             onUp: (keyStr, event) => {
             },
         });
-
-        BB.append(this.rootEl, [this.easel.getElement()]);
-
-
 
         // Register replay handlers if recorder is enabled
         if (this.klRecorder) {
@@ -1194,6 +1208,42 @@ export class KlHeadlessApp {
             },
         });
 
+        // Viewport initialization
+        this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
+        this.resize(this.uiWidth, this.uiHeight);
+
+        // Update initial brush
+        console.log('brush 0', this.uiState.brushConfig[this.uiState.currentBrushId]);
+        this.setBrushConfig({
+            ...this.uiState.brushConfig[this.uiState.currentBrushId],
+            size: 4,
+            color: this.uiState.primaryColorRgb
+        });
+        // this.updateUi();
+
+        if (p.initialViewport?.canvasWidth && p.canvasWidth) {
+            // apply scale
+            const scale = (p.initialViewport.canvasWidth ?? 0) / (p.canvasWidth ?? 1);
+            this.easel.scale(scale);
+            /*const m = createMatrixFromTransform(this.easel.getTransform());
+            const canvasCenterPoint = applyToPoint(inverse(m), {
+                x: this.uiWidth / 2,
+                y: this.uiHeight / 2,
+            });
+            this.easel.setTransform(
+                createTransform(
+                    {
+                        x: this.uiWidth / 2,
+                        y: this.uiHeight / 2,
+                    },
+                    canvasCenterPoint,
+                    scale,
+                    0,
+                )
+            );*/
+        }
+
+
         this.saveToComputer = new SaveToComputer(
             () => exportType,
             this.klCanvas,
@@ -1202,14 +1252,11 @@ export class KlHeadlessApp {
             },
         );
 
-        this.resize(this.uiWidth, this.uiHeight);
-        this.updateUi();
-
-
-        this.unloadWarningTrigger = new UnloadWarningTrigger({
+        // TODO enable if you like
+        /*this.unloadWarningTrigger = new UnloadWarningTrigger({
             klHistory: this.klHistory,
             getLastSavedHistoryIndex: () => this.lastSavedHistoryIndex,
-        });
+        });*/
 
         {
             window.addEventListener('resize', () => {
@@ -1244,8 +1291,9 @@ export class KlHeadlessApp {
             });
             try {
                 // Not all browsers support ResizeObserver. Not critical though.
-                const observer = new ResizeObserver(() =>
-                    this.resize(window.innerWidth, window.innerHeight),
+                const observer = new ResizeObserver(() => {
+                        this.resize(window.innerWidth, window.innerHeight);
+                    },
                 );
                 observer.observe(windowResizeWatcher);
             } catch (e) {
@@ -1299,6 +1347,7 @@ export class KlHeadlessApp {
                 this.klRecorder?.start();
             });
 
+
     } // end of constructor
 
 
@@ -1309,6 +1358,8 @@ export class KlHeadlessApp {
     }
 
     resize(w: number, h: number): void {
+        console.log('resize', w, h);
+
         // iPad scrolls down when increasing text zoom
         if (window.scrollY > 0) {
             window.scrollTo(0, 0);
@@ -1322,10 +1373,6 @@ export class KlHeadlessApp {
         this.uiHeight = Math.max(0, h);
 
         this.updateUi();
-
-        // this.layerPreview.setIsVisible(this.uiHeight >= 579);
-        // this.klColorSlider.setHeight(Math.max(163, Math.min(400, this.uiHeight - 505)));
-        // this.toolspaceToolRow.setIsSmall(this.uiHeight < 540);
     }
 
     out(msg: string): void {
@@ -1354,28 +1401,38 @@ export class KlHeadlessApp {
 
     setColor(c: TRgb): void {
         this.uiState.primaryColorRgb = c;
+        this.setBrushConfig({ color: c });
         this.updateUi();
     }
 
     setBrushConfig(data: Partial<TBrushConfigTypes>) {
-        const brush = this.brushes[this.uiState.currentBrushId];
-        brush.setBrushConfig(data);
+        if (data == undefined)
+            return;
+
+        const brushLogic = this.brushes[this.uiState.currentBrushId];
+        brushLogic.setBrushConfig(data);
+
+        this.uiState.brushConfig[this.uiState.currentBrushId] = {
+            ...this.uiState.brushConfig[this.uiState.currentBrushId],
+            ...data,
+        };
+
+        console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
 
         // Update context (varies)
-        if ('setLayer' in brush)
-            brush.setLayer(this.currentLayer);
-        else if ('setContext' in brush)
-            brush.setContext(this.currentLayer.context);
+        if ('setLayer' in brushLogic)
+            brushLogic.setLayer(this.currentLayer);
+        else if ('setContext' in brushLogic)
+            brushLogic.setContext(this.currentLayer.context);
 
         // if there is a "size" prop
         if (data.size !== undefined) {
-            console.log('TODO clampbetween 0 - 1 ?', data.size);
             if (this.easelBrush) {
                 this.easelBrush.setBrush({ radius: data.size });
             }
         }
         // if there is a "color" prop
-        if ((data as any).color !== undefined) {
+        if ((data as any).color !== undefined && !!(data as any).color.r) {
             const color = (data as any).color as TRgb;
             this.uiState.primaryColorRgb = BB.copyObj(color);
             this.uiState.primaryColorHsv = ColorConverter.toHSV(color);
@@ -1398,36 +1455,18 @@ export class KlHeadlessApp {
         return this.brushes[this.uiState.currentBrushId];
     }
 
-    // Core app
-    getAppState(): TKlHeadlessUiState {
+    getUiState(): TKlHeadlessUiState {
         return this.uiState;
     }
 
-    // UI components
-    // public getUiController(): KlHeadlessUiController {    }
-
-    // Events to update the user interface (partially)
-    /*on<T extends keyof IHeadlessEvents>(event: T, listener: IHeadlessEvents[T]): void {
+    getProjectId(): string {
+        return this.klHistory.getComposed().projectId?.value || '';
     }
 
-    off<T extends keyof IHeadlessEvents>(event: T, listener: IHeadlessEvents[T]): void {
-    }*/
-
-    // Canvas access
-    getRootElement() {
-        return this.rootEl;
-    }
-
-    // getCanvasElement(): HTMLCanvasElement {    }
-    // getCanvasContext(): CanvasRenderingContext2D {   }
-
-    // Cleanup
     destroy(): void {
+        // Cleanup
+        this.easel.destroy();
+        this.klCanvas.destroy();
     }
 
 }
-
-export class KlHeadlessUiController {
-    // defines all functionality, that a ui can invoke on Klecks
-}
-

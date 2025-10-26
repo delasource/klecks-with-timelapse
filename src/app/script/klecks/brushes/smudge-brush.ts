@@ -25,6 +25,15 @@ import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bou
 
 const CELL_SIZE = 256;
 
+const spacingSpline = new BB.SplineInterpolator([
+    [0, 15],
+    [8, 7],
+    [14, 4],
+    [30, 3],
+    [50, 2.7],
+    [100, 2],
+]);
+
 type TSmudgeParams = {
     aP: TVector2D;
     bP: TVector2D;
@@ -277,6 +286,7 @@ export type TSmudgeBrushConfig = {
     opacity: number;
     opacityPressure: boolean;
     lockLayerAlpha: boolean;
+    spacing: number;
 }
 
 export class SmudgeBrush {
@@ -747,12 +757,16 @@ export class SmudgeBrush {
             sizePressure: this.settingHasSizePressure,
             opacityPressure: this.settingHasOpacityPressure,
             color: this.settingColor,
+            spacing: this.settingSpacing,
         };
     }
 
     setBrushConfig(config: Partial<TSmudgeBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
+            if (!config.spacing) {
+                this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
+            }
         }
         if (config.opacity !== undefined) {
             this.setOpacity(config.opacity);
@@ -768,6 +782,9 @@ export class SmudgeBrush {
         }
         if (config.color !== undefined) {
             this.setColor(config.color);
+        }
+        if (config.spacing !== undefined) {
+            this.setSpacing(config.spacing);
         }
     }
 }
