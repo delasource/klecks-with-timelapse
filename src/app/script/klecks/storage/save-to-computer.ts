@@ -1,5 +1,6 @@
 import { BB } from '../../bb/bb';
-import { KL } from '../kl';
+import * as PSD from './psd';
+import { loadAgPsd } from './load-ag-psd';
 import { KlCanvas } from '../canvas/kl-canvas';
 import { TExportType } from '../kl-types';
 import { saveAs } from '../../bb/base/save-as';
@@ -78,13 +79,13 @@ export class SaveToComputer {
                     hidden: !item.isVisible,
                     opacity: item.opacity,
                     canvas: item.canvas,
-                    blendMode: KL.PSD.blendKlToPsd(item.mixModeStr),
+                    blendMode: PSD.blendKlToPsd(item.mixModeStr),
                     left: 0,
                     top: 0,
                 });
             }
 
-            KL.loadAgPsd()
+            loadAgPsd()
                 .then((agPsdLazy) => {
                     const buffer = agPsdLazy.writePsdBuffer(psdConfig);
                     const blob = new Blob([buffer], {

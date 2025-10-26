@@ -13,7 +13,7 @@ import { Options } from '../ui/components/options';
 import { EVENT_RES_MS } from './filters-consts';
 import { Select } from '../ui/components/select';
 import { translateBlending } from '../canvas/translate-blending';
-import { KL } from '../kl';
+import { input } from '../ui/components/input';
 import { ColorConverter } from '../../bb/color/color';
 import { Checkbox } from '../ui/components/checkbox';
 import { TWrappedTexture } from '../../fx-canvas/fx-canvas-types';
@@ -423,7 +423,7 @@ export const filterNoise = {
             height: '34px',
             marginRight: '5px',
         };
-        const colAInput = KL.input({
+        const colAInput = input({
             type: 'color',
             init: '#' + ColorConverter.toHexString(noiseInput.colA),
             callback: (val) => {
@@ -436,7 +436,7 @@ export const filterNoise = {
             css: colInputStyle,
         });
 
-        const colBInput = KL.input({
+        const colBInput = input({
             type: 'color',
             init: '#' + ColorConverter.toHexString(noiseInput.colB),
             callback: (val) => {

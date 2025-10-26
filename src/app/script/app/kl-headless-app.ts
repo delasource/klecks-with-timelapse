@@ -9,6 +9,7 @@ import { EraserBrush } from '../klecks/brushes/eraser-brush';
 import { KlCanvas, TKlCanvasLayer } from '../klecks/canvas/kl-canvas';
 import { LineSanitizer } from '../klecks/events/line-sanitizer';
 import { LineSmoothing } from '../klecks/events/line-smoothing';
+import { FILTER_LIB } from '../klecks/filters/filters';
 import { THistoryEntryDataComposed, TLayerId } from '../klecks/history/history.types';
 import { KlChainRecorder } from '../klecks/history/kl-chain-recorder';
 import { KlEventRecorder } from '../klecks/history/kl-event-recorder';
@@ -17,7 +18,8 @@ import { KlHistory } from '../klecks/history/kl-history';
 import { KlHistoryExecutor, THistoryExecutionType } from '../klecks/history/kl-history-executor';
 import { KlTempHistory } from '../klecks/history/kl-temp-history';
 import { projectToComposed } from '../klecks/history/push-helpers/project-to-composed';
-import { KL } from '../klecks/kl';
+import { drawGradient, GradientTool } from '../klecks/image-operations/gradient-tool';
+import { drawShape, ShapeTool } from '../klecks/image-operations/shape-tool';
 import {
     TDrawEvent,
     TExportType, TFillSampling,
@@ -45,6 +47,8 @@ import { EaselRotate } from '../klecks/ui/easel/tools/easel-rotate';
 import { EaselShape } from '../klecks/ui/easel/tools/easel-shape';
 import { EaselText } from '../klecks/ui/easel/tools/easel-text';
 import { EaselZoom } from '../klecks/ui/easel/tools/easel-zoom';
+import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
+import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { TViewportTransform } from '../klecks/ui/project-viewport/project-viewport';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
@@ -237,7 +241,7 @@ export class KlHeadlessApp {
     };
 
     private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
-        KL.clipboardDialog(
+        clipboardDialog(
             this.rootEl,
             (maskSelection) => {
                 return this.klCanvas.getCompleteCanvas(1, maskSelection);
@@ -252,7 +256,7 @@ export class KlHeadlessApp {
                     return;
                 }
                 //do a crop
-                KL.FILTER_LIB.cropExtend.apply!({
+                FILTER_LIB.cropExtend.apply!({
                     layer: this.currentLayer,
                     klCanvas: this.klCanvas,
                     input: inputObj,
@@ -428,14 +432,14 @@ export class KlHeadlessApp {
             this.klRecorder = new KlEventRecorder(projectId, undefined, p.eventStorageProvider);
         }
 
-        this.klCanvas = new KL.KlCanvas(this.klHistory, /* -1 ? */ 1, this.klRecorder);
+        this.klCanvas = new KlCanvas(this.klHistory, /* -1 ? */ 1, this.klRecorder);
 
         this.currentLayer = this.klCanvas.getLayer(
             this.klCanvas.getLayerCount() - 1,
         );
 
         // create brushes
-        Object.entries(KL.BRUSHES).forEach(([brushId, brushType]) => {
+        Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
             console.log('create brush', brushId);
             const brush = new brushType();
             brush.setHistory(this.klHistory);
@@ -573,7 +577,7 @@ export class KlHeadlessApp {
         });
 
 
-        const shapeTool = new KL.ShapeTool({
+        const shapeTool = new ShapeTool({
             onShape: (isDone, x1, y1, x2, y2, angleRad) => {
                 const layerIndex = this.currentLayer.index;
 
@@ -613,7 +617,7 @@ export class KlHeadlessApp {
                         : undefined;
                     this.klCanvas.setComposite(layerIndex, {
                         draw: (ctx) => {
-                            KL.drawShape(ctx, shapeObj, selectionPath);
+                            drawShape(ctx, shapeObj, selectionPath);
                         },
                     });
                 }
@@ -623,7 +627,7 @@ export class KlHeadlessApp {
         });
 
 
-        const gradientTool = new KL.GradientTool({
+        const gradientTool = new GradientTool({
             onGradient: (isDone, x1, y1, x2, y2, angleRad) => {
                 const layerIndex = this.currentLayer.index;
                 const gradientObj: TGradient = {
@@ -651,7 +655,7 @@ export class KlHeadlessApp {
                         : undefined;
                     this.klCanvas.setComposite(layerIndex, {
                         draw: (ctx) => {
-                            KL.drawGradient(ctx, gradientObj, selectionPath);
+                            drawGradient(ctx, gradientObj, selectionPath);
                         },
                     });
                 }
@@ -728,7 +732,7 @@ export class KlHeadlessApp {
                 }),
                 text: new EaselText({
                     onDown: (p, angleRad) => {
-                        if (KL.DIALOG_COUNTER.get() > 0) {
+                        if (DIALOG_COUNTER.get() > 0) {
                             return;
                         }
 
@@ -804,13 +808,13 @@ export class KlHeadlessApp {
         this.klHistory.addListener(() => {
             this.easelProjectUpdater.update();
         });
-        KL.DIALOG_COUNTER.subscribe((count) => {
+        DIALOG_COUNTER.subscribe((count) => {
             this.easel.setIsFrozen(count > 0);
         });
 
         const keyListener = new BB.KeyListener({
             onDown: (keyStr, event, comboStr) => {
-                if (KL.DIALOG_COUNTER.get() > 0 || BB.isInputFocused(true)) {
+                if (DIALOG_COUNTER.get() > 0 || BB.isInputFocused(true)) {
                     return;
                 }
 
@@ -1165,7 +1169,7 @@ export class KlHeadlessApp {
             replayer.addReplayHandler('filter', event => {
                 const filterKey = event.data.filterKey as string;
                 const filterInput = event.data.input as any;
-                const filterResult = KL.FILTER_LIB[filterKey].apply!({
+                const filterResult = FILTER_LIB[filterKey].apply!({
                     layer: this.currentLayer,
                     klCanvas: this.klCanvas,
                     klHistory: this.klHistory,
@@ -1175,7 +1179,7 @@ export class KlHeadlessApp {
                     console.log('Failed to apply filter during replay:', filterKey);
                     return;
                 }
-                KL.FILTER_LIB[filterKey].updatePos && this.easelProjectUpdater.update();
+                FILTER_LIB[filterKey].updatePos && this.easelProjectUpdater.update();
                 this.easel.resetOrFitTransform(true);
             });
         }
@@ -1190,7 +1194,7 @@ export class KlHeadlessApp {
             },
         });
 
-        this.saveToComputer = new KL.SaveToComputer(
+        this.saveToComputer = new SaveToComputer(
             () => exportType,
             this.klCanvas,
             () => {

@@ -1,8 +1,8 @@
 // Headless entry point - only exports the KlHeadlessApp and essential types
-export { KlHeadlessApp } from './kl-headless-app-stub';
+export { KlHeadlessApp } from './app/script/app/kl-headless-app';
 export type {
   TKlHeadlessUiState
-} from './kl-headless-app-stub';
+} from './app/script/app/kl-headless-app';
 
 export type {
   TKlProject,

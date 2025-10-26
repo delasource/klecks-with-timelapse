@@ -34,46 +34,21 @@ const config = [
       'json5',
       'js-beautify',
       'mdn-polyfills',
-      // Externalize all asset files
-      /^\.\/.*\.(woff2|woff|svg|png|gif|jpg|jpeg|mp3|mp4|wav)$/,
+      // Externalize all asset files that Rollup can't process
       /^url:/,
       /\.scss$/,
       /\.css$/,
-      /\.sass$/,
-      /\.less$/,
-      /\.styl$/,
       /\.glsl$/,
-      /\.glsl\.vs$/,
-      /\.glsl\.fs$/,
-      /\.html$/,
-      /\.txt$/,
+      /\.woff2?$/,
+      /\.svg$/,
+      /\.png$/,
+      /\.gif$/,
+      /\.jpg$/,
+      /\.jpeg$/,
       /\.json$/,
-      // Externalize all UI components that import assets
-      /^\.\/.*\/ui\/.*$/,
-      // Externalize specific UI modules that KlHeadlessApp imports
-      './app/script/klecks/ui/components/pinch-zoom-watcher',
-      './app/script/klecks/ui/components/save-reminder',
-      './app/script/klecks/ui/components/status-overlay',
-      './app/script/klecks/ui/components/unload-warning-trigger',
-      './app/script/klecks/ui/easel/easel',
-      './app/script/klecks/ui/easel/easel-project-updater',
-      './app/script/klecks/ui/easel/tools/easel-brush',
-      './app/script/klecks/ui/easel/tools/easel-eyedropper',
-      './app/script/klecks/ui/easel/tools/easel-gradient',
-      './app/script/klecks/ui/easel/tools/easel-hand',
-      './app/script/klecks/ui/easel/tools/easel-paint-bucket',
-      './app/script/klecks/ui/easel/tools/easel-rotate',
-      './app/script/klecks/ui/easel/tools/easel-shape',
-      './app/script/klecks/ui/easel/tools/easel-text',
-      './app/script/klecks/ui/easel/tools/easel-zoom',
-      './app/script/klecks/ui/project-viewport/project-viewport',
     ],
     onwarn: (warning, warn) => {
-      // Suppress expected warnings from externalized modules
       if (warning.code === 'UNRESOLVED_IMPORT') return;
-      if (warning.code === 'MODULE_NOT_FOUND') return;
-      // Suppress TypeScript warnings about externalized assets
-      if (warning.plugin === 'typescript' && warning.message.includes('Cannot find module')) return;
       warn(warning);
     },
   },
@@ -120,46 +95,22 @@ const config = [
       'json5',
       'js-beautify',
       'mdn-polyfills',
-      // Externalize all asset files
-      /^\.\/.*\.(woff2|woff|svg|png|gif|jpg|jpeg|mp3|mp4|wav)$/,
+      // Externalize all asset files that Rollup can't process
       /^url:/,
       /\.scss$/,
       /\.css$/,
-      /\.sass$/,
-      /\.less$/,
-      /\.styl$/,
       /\.glsl$/,
-      /\.glsl\.vs$/,
-      /\.glsl\.fs$/,
-      /\.html$/,
-      /\.txt$/,
+      /\.woff2?$/,
+      /\.svg$/,
+      /\.png$/,
+      /\.gif$/,
+      /\.jpg$/,
+      /\.jpeg$/,
       /\.json$/,
-      // Externalize all UI components that import assets
-      /^\.\/.*\/ui\/.*$/,
-      // Externalize specific UI modules that KlHeadlessApp imports
-      './app/script/klecks/ui/components/pinch-zoom-watcher',
-      './app/script/klecks/ui/components/save-reminder',
-      './app/script/klecks/ui/components/status-overlay',
-      './app/script/klecks/ui/components/unload-warning-trigger',
-      './app/script/klecks/ui/easel/easel',
-      './app/script/klecks/ui/easel/easel-project-updater',
-      './app/script/klecks/ui/easel/tools/easel-brush',
-      './app/script/klecks/ui/easel/tools/easel-eyedropper',
-      './app/script/klecks/ui/easel/tools/easel-gradient',
-      './app/script/klecks/ui/easel/tools/easel-hand',
-      './app/script/klecks/ui/easel/tools/easel-paint-bucket',
-      './app/script/klecks/ui/easel/tools/easel-rotate',
-      './app/script/klecks/ui/easel/tools/easel-shape',
-      './app/script/klecks/ui/easel/tools/easel-text',
-      './app/script/klecks/ui/easel/tools/easel-zoom',
-      './app/script/klecks/ui/project-viewport/project-viewport',
     ],
     onwarn: (warning, warn) => {
-      // Suppress expected warnings from externalized modules
+      // Only suppress UNRESOLVED_IMPORT for known external dependencies
       if (warning.code === 'UNRESOLVED_IMPORT') return;
-      if (warning.code === 'MODULE_NOT_FOUND') return;
-      // Suppress TypeScript warnings about externalized assets
-      if (warning.plugin === 'typescript' && warning.message.includes('Cannot find module')) return;
       warn(warning);
     },
   },

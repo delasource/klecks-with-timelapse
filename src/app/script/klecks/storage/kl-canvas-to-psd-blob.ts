@@ -1,7 +1,7 @@
-import { KL } from '../kl';
 import { KlCanvas } from '../canvas/kl-canvas';
 import { Psd } from 'ag-psd/dist/psd';
 import { loadAgPsd } from './load-ag-psd';
+import * as PSD from './psd';
 
 export async function klCanvasToPsdBlob(klCanvas: KlCanvas): Promise<Blob> {
     const layerArr = klCanvas.getLayersFast();
@@ -17,7 +17,7 @@ export async function klCanvasToPsdBlob(klCanvas: KlCanvas): Promise<Blob> {
                 hidden: !item.isVisible,
                 opacity: item.opacity,
                 canvas: item.canvas,
-                blendMode: KL.PSD.blendKlToPsd(item.mixModeStr),
+                blendMode: PSD.blendKlToPsd(item.mixModeStr),
                 left: 0,
                 top: 0,
             };
