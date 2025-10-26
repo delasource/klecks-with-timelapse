@@ -1,0 +1,168 @@
+import typescript from '@rollup/plugin-typescript';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import dts from 'rollup-plugin-dts';
+import json from '@rollup/plugin-json';
+
+const config = [
+  // ES Module build
+  {
+    input: 'src/headless.ts',
+    output: {
+      file: 'dist/index.js',
+      format: 'es',
+      sourcemap: true,
+      inlineDynamicImports: true,
+    },
+    plugins: [
+      resolve({
+        browser: false,
+        preferBuiltins: false,
+      }),
+      commonjs(),
+      json(),
+      typescript({
+        tsconfig: './tsconfig.build.json',
+        declaration: false,
+      }),
+    ],
+    external: [
+      'buffer',
+      'transformation-matrix',
+      'ag-psd',
+      'polygon-clipping',
+      'json5',
+      'js-beautify',
+      'mdn-polyfills',
+      // Externalize all asset files
+      /^\.\/.*\.(woff2|woff|svg|png|gif|jpg|jpeg|mp3|mp4|wav)$/,
+      /^url:/,
+      /\.scss$/,
+      /\.css$/,
+      /\.sass$/,
+      /\.less$/,
+      /\.styl$/,
+      /\.glsl$/,
+      /\.glsl\.vs$/,
+      /\.glsl\.fs$/,
+      /\.html$/,
+      /\.txt$/,
+      /\.json$/,
+      // Externalize all UI components that import assets
+      /^\.\/.*\/ui\/.*$/,
+      // Externalize specific UI modules that KlHeadlessApp imports
+      './app/script/klecks/ui/components/pinch-zoom-watcher',
+      './app/script/klecks/ui/components/save-reminder',
+      './app/script/klecks/ui/components/status-overlay',
+      './app/script/klecks/ui/components/unload-warning-trigger',
+      './app/script/klecks/ui/easel/easel',
+      './app/script/klecks/ui/easel/easel-project-updater',
+      './app/script/klecks/ui/easel/tools/easel-brush',
+      './app/script/klecks/ui/easel/tools/easel-eyedropper',
+      './app/script/klecks/ui/easel/tools/easel-gradient',
+      './app/script/klecks/ui/easel/tools/easel-hand',
+      './app/script/klecks/ui/easel/tools/easel-paint-bucket',
+      './app/script/klecks/ui/easel/tools/easel-rotate',
+      './app/script/klecks/ui/easel/tools/easel-shape',
+      './app/script/klecks/ui/easel/tools/easel-text',
+      './app/script/klecks/ui/easel/tools/easel-zoom',
+      './app/script/klecks/ui/project-viewport/project-viewport',
+    ],
+    onwarn: (warning, warn) => {
+      // Suppress expected warnings from externalized modules
+      if (warning.code === 'UNRESOLVED_IMPORT') return;
+      if (warning.code === 'MODULE_NOT_FOUND') return;
+      // Suppress TypeScript warnings about externalized assets
+      if (warning.plugin === 'typescript' && warning.message.includes('Cannot find module')) return;
+      warn(warning);
+    },
+  },
+  // Type definitions
+  {
+    input: 'src/headless.ts',
+    output: {
+      file: 'dist/index.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+  // UMD build for compatibility
+  {
+    input: 'src/headless.ts',
+    output: {
+      file: 'dist/index.umd.js',
+      format: 'umd',
+      name: 'KlecksHeadlessApp',
+      sourcemap: true,
+      globals: {
+        'buffer': 'Buffer',
+        'transformation-matrix': 'Transform',
+      },
+      inlineDynamicImports: true,
+    },
+    plugins: [
+      resolve({
+        browser: true,
+        preferBuiltins: false,
+      }),
+      commonjs(),
+      json(),
+      typescript({
+        tsconfig: './tsconfig.build.json',
+        declaration: false,
+      }),
+    ],
+    external: [
+      'buffer',
+      'transformation-matrix',
+      'ag-psd',
+      'polygon-clipping',
+      'json5',
+      'js-beautify',
+      'mdn-polyfills',
+      // Externalize all asset files
+      /^\.\/.*\.(woff2|woff|svg|png|gif|jpg|jpeg|mp3|mp4|wav)$/,
+      /^url:/,
+      /\.scss$/,
+      /\.css$/,
+      /\.sass$/,
+      /\.less$/,
+      /\.styl$/,
+      /\.glsl$/,
+      /\.glsl\.vs$/,
+      /\.glsl\.fs$/,
+      /\.html$/,
+      /\.txt$/,
+      /\.json$/,
+      // Externalize all UI components that import assets
+      /^\.\/.*\/ui\/.*$/,
+      // Externalize specific UI modules that KlHeadlessApp imports
+      './app/script/klecks/ui/components/pinch-zoom-watcher',
+      './app/script/klecks/ui/components/save-reminder',
+      './app/script/klecks/ui/components/status-overlay',
+      './app/script/klecks/ui/components/unload-warning-trigger',
+      './app/script/klecks/ui/easel/easel',
+      './app/script/klecks/ui/easel/easel-project-updater',
+      './app/script/klecks/ui/easel/tools/easel-brush',
+      './app/script/klecks/ui/easel/tools/easel-eyedropper',
+      './app/script/klecks/ui/easel/tools/easel-gradient',
+      './app/script/klecks/ui/easel/tools/easel-hand',
+      './app/script/klecks/ui/easel/tools/easel-paint-bucket',
+      './app/script/klecks/ui/easel/tools/easel-rotate',
+      './app/script/klecks/ui/easel/tools/easel-shape',
+      './app/script/klecks/ui/easel/tools/easel-text',
+      './app/script/klecks/ui/easel/tools/easel-zoom',
+      './app/script/klecks/ui/project-viewport/project-viewport',
+    ],
+    onwarn: (warning, warn) => {
+      // Suppress expected warnings from externalized modules
+      if (warning.code === 'UNRESOLVED_IMPORT') return;
+      if (warning.code === 'MODULE_NOT_FOUND') return;
+      // Suppress TypeScript warnings about externalized assets
+      if (warning.plugin === 'typescript' && warning.message.includes('Cannot find module')) return;
+      warn(warning);
+    },
+  },
+];
+
+export default config;
