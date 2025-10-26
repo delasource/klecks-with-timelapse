@@ -11,7 +11,7 @@ import { showModal } from '../base/showModal';
 import { copyCanvas } from '../../../../bb/base/canvas';
 import * as classes from './recovery-manager-panel.module.scss';
 import { LANG } from '../../../../language/language';
-import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
+import removeLayerImg from '../../../../../img/ui/remove-layer.svg';
 import { css } from '../../../../bb/base/base';
 
 export type TRecoveryManagerPanelParams = {
@@ -91,7 +91,7 @@ export class RecoveryManagerPanel {
                 const previewWrapper = BB.el({
                     tagName: 'a',
                     content: preview,
-                    className: classes.preview,
+                    className: (classes as any).preview,
                     title: LANG('tab-recovery-recover'),
                     css: {
                         minHeight: RECOVERY_THUMB_HEIGHT_PX + 'px',

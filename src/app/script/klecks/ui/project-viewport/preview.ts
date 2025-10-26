@@ -2,11 +2,11 @@ import { c } from '../../../bb/base/c';
 import { ProjectViewport, TProjectViewportProject, TViewportTransform } from './project-viewport';
 import { BB } from '../../../bb/bb';
 import { PointerListener } from '../../../bb/input/pointer-listener';
-import toolZoomInImg from 'url:/src/app/img/ui/tool-zoom-in.svg';
-import toolZoomOutImg from 'url:/src/app/img/ui/tool-zoom-out.svg';
-import viewportResetImg from 'url:/src/app/img/ui/viewport-reset.svg';
-import toolHandImg from 'url:/src/app/img/ui/tool-hand.svg';
-import editPencilImg from 'url:/src/app/img/ui/edit-pencil.svg';
+import toolZoomInImg from '../../../../img/ui/tool-zoom-in.svg';
+import toolZoomOutImg from '../../../../img/ui/tool-zoom-out.svg';
+import viewportResetImg from '../../../../img/ui/viewport-reset.svg';
+import toolHandImg from '../../../../img/ui/tool-hand.svg';
+import editPencilImg from '../../../../img/ui/edit-pencil.svg';
 import { EventChain } from '../../../bb/input/event-chain/event-chain';
 import { DoubleTapper } from '../../../bb/input/event-chain/double-tapper';
 import { TChainElement } from '../../../bb/input/event-chain/event-chain.types';
@@ -271,7 +271,7 @@ export class Preview {
             }
         });
 
-        this.viewport.getElement().classList.add(classes.viewport);
+        this.viewport.getElement().classList.add((classes as any).viewport);
         css(this.viewport.getElement(), {
             userSelect: 'none',
             touchAction: 'none',
@@ -354,7 +354,7 @@ export class Preview {
         // pointer-events: auto - So the canvas can be ignored, while the buttons still work.
         this.rootEl = c(
             {
-                className: p.hasBorder === false ? undefined : classes.preview,
+                className: p.hasBorder === false ? undefined : (classes as any).preview,
                 css: {
                     position: 'relative',
                     zIndex: '0', // prevent buttons from sitting on top of other modals

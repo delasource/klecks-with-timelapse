@@ -1,6 +1,6 @@
 import { BB } from '../../../bb/bb';
 
-import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
+import removeLayerImg from '../../../../img/ui/remove-layer.svg';
 import { TKlProject } from '../../kl-types';
 import { ProjectStore, TProjectStoreListener } from '../../storage/project-store';
 import { KL } from '../../kl';
@@ -93,7 +93,7 @@ export class BrowserStorageUi {
             if (typeof performance !== 'undefined' && timestamp > performance.timeOrigin) {
                 const animEl = BB.el({
                     parent: this.previewEl,
-                    className: classes.animEl,
+                    className: (classes as any).animEl,
                 });
                 setTimeout(() => {
                     animEl.remove();

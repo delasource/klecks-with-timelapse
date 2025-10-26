@@ -1,9 +1,9 @@
 import { BB } from '../../../bb/bb';
 import { ToolDropdown } from './tool-dropdown';
-import toolHandImg from 'url:/src/app/img/ui/tool-hand.svg';
-import toolZoomInImg from 'url:/src/app/img/ui/tool-zoom-in.svg';
-import toolZoomOutImg from 'url:/src/app/img/ui/tool-zoom-out.svg';
-import toolUndoImg from 'url:/src/app/img/ui/tool-undo.svg';
+import toolHandImg from '../../../../img/ui/tool-hand.svg';
+import toolZoomInImg from '../../../../img/ui/tool-zoom-in.svg';
+import toolZoomOutImg from '../../../../img/ui/tool-zoom-out.svg';
+import toolUndoImg from '../../../../img/ui/tool-undo.svg';
 import { LANG } from '../../../language/language';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import { TToolType } from '../../kl-types';

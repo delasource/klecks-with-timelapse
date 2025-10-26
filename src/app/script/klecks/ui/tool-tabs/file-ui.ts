@@ -4,11 +4,11 @@ import { BrowserStorageUi } from '../components/browser-storage-ui';
 import { TDropOption, TExportType, TKlProject } from '../../kl-types';
 import { ProjectStore } from '../../storage/project-store';
 import { LANG } from '../../../language/language';
-import newImageImg from 'url:/src/app/img/ui/new-image.svg';
-import exportImg from 'url:/src/app/img/ui/export.svg';
-import shareImg from 'url:/src/app/img/ui/share.svg';
-import uploadImg from 'url:/src/app/img/ui/upload.svg';
-import importImg from 'url:/src/app/img/ui/import.svg';
+import newImageImg from '../../../../img/ui/new-image.svg';
+import exportImg from '../../../../img/ui/export.svg';
+import shareImg from '../../../../img/ui/share.svg';
+import uploadImg from '../../../../img/ui/upload.svg';
+import importImg from '../../../../img/ui/import.svg';
 import { Checkbox } from '../components/checkbox';
 import { LocalStorage } from '../../../bb/base/local-storage';
 import { KlRecoveryManager, TKlRecoveryListener } from '../../storage/kl-recovery-manager';
@@ -271,7 +271,7 @@ export class FileUi {
             this.klRecoveryManager = p.klRecoveryManager;
             const recoveryWrapper = BB.el({});
             this.recoveryCountBubble = BB.el({
-                className: classes.recoveryBubble,
+                className: (classes as any).recoveryBubble,
             });
 
             const recoveryBrowserButton = BB.el({

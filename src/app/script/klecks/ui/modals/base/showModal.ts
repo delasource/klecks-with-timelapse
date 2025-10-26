@@ -3,9 +3,9 @@ import { DIALOG_COUNTER } from '../modal-count';
 import { BB } from '../../../../bb/bb';
 import { LANG } from '../../../../language/language';
 import './scroll-fix';
-import cancelImg from 'url:/src/app/img/ui/cancel.svg';
-import checkImg from 'url:/src/app/img/ui/check.svg';
-import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
+import cancelImg from '../../../../../img/ui/cancel.svg';
+import checkImg from '../../../../../img/ui/check.svg';
+import removeLayerImg from '../../../../../img/ui/remove-layer.svg';
 
 export function showModal(p: {
     target: HTMLElement;

@@ -1,11 +1,11 @@
 import { BB } from '../../../bb/bb';
 import { DIALOG_COUNTER } from '../modals/modal-count';
-import toolPaintImg from 'url:/src/app/img/ui/tool-paint.svg';
-import toolFillImg from 'url:/src/app/img/ui/tool-fill.svg';
-import toolGradientImg from 'url:/src/app/img/ui/tool-gradient.svg';
-import toolTextImg from 'url:/src/app/img/ui/tool-text.svg';
-import toolShapeImg from 'url:/src/app/img/ui/tool-shape.svg';
-import toolSelectImg from 'url:/src/app/img/ui/tool-select.svg';
+import toolPaintImg from '../../../../img/ui/tool-paint.svg';
+import toolFillImg from '../../../../img/ui/tool-fill.svg';
+import toolGradientImg from '../../../../img/ui/tool-gradient.svg';
+import toolTextImg from '../../../../img/ui/tool-text.svg';
+import toolShapeImg from '../../../../img/ui/tool-shape.svg';
+import toolSelectImg from '../../../../img/ui/tool-select.svg';
 import { LANG } from '../../../language/language';
 import { TToolType } from '../../kl-types';
 import { PointerListener } from '../../../bb/input/pointer-listener';

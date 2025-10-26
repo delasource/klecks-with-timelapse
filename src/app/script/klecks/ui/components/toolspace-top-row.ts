@@ -1,10 +1,10 @@
 import { BB } from '../../../bb/bb';
-import klecksLogoImg from 'url:/src/app/img/klecks-logo.png';
-import newImageImg from 'url:/src/app/img/ui/new-image.svg';
-import importImg from 'url:/src/app/img/ui/import.svg';
-import exportImg from 'url:/src/app/img/ui/export.svg';
-import shareImg from 'url:/src/app/img/ui/share.svg';
-import helpImg from 'url:/src/app/img/ui/help.svg';
+import klecksLogoImg from '../../../../img/klecks-logo.png';
+import newImageImg from '../../../../img/ui/new-image.svg';
+import importImg from '../../../../img/ui/import.svg';
+import exportImg from '../../../../img/ui/export.svg';
+import shareImg from '../../../../img/ui/share.svg';
+import helpImg from '../../../../img/ui/help.svg';
 import { LANG } from '../../../language/language';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import { css } from '../../../bb/base/base';

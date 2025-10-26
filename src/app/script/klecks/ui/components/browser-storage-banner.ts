@@ -6,7 +6,7 @@ import { KlRecoveryManager } from '../../storage/kl-recovery-manager';
 import { css, fitInto, sleep } from '../../../bb/base/base';
 import { CrossTabChannel } from '../../../bb/base/cross-tab-channel';
 import { KlHistory } from '../../history/kl-history';
-import cancelImg from 'url:/src/app/img/ui/cancel.svg';
+import cancelImg from '../../../../img/ui/cancel.svg';
 
 export type TBrowserStorageBannerParams = {
     projectStore?: ProjectStore;

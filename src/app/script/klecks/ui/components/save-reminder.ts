@@ -63,7 +63,7 @@ export class SaveReminder {
         );
 
         const psdWrapper = BB.el({
-            className: classes.psdWrapper,
+            className: (classes as any).psdWrapper,
         });
         const storageWrapper = BB.el({
             css: {

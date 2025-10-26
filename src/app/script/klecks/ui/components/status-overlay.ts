@@ -1,5 +1,5 @@
 import { BB } from '../../../bb/bb';
-import angleSvg from 'url:/src/app/img/ui/angle.svg';
+import angleSvg from '../../../../img/ui/angle.svg';
 import { css } from '../../../bb/base/base';
 
 type TUiState = 'left' | 'right';

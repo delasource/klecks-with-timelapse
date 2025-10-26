@@ -1,23 +1,23 @@
 import { TFilter } from '../kl-types';
-import glBrightnessContrastImg from 'url:/src/app/img/ui/edit-brightness-contrast.svg';
-import cropExtendImg from 'url:/src/app/img/ui/edit-crop.svg';
-import glCurvesImg from 'url:/src/app/img/ui/edit-curves.svg';
-import flipImg from 'url:/src/app/img/ui/edit-flip.svg';
-import glHueSaturationImg from 'url:/src/app/img/ui/edit-hue-saturation.svg';
-import invertImg from 'url:/src/app/img/ui/edit-invert.png';
-import glPerspectiveImg from 'url:/src/app/img/ui/edit-perspective.svg';
-import resizeImg from 'url:/src/app/img/ui/edit-resize.svg';
-import rotateImg from 'url:/src/app/img/ui/edit-rotate.svg';
-import glTiltShiftImg from 'url:/src/app/img/ui/edit-tilt-shift.png';
-import toAlphaImg from 'url:/src/app/img/ui/edit-to-alpha.svg';
-import transformImg from 'url:/src/app/img/ui/edit-transform.svg';
-import glBlurImg from 'url:/src/app/img/ui/edit-triangle-blur.png';
-import glUnsharpMaskImg from 'url:/src/app/img/ui/edit-unsharp-mask.png';
-import gridImg from 'url:/src/app/img/ui/edit-grid.svg';
-import noiseImg from 'url:/src/app/img/ui/edit-noise.svg';
-import patternImg from 'url:/src/app/img/ui/edit-pattern.svg';
-import vanishPointImg from 'url:/src/app/img/ui/edit-vanish-point.svg';
-import distortImg from 'url:/src/app/img/ui/edit-distort.svg';
+import glBrightnessContrastImg from '../../../img/ui/edit-brightness-contrast.svg';
+import cropExtendImg from '../../../img/ui/edit-crop.svg';
+import glCurvesImg from '../../../img/ui/edit-curves.svg';
+import flipImg from '../../../img/ui/edit-flip.svg';
+import glHueSaturationImg from '../../../img/ui/edit-hue-saturation.svg';
+import invertImg from '../../../img/ui/edit-invert.png';
+import glPerspectiveImg from '../../../img/ui/edit-perspective.svg';
+import resizeImg from '../../../img/ui/edit-resize.svg';
+import rotateImg from '../../../img/ui/edit-rotate.svg';
+import glTiltShiftImg from '../../../img/ui/edit-tilt-shift.png';
+import toAlphaImg from '../../../img/ui/edit-to-alpha.svg';
+import transformImg from '../../../img/ui/edit-transform.svg';
+import glBlurImg from '../../../img/ui/edit-triangle-blur.png';
+import glUnsharpMaskImg from '../../../img/ui/edit-unsharp-mask.png';
+import gridImg from '../../../img/ui/edit-grid.svg';
+import noiseImg from '../../../img/ui/edit-noise.svg';
+import patternImg from '../../../img/ui/edit-pattern.svg';
+import vanishPointImg from '../../../img/ui/edit-vanish-point.svg';
+import distortImg from '../../../img/ui/edit-distort.svg';
 
 export const FILTER_LIB_STATUS = {
     isLoaded: false,
