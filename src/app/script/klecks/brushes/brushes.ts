@@ -1,10 +1,10 @@
-import { PenBrush } from './pen-brush';
-import { BlendBrush } from './blend-brush';
-import { SketchyBrush } from './sketchy-brush';
-import { PixelBrush } from './pixel-brush';
-import { EraserBrush } from './eraser-brush';
-import { SmudgeBrush } from './smudge-brush';
-import { ChemyBrush } from './chemy-brush';
+import { PenBrush, TPenBrushConfig } from './pen-brush';
+import { BlendBrush, TBlendBrushConfig } from './blend-brush';
+import { SketchyBrush, TSketchyBrushConfig } from './sketchy-brush';
+import { PixelBrush, TPixelBrushConfig } from './pixel-brush';
+import { ChemyBrush, TChemyBrushConfig } from './chemy-brush';
+import { SmudgeBrush, TSmudgeBrushConfig } from './smudge-brush';
+import { EraserBrush, TEraserBrushConfig } from './eraser-brush';
 
 export const BRUSHES = {
     PenBrush,
@@ -15,3 +15,22 @@ export const BRUSHES = {
     SmudgeBrush,
     EraserBrush,
 };
+
+export type TBrushClassTypes =
+    PenBrush
+    | BlendBrush
+    | SketchyBrush
+    | PixelBrush
+    | ChemyBrush
+    | SmudgeBrush
+    | EraserBrush;
+
+
+export type TBrushConfigTypes =
+    TPenBrushConfig
+    | TBlendBrushConfig
+    | TSketchyBrushConfig
+    | TPixelBrushConfig
+    | TChemyBrushConfig
+    | TSmudgeBrushConfig
+    | TEraserBrushConfig;

@@ -302,7 +302,7 @@ export class EraserBrush {
         };
     }
 
-    setBrushConfig(config: TEraserBrushConfig): void {
+    setBrushConfig(config: Partial<TEraserBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }

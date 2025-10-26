@@ -316,7 +316,7 @@ export class ChemyBrush {
         };
     }
 
-    setBrushConfig(config: TChemyBrushConfig): void {
+    setBrushConfig(config: Partial<TChemyBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }
@@ -365,7 +365,7 @@ export class ChemyBrush {
         this.updateCompleteRedrawBounds(x, y);
     }
 
-    goLine(x: number, y: number): void {
+    goLine(x: number, y: number, p: number): void {
         if (!this.isDrawing) {
             return;
         }

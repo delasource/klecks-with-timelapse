@@ -586,7 +586,7 @@ export class PixelBrush {
         };
     }
 
-    setBrushConfig(config: TPixelBrushConfig): void {
+    setBrushConfig(config: Partial<TPixelBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }

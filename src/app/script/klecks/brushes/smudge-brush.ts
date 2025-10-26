@@ -750,7 +750,7 @@ export class SmudgeBrush {
         };
     }
 
-    setBrushConfig(config: TSmudgeBrushConfig): void {
+    setBrushConfig(config: Partial<TSmudgeBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }

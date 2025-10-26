@@ -128,7 +128,7 @@ export class SketchyBrush {
         };
     }
 
-    setBrushConfig(config: TSketchyBrushConfig): void {
+    setBrushConfig(config: Partial<TSketchyBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }

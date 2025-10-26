@@ -564,7 +564,7 @@ export class PenBrush {
         };
     }
 
-    setBrushConfig(config: TPenBrushConfig): void {
+    setBrushConfig(config: Partial<TPenBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
         }

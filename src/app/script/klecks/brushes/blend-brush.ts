@@ -1,4 +1,5 @@
 import { BB } from '../../bb/bb';
+import { TKlCanvasLayer } from '../canvas/kl-canvas';
 import { isLayerFill, TRgb, TRgba } from '../kl-types';
 import { TBounds, TPressureInput } from '../../bb/bb-types';
 import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
@@ -600,9 +601,9 @@ export class BlendBrush {
         this.color = BB.copyObj(c);
     }
 
-    setContext(c: CanvasRenderingContext2D, id: string): void {
-        this.context = c;
-        this.layerId = id;
+    setLayer(layer: TKlCanvasLayer): void {
+        this.context = layer.context;
+        this.layerId = layer.id;
     }
 
     setSizePressure(b: boolean): void {
@@ -641,7 +642,7 @@ export class BlendBrush {
         };
     }
 
-    setBrushConfig(config: TBlendBrushConfig): void {
+    setBrushConfig(config: Partial<TBlendBrushConfig>): void {
         if (config.color !== undefined) {
             this.setColor(config.color);
         }
@@ -773,11 +774,11 @@ export class BlendBrush {
         }
     }
 
-    goLine(x: number, y: number, p: number, isCoalesced: boolean): void {
+    goLine(x: number, y: number, p: number, isCoalesced?: boolean): void {
         if (!this.isDrawing) {
             return;
         }
-        this.continueLine(x, y, this.lastInput.pressure, isCoalesced);
+        this.continueLine(x, y, this.lastInput.pressure, isCoalesced ?? false);
 
         this.lastInput2 = BB.copyObj(this.lastInput);
         this.lastInput.x = x;

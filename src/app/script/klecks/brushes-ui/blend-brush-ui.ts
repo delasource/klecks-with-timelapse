@@ -171,7 +171,7 @@ export const blendBrushUi = (function () {
             brush.setColor(c);
         };
         this.setLayer = function (layer) {
-            brush.setContext(layer.context, layer.id);
+            brush.setLayer(layer);
         };
         this.startLine = function (x, y, p) {
             brush.startLine(x, y, p);
