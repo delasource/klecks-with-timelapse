@@ -13,6 +13,7 @@
     "isolatedModules": true
   },
   "include": [
-    "src/headless.ts"
+    "src/headless.ts",
+    "src/app/declaration.d.ts"
   ]
 }

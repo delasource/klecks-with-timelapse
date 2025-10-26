@@ -1,6 +1,7 @@
-import { BB } from '../../../bb/bb';
 import { TKeyString } from '../../../bb/bb-types';
 import { KeyListener } from '../../../bb/input/key-listener';
+import { PointerListener } from '../../../bb/input/pointer-listener';
+import { el } from '../../../bb/base/ui';
 import { css } from '../../../bb/base/base';
 
 type TInputType = 'button' | 'checkbox' | 'number' | 'text' | 'color';
@@ -36,7 +37,7 @@ export class Input {
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TInputParams) {
-        this.rootEl = BB.el({
+        this.rootEl = el({
             tagName: 'label',
             content: p.label,
             css: {
@@ -46,7 +47,7 @@ export class Input {
             },
         });
 
-        this.input = BB.el({
+        this.input = el({
             tagName: 'input',
             parent: this.rootEl,
             title: p.title,
@@ -122,8 +123,8 @@ export class Input {
 
         if (p.doScrollWithoutFocus && p.type === 'number' && p.onChange) {
             const onChange = p.onChange;
-            this.keyListener = new BB.KeyListener({});
-            this.pointerListener = new BB.PointerListener({
+            this.keyListener = new KeyListener({});
+            this.pointerListener = new PointerListener({
                 target: this.input,
                 onWheel: (e) => {
                     /*if (document.hasFocus()) { // what was the point of this?

@@ -5,8 +5,8 @@ import { BB } from '../../../../bb/bb';
 import { LANG } from '../../../../language/language';
 
 export function showLicensesDialog() {
-    const libraries = c('.' + classes.licenses, LANG('loading'));
-    const fonts = c('.' + classes.licenses, LANG('loading'));
+    const libraries = c('.' + (classes as any).licenses, LANG('loading'));
+    const fonts = c('.' + (classes as any).licenses, LANG('loading'));
 
     const content = c(',flex,flexCol,gap-10', [libraries, fonts]);
 

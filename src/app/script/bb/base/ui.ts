@@ -1,5 +1,4 @@
-import { css } from './base';
-import { BB } from '../bb';
+import { append, css } from './base';
 
 export function appendTextDiv(target: HTMLElement, text: string): HTMLDivElement {
     const div = document.createElement('div');
@@ -36,7 +35,7 @@ export function unfocusAnyInput(): void {
 
             Workaround: Temporarily create an input, focus it, detach it.
              */
-        const focusEl = BB.el({
+        const focusEl = el({
             parent: document.body,
             tagName: 'input',
             css: {
@@ -147,7 +146,7 @@ export function el<GTag extends keyof HTMLElementTagNameMap = 'div'>(params?: {
         if (typeof params.content === typeof 'aa') {
             result.innerHTML = params.content as string;
         } else if (Array.isArray(params.content)) {
-            BB.append(result, params.content);
+            append(result, params.content);
         } else {
             result.append(params.content as HTMLElement);
         }

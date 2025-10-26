@@ -3,13 +3,16 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json';
+import image from '@rollup/plugin-image';
+import scss from 'rollup-plugin-scss';
+import { string } from 'rollup-plugin-string';
+import terser from '@rollup/plugin-terser';
 
 const config = [
-  // ES Module build
   {
     input: 'src/headless.ts',
     output: {
-      file: 'dist/index.js',
+      file: 'dist/headless.js',
       format: 'es',
       sourcemap: true,
       inlineDynamicImports: true,
@@ -21,6 +24,23 @@ const config = [
       }),
       commonjs(),
       json(),
+      image({
+        include: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.woff2'],
+        limit: 8192, // embed all small assets
+      }),
+      scss({
+        output: 'dist/styles.css',
+        outputStyle: 'compressed',
+        fileName: 'styles.css',
+        modules: {
+          auto: true,
+          localsConvention: 'camelCase'
+        },
+      }),
+      string({
+        include: '**/*.glsl',
+      }),
+      terser(),
       typescript({
         tsconfig: './tsconfig.build.json',
         declaration: false,
@@ -34,86 +54,17 @@ const config = [
       'json5',
       'js-beautify',
       'mdn-polyfills',
-      // Externalize all asset files that Rollup can't process
-      /^url:/,
-      /\.scss$/,
-      /\.css$/,
-      /\.glsl$/,
-      /\.woff2?$/,
-      /\.svg$/,
-      /\.png$/,
-      /\.gif$/,
-      /\.jpg$/,
-      /\.jpeg$/,
-      /\.json$/,
     ],
-    onwarn: (warning, warn) => {
-      if (warning.code === 'UNRESOLVED_IMPORT') return;
-      warn(warning);
-    },
   },
   // Type definitions
   {
     input: 'src/headless.ts',
     output: {
-      file: 'dist/index.d.ts',
+      file: 'dist/headless.d.ts',
       format: 'es',
     },
     plugins: [dts()],
-  },
-  // UMD build for compatibility
-  {
-    input: 'src/headless.ts',
-    output: {
-      file: 'dist/index.umd.js',
-      format: 'umd',
-      name: 'KlecksHeadlessApp',
-      sourcemap: true,
-      globals: {
-        'buffer': 'Buffer',
-        'transformation-matrix': 'Transform',
-      },
-      inlineDynamicImports: true,
-    },
-    plugins: [
-      resolve({
-        browser: true,
-        preferBuiltins: false,
-      }),
-      commonjs(),
-      json(),
-      typescript({
-        tsconfig: './tsconfig.build.json',
-        declaration: false,
-      }),
-    ],
-    external: [
-      'buffer',
-      'transformation-matrix',
-      'ag-psd',
-      'polygon-clipping',
-      'json5',
-      'js-beautify',
-      'mdn-polyfills',
-      // Externalize all asset files that Rollup can't process
-      /^url:/,
-      /\.scss$/,
-      /\.css$/,
-      /\.glsl$/,
-      /\.woff2?$/,
-      /\.svg$/,
-      /\.png$/,
-      /\.gif$/,
-      /\.jpg$/,
-      /\.jpeg$/,
-      /\.json$/,
-    ],
-    onwarn: (warning, warn) => {
-      // Only suppress UNRESOLVED_IMPORT for known external dependencies
-      if (warning.code === 'UNRESOLVED_IMPORT') return;
-      warn(warning);
-    },
-  },
+  }
 ];
 
 export default config;

@@ -88,7 +88,9 @@ export class SaveToComputer {
             loadAgPsd()
                 .then((agPsdLazy) => {
                     const buffer = agPsdLazy.writePsdBuffer(psdConfig);
-                    const blob = new Blob([buffer], {
+                    // Convert Buffer to Uint8Array for Blob compatibility
+                    const uint8Array = new Uint8Array(buffer);
+                    const blob = new Blob([uint8Array], {
                         type: 'image/vnd.adobe.photoshop',
                     });
                     saveAs(

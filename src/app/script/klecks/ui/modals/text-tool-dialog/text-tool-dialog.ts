@@ -26,7 +26,7 @@ export function textToolDialog(p: {
     let text = BB.copyObj(p.text);
 
     const viewportWrapper = BB.el({
-        className: classes.viewportWrapper,
+        className: (classes as any).viewportWrapper,
     });
 
     const viewportUI = new TextToolViewportUI({
@@ -120,14 +120,14 @@ export function textToolDialog(p: {
             },
         ],
     });
-    tabs.getElement().classList.add(classes.tab);
+    tabs.getElement().classList.add((classes as any).tab);
     rootEl.append(
         c('', [
             c(viewportWrapper, [viewportUI.getElement()]),
-            c('.' + classes.viewportInputs, [viewportUI.getInputsElement()]),
-            c('.tabrow.' + classes.tabWrapper, [c(',w-240,h-40'), tabs.getElement()]),
+            c('.' + (classes as any).viewportInputs, [viewportUI.getInputsElement()]),
+            c('.tabrow.' + (classes as any).tabWrapper, [c(',w-240,h-40'), tabs.getElement()]),
 
-            c('.' + classes.inputs, [
+            c('.' + (classes as any).inputs, [
                 c(colorWrapper, [fillUI.getElement(), strokeUI.getElement()]),
                 fontUI.getElement(),
                 textUI.getElement(),

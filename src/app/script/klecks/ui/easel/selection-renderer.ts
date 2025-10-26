@@ -81,13 +81,13 @@ export class SelectionRenderer {
             elementType: 'path',
             'vector-effect': 'non-scaling-stroke',
         }) as SVGPathElement;
-        this.svgPath1.classList.add(classes.whitePath);
+        this.svgPath1.classList.add((classes as any).whitePath);
 
         this.svgPath2 = BB.createSvg({
             elementType: 'path',
             'vector-effect': 'non-scaling-stroke',
         }) as SVGPathElement;
-        this.svgPath2.classList.add(classes.blackPath);
+        this.svgPath2.classList.add((classes as any).blackPath);
         this.rootEl = BB.createSvg({
             elementType: 'g',
         });

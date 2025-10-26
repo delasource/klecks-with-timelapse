@@ -1,19 +1,5 @@
 {
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.umd.js"
-    },
-    "./headless": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.umd.js"
-    }
-  },
   "browserslist": [
     "> 0.2%",
     "last 2 versions",
@@ -36,6 +22,8 @@
   "dependencies": {
     "@parcel/transformer-glsl": "2.16.0",
     "@parcel/transformer-sass": "2.16.0",
+    "@parcel/transformer-typescript-types": "^2.16.0",
+    "@swc/helpers": "^0.5.17",
     "ag-psd": "28.3.1",
     "buffer": "6.0.3",
     "js-beautify": "1.15.4",
@@ -46,13 +34,22 @@
     "transformation-matrix": "3.1.0"
   },
   "devDependencies": {
+    "@parcel/transformer-html": "^2.16.0",
+    "@parcel/transformer-raw": "^2.16.0",
+    "@parcel/transformer-svg": "^2.16.0",
+    "@parcel/transformer-typescript-tsc": "^2.16.0",
     "@rollup/plugin-commonjs": "^28.0.9",
+    "@rollup/plugin-image": "^3.0.3",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.3.0",
+    "@rollup/plugin-url": "^8.0.2",
     "@types/node": "^24.9.1",
     "rollup": "^4.52.5",
     "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-scss": "^4.0.1",
+    "rollup-plugin-string": "^3.0.0",
     "typescript": "^5.9.3"
   }
 }
