@@ -105,6 +105,8 @@ function getButtonStr(buttons: number): TPointerButton | undefined {
             return 'right';
         case 4:
             return 'middle';
+        case 32:
+            return 'pen-eraser';
         default:
             return undefined;
     }
@@ -143,6 +145,7 @@ function correctPointerEvent(
         right:	2 -> 2
         fourth:	3 -> 8
         fifth:	4 -> 16
+        sixth:  5 -> 32   back side of a stylus = eraser
          */
         if (event.button !== undefined) {
             // old safari on mac has no buttons. remove eventually.
@@ -453,7 +456,7 @@ export class PointerListener {
                 if (
                     this.dragPointerIdArr.includes(correctedEvent.pointerId) ||
                     this.dragPointerIdArr.length === this.maxPointers ||
-                    ![1, 2, 4].includes(correctedEvent.buttons)
+                    ![1, 2, 4, 32].includes(correctedEvent.buttons)
                 ) {
                     //BB.throwOut('pointerdown ignored');
                     return;

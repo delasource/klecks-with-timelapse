@@ -583,10 +583,19 @@ export class KlApp {
             },
         });
 
+        let isEraserPen: boolean = false;
         this.easelBrush = new EaselBrush({
             radius: 5,
             onLineStart: (e) => {
                 // expects TDrawEvent
+                isEraserPen = e.isEraserPen ||false;
+                if (isEraserPen) {
+                    // Temporary switch to eraser
+                    applyUncommitted();
+                    setCurrentBrush('eraserBrush');
+                    this.updateUi();
+                }
+
                 drawEventChain.chainIn({
                     type: 'down',
                     scale: this.easel.getTransform().scale,
@@ -617,6 +626,13 @@ export class KlApp {
                     shiftIsPressed: keyListener.isPressed('shift'),
                     isCoalesced: false,
                 } as any);
+                if (isEraserPen) {
+                    // Return to brush
+                    isEraserPen = false;
+                    applyUncommitted();
+                    setCurrentBrush(lastNonEraserBrushId);
+                    this.updateUi();
+                }
             },
             onLine: (p1, p2) => {
                 // expects TDrawEvent
@@ -629,6 +645,13 @@ export class KlApp {
                     pressure0: 1,
                     pressure1: 1,
                 } as any);
+                if (isEraserPen) {
+                    // Return to brush
+                    isEraserPen = false;
+                    applyUncommitted();
+                    setCurrentBrush(lastNonEraserBrushId);
+                    this.updateUi();
+                }
             },
         });
 

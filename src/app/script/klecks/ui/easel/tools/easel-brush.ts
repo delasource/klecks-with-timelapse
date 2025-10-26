@@ -19,6 +19,7 @@ export type TEaselBrushEvent = {
     y: number;
     isCoalesced: boolean;
     pressure: number;
+    isEraserPen?: boolean;
 };
 
 export type TEaselBrushParams = {
@@ -90,7 +91,7 @@ export class EaselBrush implements TEaselTool {
             this.lineToolDirection = undefined;
         }
 
-        if (e.type === 'pointerdown' && e.button === 'left') {
+        if (e.type === 'pointerdown' && (e.button === 'left' || e.button == 'pen-eraser')) {
             if (shiftIsPressed) {
                 if (this.lastLineEnd) {
                     this.onLine(this.lastLineEnd, { x, y });
@@ -98,10 +99,10 @@ export class EaselBrush implements TEaselTool {
                 return;
             }
 
-            this.onLineStart({ x, y, pressure, isCoalesced });
+            this.onLineStart({ x, y, pressure, isCoalesced, isEraserPen: e.button == 'pen-eraser' });
             this.isDragging = true;
         }
-        if (e.type === 'pointermove' && e.button === 'left') {
+        if (e.type === 'pointermove' && (e.button === 'left' || e.button == 'pen-eraser')) {
             if (shiftIsPressed) {
                 if (!this.lineToolDirection) {
                     const dX = Math.abs(e.relX - this.firstShiftPos!.x);
