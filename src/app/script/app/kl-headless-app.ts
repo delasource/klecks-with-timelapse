@@ -52,7 +52,7 @@ import { getDefaultProjectOptions } from './default-project';
 import { KlAppSelect } from './kl-app-select';
 
 
-type TKlToolId =
+export type TKlToolId =
     | 'hand'
     | 'brush'
     | 'select'
@@ -64,7 +64,7 @@ type TKlToolId =
     | 'rotate'
     | 'zoom';
 
-type TKlBrushId = keyof typeof BRUSHES;
+export type TKlBrushId = keyof typeof BRUSHES;
 
 export type TKlHeadlessUiState = {
     isColorPickerEnabled: boolean;
@@ -348,7 +348,7 @@ export class KlHeadlessApp {
         this.klAppSelect.onHistory(type);
     };
 
-    private undo(showMessage?: boolean) {
+    public undo(showMessage?: boolean) {
         if (!this.tempHistory.canDecreaseIndex()) {
             this.discardUncommitted();
         }
@@ -365,7 +365,7 @@ export class KlHeadlessApp {
         }
     };
 
-    private redo(showMessage?: boolean) {
+    public redo(showMessage?: boolean) {
         const composedBefore = this.klHistory.getComposed();
         const result = this.klHistoryExecutor.redo();
         if (!result) {
