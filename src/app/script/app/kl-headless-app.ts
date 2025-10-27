@@ -27,7 +27,7 @@ import {
     TExportType, TFillSampling,
     TGradient,
     TGradientType,
-    TKlProject,
+    TKlProject, TMixMode,
     TRgb,
     TShapeToolMode,
     TShapeToolType
@@ -56,6 +56,19 @@ import { LANG } from '../language/language';
 import { getDefaultProjectOptions } from './default-project';
 import { KlAppSelect } from './kl-app-select';
 
+/* TODO
+ * Select UI fehlt
+ * UI: BrushOptions
+ *   Slider Curves (siehe Klecks -UI)
+ *   Slider (Range) Style besser machen
+ *   Linke Seite sollte sich "top" orientieren und nicht "top mid" damit die ui nicht so springt
+ * UI: Layers
+ * UI: Colors
+ * UI: Filter
+ * Resize triggert nicht das resizen vom canvas element
+ * Zoom-Indikator
+ *
+ */
 
 export type TKlToolId =
     | 'hand'
@@ -110,7 +123,20 @@ export type TKlHeadlessUiState = {
         grow: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
         isEraser: boolean;
         isContiguous: boolean;
+    },
+    select: {
+        mode: 'select' | 'transform';
+        selectShape: 'rect' | 'ellipse' | 'lasso' | 'poly';
+        selectOperation: 'new' | 'union' | 'difference';
+        hasSelection: boolean;
     }
+    layers: {
+        index: number;
+        name: string;
+        opacity: number;
+        isVisible: boolean;
+        mixModeStr: TMixMode;
+    }[]
 }
 
 const DEFAULT_UI_STATE: TKlHeadlessUiState = {
@@ -145,6 +171,12 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
         isReversed: false,
         isEraser: false,
     },
+    select: {
+        mode: 'select',
+        selectShape: 'lasso',
+        selectOperation: 'new',
+        hasSelection: false
+    },
     fill: {
         tolerance: 0.2,
         opacity: 1,
@@ -152,7 +184,8 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
         grow: 0,
         isEraser: false,
         isContiguous: false,
-    }
+    },
+    layers: []
 };
 
 export type TKlFeatureConfiguration = {
@@ -227,7 +260,7 @@ export class KlHeadlessApp {
     }
 
     private updateUi() {
-        this.triggerUiEvent('uiStateChanged', this.uiState);
+        this.triggerUiEvent('uiStateChanged', { ...this.uiState });
     }
 
     private showStatusMessageCallback = (message: string) => {
@@ -295,6 +328,9 @@ export class KlHeadlessApp {
         return false;
     };
 
+    private getCurrentBrush() {
+        return this.brushes[this.uiState.currentBrushId];
+    }
 
     private clearLayer(showStatus?: boolean, ignoreSelection?: boolean) {
         this.applyUncommitted();
@@ -1229,34 +1265,17 @@ export class KlHeadlessApp {
         this.resize(this.uiWidth, this.uiHeight);
 
         // Update initial brush
-        console.log('brush 0', this.uiState.brushConfig[this.uiState.currentBrushId]);
         this.setBrushConfig({
             ...this.uiState.brushConfig[this.uiState.currentBrushId],
             size: 4,
             color: this.uiState.primaryColorRgb
         });
-        // this.updateUi();
 
         if (p.initialViewport?.canvasWidth && p.canvasWidth) {
             // apply scale
             const scale = (p.initialViewport.canvasWidth ?? 0) / (p.canvasWidth ?? 1);
             this.easel.scale(scale);
-            /*const m = createMatrixFromTransform(this.easel.getTransform());
-            const canvasCenterPoint = applyToPoint(inverse(m), {
-                x: this.uiWidth / 2,
-                y: this.uiHeight / 2,
-            });
-            this.easel.setTransform(
-                createTransform(
-                    {
-                        x: this.uiWidth / 2,
-                        y: this.uiHeight / 2,
-                    },
-                    canvasCenterPoint,
-                    scale,
-                    0,
-                )
-            );*/
+            // this.resetView()
         }
 
 
@@ -1484,26 +1503,41 @@ export class KlHeadlessApp {
             this.setBrushConfig(newConfig);
     }
 
-    getCurrentBrushConfig() {
-        return this.uiState.brushConfig[this.uiState.currentBrushId];
-    }
-
-    getCurrentBrush() {
-        return this.brushes[this.uiState.currentBrushId];
-    }
-
-    getUiState(): TKlHeadlessUiState {
-        return this.uiState;
-    }
-
-    getProjectId(): string {
-        return this.klHistory.getComposed().projectId?.value || '';
-    }
-
     setTool(toolId: TKlToolId): void {
         this.easel.setTool(toolId);
         this.uiState.tool = toolId;
         this.updateUi();
+    }
+
+    setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
+        this.uiState.shape = {
+            ...this.uiState.shape,
+            ...config,
+        };
+        this.updateUi();
+    }
+
+    setGradientConfig(config: Partial<typeof this.uiState.gradient>): void {
+        // TODO
+    }
+
+    setFillConfig(config: Partial<typeof this.uiState.fill>): void {
+        // TODO
+    }
+
+    setSelectConfig(config: Partial<typeof this.uiState.select>): void {
+    }
+
+    getCurrentBrushConfig() {
+        return this.uiState.brushConfig[this.uiState.currentBrushId];
+    }
+
+    getUiState(): TKlHeadlessUiState {
+        return { ...this.uiState };
+    }
+
+    getProjectId(): string {
+        return this.klHistory.getComposed().projectId?.value || '';
     }
 
     destroy(): void {

@@ -36,3 +36,8 @@ export {
     genBrushAlpha01,
     genBrushAlpha02
 } from './app/script/klecks/brushes/alphas/brush-alphas';
+
+export type {
+    TShapeToolType,
+    TShapeToolMode
+} from './app/script/klecks/kl-types';
