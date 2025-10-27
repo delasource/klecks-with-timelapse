@@ -171,6 +171,7 @@ export type TKlHeadlessAppParams = {
     };
     canvasWidth?: number;
     canvasHeight?: number;
+    featureConfiguration?: TKlFeatureConfiguration;
 }
 
 const exportType: TExportType = 'png';
@@ -222,22 +223,6 @@ export class KlHeadlessApp {
         this.updateUiCallback(this.uiState);
     }
 
-    private setCurrentBrush(brushId: TKlBrushId) {
-        if (brushId !== 'EraserBrush') {
-            this.lastNonEraserBrushId = brushId;
-        }
-
-        this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
-
-        this.uiState.currentBrushId = brushId;
-        this.setBrushConfig({
-            color: this.uiState.primaryColorRgb,
-        });
-        this.easelBrush.setBrush({
-            type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
-        });
-        this.updateUi();
-    };
 
     private setCurrentLayer(layer: TKlCanvasLayer) {
         this.uiState.currentLayerId = layer.id;
@@ -1428,6 +1413,23 @@ export class KlHeadlessApp {
         this.updateUi();
     }
 
+    setCurrentBrush(brushId: TKlBrushId) {
+        if (brushId !== 'EraserBrush') {
+            this.lastNonEraserBrushId = brushId;
+        }
+
+        this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
+
+        this.uiState.currentBrushId = brushId;
+        this.setBrushConfig({
+            color: this.uiState.primaryColorRgb,
+        });
+        this.easelBrush.setBrush({
+            type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
+        });
+        this.updateUi();
+    };
+
     setBrushConfig(data: Partial<TBrushConfigTypes>) {
         if (data == undefined)
             return;
@@ -1440,7 +1442,7 @@ export class KlHeadlessApp {
             ...data,
         };
 
-        console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
+        // console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
 
         // Update context (varies)
         if ('setLayer' in brushLogic)
@@ -1484,6 +1486,12 @@ export class KlHeadlessApp {
 
     getProjectId(): string {
         return this.klHistory.getComposed().projectId?.value || '';
+    }
+
+    setTool(toolId: TKlToolId): void {
+        this.easel.setTool(toolId);
+        this.uiState.tool = toolId;
+        this.updateUi();
     }
 
     destroy(): void {

@@ -138,14 +138,16 @@ function correctPointerEvent(
             return event.buttons;
         }
         /*
-                button -> buttons
-        none:	undefined -> 0
-        left:	0 -> 1
-        middle:	1 -> 4
-        right:	2 -> 2
-        fourth:	3 -> 8
-        fifth:	4 -> 16
-        sixth:  5 -> 32   back side of a stylus = eraser
+         * https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events#determining_button_states
+         *
+         *         button -> buttons
+         * none:	undefined -> 0
+         * left:	0 -> 1
+         * middle:	1 -> 4
+         * right:	2 -> 2
+         * fourth:	3 -> 8    back
+         * fifth:	4 -> 16   forward
+         * sixth:   5 -> 32   back side of a stylus = eraser
          */
         if (event.button !== undefined) {
             // old safari on mac has no buttons. remove eventually.

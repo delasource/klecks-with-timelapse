@@ -2433,10 +2433,10 @@ export class KlApp {
             );
         }
 
-        this.unloadWarningTrigger = new UnloadWarningTrigger({
-            klHistory: this.klHistory,
-            getLastSavedHistoryIndex: () => this.lastSavedHistoryIndex,
-        });
+        // this.unloadWarningTrigger = new UnloadWarningTrigger({
+        //     klHistory: this.klHistory,
+        //     getLastSavedHistoryIndex: () => this.lastSavedHistoryIndex,
+        // });
 
         {
             window.addEventListener('resize', () => {
