@@ -41,3 +41,12 @@ export type {
     TShapeToolType,
     TShapeToolMode
 } from './app/script/klecks/kl-types';
+
+export {
+    LayerHeadlessController,
+} from './app/script/app/layer-headless-controller';
+
+export type {
+    TLayerInfo,
+    TLayerThumbnailOptions
+} from './app/script/app/layer-headless-controller';

@@ -53,6 +53,7 @@ import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
+import { LayerHeadlessController } from './layer-headless-controller';
 import { getDefaultProjectOptions } from './default-project';
 import { KlAppSelect } from './kl-app-select';
 
@@ -226,6 +227,7 @@ export class KlHeadlessApp {
     private readonly lineSanitizer: LineSanitizer;
     private readonly saveToComputer: SaveToComputer;
     private readonly klAppSelect: KlAppSelect;
+    private readonly layerController: LayerHeadlessController;
 
     private lastSavedHistoryIndex: number = 0;
     private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
@@ -271,6 +273,12 @@ export class KlHeadlessApp {
         this.uiState.currentLayerId = layer.id;
         this.currentLayer = layer;
         this.setBrushConfig({}); // Update layer context on the brushes
+
+        // Sync layer controller active layer index
+        const layerIndex = this.klCanvas.getLayers().findIndex(l => l.id === layer.id);
+        if (layerIndex >= 0) {
+            this.layerController.setActiveLayer(layerIndex);
+        }
     };
 
     private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
@@ -1287,6 +1295,25 @@ export class KlHeadlessApp {
             },
         );
 
+        // Initialize layer controller
+        this.layerController = new LayerHeadlessController({
+            klCanvas: this.klCanvas,
+            klHistory: this.klHistory,
+            applyUncommitted: () => this.applyUncommitted(),
+            onUpdateProject: () => this.easelProjectUpdater.update(),
+            onClearLayer: () => this.clearLayer(true),
+            onActiveLayerChange: (layerIndex: number) => {
+                const layer = this.klCanvas.getLayer(layerIndex);
+                if (layer) {
+                    this.setCurrentLayer(layer);
+                }
+            },
+            onLayersChange: (layers) => {
+                this.uiState.layers = layers;
+                this.updateUi();
+            }
+        });
+
         // TODO enable if you like
         /*this.unloadWarningTrigger = new UnloadWarningTrigger({
             klHistory: this.klHistory,
@@ -1542,6 +1569,7 @@ export class KlHeadlessApp {
 
     destroy(): void {
         // Cleanup
+        this.layerController.destroy();
         this.easel.destroy();
         this.klCanvas.destroy();
     }
@@ -1564,6 +1592,10 @@ export class KlHeadlessApp {
                 }
             }
         }
+    }
+
+    getLayerController(): LayerHeadlessController {
+        return this.layerController;
     }
 
     resetView(): void {
