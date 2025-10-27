@@ -8,10 +8,10 @@ import { EraserBrush, TEraserBrushConfig } from './eraser-brush';
 
 export const BRUSHES = {
     PenBrush,
-    BlendBrush,
     SketchyBrush,
     PixelBrush,
     ChemyBrush,
+    BlendBrush,
     SmudgeBrush,
     EraserBrush,
 };

@@ -24,7 +24,7 @@ export type TPixelBrushConfig = {
     opacity: number;
     opacityPressure: boolean;
     spacing: number;
-    lockAlpha: boolean;
+    lockLayerAlpha: boolean;
     isEraser: boolean;
     useDither: boolean;
     color: TRgb;
@@ -586,7 +586,7 @@ export class PixelBrush {
             opacity: this.settingOpacity,
             opacityPressure: this.settingHasOpacityPressure,
             spacing: this.settingSpacing,
-            lockAlpha: this.settingLockLayerAlpha,
+            lockLayerAlpha: this.settingLockLayerAlpha,
             isEraser: this.settingIsEraser,
             useDither: this.settingUseDither,
             color: this.settingColor
@@ -597,14 +597,15 @@ export class PixelBrush {
         if (config.size !== undefined) {
             this.setSize(config.size);
             if (!config.spacing) {
-                this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
+                // this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
+                this.settingSpacing  = spacingSpline.interpolate(config.size) / config.size;
             }
         }
         if (config.opacity !== undefined) {
             this.setOpacity(config.opacity);
         }
-        if (config.lockAlpha !== undefined) {
-            this.setLockAlpha(config.lockAlpha);
+        if (config.lockLayerAlpha !== undefined) {
+            this.setLockAlpha(config.lockLayerAlpha);
         }
         if (config.isEraser !== undefined) {
             this.setIsEraser(config.isEraser);

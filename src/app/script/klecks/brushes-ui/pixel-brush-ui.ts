@@ -219,8 +219,8 @@ export const pixelBrushUi = (function () {
             if (config.opacity !== undefined) {
                 opacitySlider.setValue(config.opacity * 100);
             }
-            if (config.lockAlpha !== undefined) {
-                lockAlphaToggle.setValue(config.lockAlpha);
+            if (config.lockLayerAlpha !== undefined) {
+                lockAlphaToggle.setValue(config.lockLayerAlpha);
             }
             if (config.isEraser !== undefined) {
                 eraserToggle.setValue(config.isEraser);

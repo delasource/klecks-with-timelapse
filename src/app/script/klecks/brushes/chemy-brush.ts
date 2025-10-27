@@ -17,7 +17,7 @@ export type TChemyBrushConfig = {
     size: number;
     opacity: number;
     mode: TChemyMode;
-    lockAlpha: boolean;
+    lockLayerAlpha: boolean;
     isEraser: boolean;
     xSymmetry: boolean;
     ySymmetry: boolean;
@@ -306,7 +306,7 @@ export class ChemyBrush {
             size: this.getSize(),
             opacity: this.settingOpacity,
             mode: this.settingMode,
-            lockAlpha: this.settingLockLayerAlpha,
+            lockLayerAlpha: this.settingLockLayerAlpha,
             isEraser: this.settingIsEraser,
             xSymmetry: this.settingXSymmetry,
             ySymmetry: this.settingYSymmetry,
@@ -326,8 +326,8 @@ export class ChemyBrush {
         if (config.mode !== undefined) {
             this.setMode(config.mode);
         }
-        if (config.lockAlpha !== undefined) {
-            this.setLockAlpha(config.lockAlpha);
+        if (config.lockLayerAlpha !== undefined) {
+            this.setLockAlpha(config.lockLayerAlpha);
         }
         if (config.isEraser !== undefined) {
             this.setIsEraser(config.isEraser);

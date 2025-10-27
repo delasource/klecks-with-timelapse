@@ -271,6 +271,7 @@ export class ProjectViewport {
     }
 
     setTransform(transform: TViewportTransform): void {
+        // console.log("transform scale", transform.scale);
         this.transform = { ...transform };
     }
 

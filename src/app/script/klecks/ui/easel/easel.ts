@@ -135,6 +135,7 @@ export class Easel<GToolId extends string> {
     }
 
     private lastFrameTimestamp: number = 0;
+
     /**
      * Only call once from outside. Will perpetuate itself and render when doRender = true
      */
@@ -266,7 +267,7 @@ export class Easel<GToolId extends string> {
         );
 
         //rotate points
-        for (let i = 0; i < canvasPointsArr.length; i++) {
+        for (let i = 0 ; i < canvasPointsArr.length ; i++) {
             let coords: TVec4 = [canvasPointsArr[i][0], canvasPointsArr[i][1], 0, 1];
             coords = BB.Matrix.multiplyMatrixAndPoint(matrix, coords);
             canvasPointsArr[i][0] = coords[0];
@@ -274,7 +275,7 @@ export class Easel<GToolId extends string> {
         }
 
         const boundsObj: Partial<TBounds> = {};
-        for (let i = 0; i < canvasPointsArr.length; i++) {
+        for (let i = 0 ; i < canvasPointsArr.length ; i++) {
             if (boundsObj.x1 === undefined || canvasPointsArr[i][0] < boundsObj.x1) {
                 boundsObj.x1 = canvasPointsArr[i][0];
             }
@@ -829,6 +830,29 @@ export class Easel<GToolId extends string> {
         } else {
             this.resetTransform(isImmediate);
         }
+    }
+
+    /**
+     * Scale to the initial dimension based on window height, similar to the constructor behavior.
+     * Automatically decides between scale 1 and fitting based on project size relative to window.
+     */
+    scaleToNormal(isImmediate?: boolean): number {
+        const isFit = this.getTransform().scale >= 1;
+        const uiWidth = 440; // width of both sidebars
+        const fitWithinUiScale = (this.width - uiWidth) / this.project.width;
+        // Following code is similar to resetTransform
+        const transform = createTransform(
+            {
+                x: this.width / 2,
+                y: this.height / 2,
+            },
+            { x: this.project.width / 2, y: this.project.height / 2 },
+            isFit ? fitWithinUiScale : 1,
+            0
+        );
+        this.setTargetTransform(transform, isImmediate);
+        this.requestRender();
+        return transform.scale;
     }
 
     setAngleDeg(angleDeg: number, isRelative: undefined | boolean) {

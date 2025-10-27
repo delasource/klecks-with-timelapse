@@ -1,7 +1,9 @@
-import { css, randomUuid } from '../bb/base/base';
-import { canvasToBlob } from '../bb/base/canvas';
-import { BB } from '../bb/bb';
+import { append, copyObj, css, randomUuid } from '../bb/base/base';
+import { canvasToBlob, freeCanvas } from '../bb/base/canvas';
+import { el, isInputFocused } from '../bb/base/ui';
 import { ColorConverter, HSV, RGB } from '../bb/color/color';
+import { EventChain } from '../bb/input/event-chain/event-chain';
+import { KeyListener, sameKeys } from '../bb/input/key-listener';
 import { getSelectionPath2d } from '../bb/multi-polygon/get-selection-path-2d';
 import { BRUSHES, TBrushClassTypes, TBrushConfigTypes } from '../klecks/brushes/brushes';
 import { ERASE_COLOR } from '../klecks/brushes/erase-color';
@@ -49,7 +51,6 @@ import { EaselText } from '../klecks/ui/easel/tools/easel-text';
 import { EaselZoom } from '../klecks/ui/easel/tools/easel-zoom';
 import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
-import { TViewportTransform } from '../klecks/ui/project-viewport/project-viewport';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
 import { getDefaultProjectOptions } from './default-project';
@@ -162,10 +163,7 @@ export type TKlHeadlessAppParams = {
     project?: TKlProject;
     eventStorageProvider?: IEventStorageProvider;
     saveReminderEnabled?: boolean;
-    // canvasWidth?: number; // Autosize?
-    updateUiCallback: (uiState: TKlHeadlessUiState) => void;
     showStatusMessageCallback: (message: string) => void;
-    isDrawingCallback?: (isDrawing: boolean) => void;
     initialViewport?: {
         canvasWidth?: number;
     };
@@ -175,6 +173,9 @@ export type TKlHeadlessAppParams = {
 }
 
 const exportType: TExportType = 'png';
+
+export type TUiEventType = 'isDrawing' | 'uiStateChanged' | 'transformChanged' | 'statusMessage';
+export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
     private readonly rootEl: HTMLElement;
@@ -201,14 +202,7 @@ export class KlHeadlessApp {
     private brushes: { [key: string]: TBrushClassTypes } = {};
     private lastNonEraserBrushId: TKlBrushId = 'PenBrush';
 
-    private updateUiCallback: ((uiState: TKlHeadlessUiState) => void) = (uiState) => {
-    };
-    private showStatusMessageCallback: ((message: string) => void) = (message) => {
-    };
-    private isDrawingCallback: (isDrawing: boolean) => void = (isDrawing) => {
-    };
-    private updateTransformCallback: (transform: TViewportTransform, isScaleOrAngleChanged: boolean) => void = (transform: TViewportTransform, isScaleOrAngleChanged: boolean) => {
-    };
+    private uiUpdateListeners: Map<TUiEventType, TUiEventHandler[]> = new Map();
 
 
     // ----- private ------
@@ -219,10 +213,26 @@ export class KlHeadlessApp {
         this.unloadWarningTrigger?.update();
     }
 
-    private updateUi() {
-        this.updateUiCallback(this.uiState);
+    private triggerUiEvent(eventType: TUiEventType, state: any) {
+        const listeners = this.uiUpdateListeners.get(eventType);
+        if (listeners) {
+            listeners.forEach((callback) => {
+                try {
+                    callback(state);
+                } catch (e) {
+                    console.error('Error in UI event listener for event', eventType, e);
+                }
+            });
+        }
     }
 
+    private updateUi() {
+        this.triggerUiEvent('uiStateChanged', this.uiState);
+    }
+
+    private showStatusMessageCallback = (message: string) => {
+        this.triggerUiEvent('statusMessage', message);
+    };
 
     private setCurrentLayer(layer: TKlCanvasLayer) {
         this.uiState.currentLayerId = layer.id;
@@ -376,14 +386,12 @@ export class KlHeadlessApp {
 
     constructor(p: TKlHeadlessAppParams) {
         // Register parameter
-        this.updateUiCallback = p.updateUiCallback;
-        this.showStatusMessageCallback = p.showStatusMessageCallback;
-        if (p.isDrawingCallback) this.isDrawingCallback = p.isDrawingCallback;
+        this.on('statusMessage', p.showStatusMessageCallback);
 
         // UI is full browser size
         this.uiWidth = Math.max(0, window.innerWidth);
         this.uiHeight = Math.max(0, window.innerHeight);
-        this.rootEl = BB.el({
+        this.rootEl = el({
             className: 'g-root',
             css: {
                 display: 'absolute',
@@ -417,7 +425,7 @@ export class KlHeadlessApp {
             // attempt at freeing memory
             p.project.layers.forEach((layer) => {
                 if (layer.image instanceof HTMLCanvasElement) {
-                    BB.freeCanvas(layer.image);
+                    freeCanvas(layer.image);
                 }
                 layer.image = null as any;
             });
@@ -461,14 +469,14 @@ export class KlHeadlessApp {
             smoothing: translateSmoothing(1),
         });
 
-        const drawEventChain = new BB.EventChain({
-            // TODO replace any with proper type/interface. BB.EventChain needs to get a change here.
+        const drawEventChain = new EventChain({
+            // TODO replace any with proper type/interface. EventChain needs to get a change here.
             chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c),
         });
 
         drawEventChain.setChainOut(((event: TDrawEvent) => {
             if (event.type === 'down') {
-                this.isDrawingCallback(true);
+                this.triggerUiEvent('isDrawing', true);
                 this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
                 this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
                 this.easel.requestRender();
@@ -479,7 +487,7 @@ export class KlHeadlessApp {
                 this.easel.requestRender();
             }
             if (event.type === 'up') {
-                this.isDrawingCallback(false);
+                this.triggerUiEvent('isDrawing', false);
                 this.getCurrentBrush().endLine();
                 this.easel.requestRender();
             }
@@ -530,7 +538,7 @@ export class KlHeadlessApp {
             radius: 5,
             onLineStart: (e) => {
                 // expects TDrawEvent
-                isEraserPen = e.isEraserPen ||false;
+                isEraserPen = e.isEraserPen || false;
                 if (isEraserPen) {
                     // Temporary switch to eraser
                     this.applyUncommitted();
@@ -807,7 +815,7 @@ export class KlHeadlessApp {
                 this.updateUi();
             },
             onTransformChange: (transform, isScaleOrAngleChanged) => {
-                this.updateTransformCallback(transform, isScaleOrAngleChanged);
+                this.triggerUiEvent('transformChanged', { transform, isScaleOrAngleChanged });
             },
             onUndo: () => {
                 this.undo(true);
@@ -823,7 +831,7 @@ export class KlHeadlessApp {
             top: '0',
         });
 
-        BB.append(this.rootEl, [this.easel.getElement()]);
+        append(this.rootEl, [this.easel.getElement()]);
 
         this.easelProjectUpdater = new EaselProjectUpdater({
             klCanvas: this.klCanvas,
@@ -838,9 +846,9 @@ export class KlHeadlessApp {
             this.easel.setIsFrozen(count > 0);
         });
 
-        const keyListener = new BB.KeyListener({
+        const keyListener = new KeyListener({
             onDown: (keyStr, event, comboStr) => {
-                if (DIALOG_COUNTER.get() > 0 || BB.isInputFocused(true)) {
+                if (DIALOG_COUNTER.get() > 0 || isInputFocused(true)) {
                     return;
                 }
 
@@ -860,8 +868,8 @@ export class KlHeadlessApp {
                 }
                 if (
                     ['ctrl+y', 'cmd+y'].includes(comboStr) ||
-                    ((BB.sameKeys('ctrl+shift+z', comboStr) ||
-                            BB.sameKeys('cmd+shift+z', comboStr)) &&
+                    ((sameKeys('ctrl+shift+z', comboStr) ||
+                            sameKeys('cmd+shift+z', comboStr)) &&
                         keyStr === 'z')
                 ) {
                     event.preventDefault();
@@ -1212,7 +1220,7 @@ export class KlHeadlessApp {
             onCanUndoRedoChange: (canUndo, canRedo) => {
                 this.uiState.canUndo = canUndo;
                 this.uiState.canRedo = canRedo;
-                this.updateUiCallback(this.uiState);
+                this.updateUi();
             },
         });
 
@@ -1284,7 +1292,7 @@ export class KlHeadlessApp {
 
             // iPad doesn't trigger 'resize' event when using text zoom, although it's resizing the window.
             // Workaround: place a div in the body that fills the window, and use a ResizeObserver
-            const windowResizeWatcher = BB.el({
+            const windowResizeWatcher = el({
                 parent: document.body,
                 css: {
                     position: 'fixed',
@@ -1413,7 +1421,10 @@ export class KlHeadlessApp {
         this.updateUi();
     }
 
-    setCurrentBrush(brushId: TKlBrushId) {
+    setCurrentBrush(brushId: TKlBrushId | -1) {
+        if (brushId == -1)
+            brushId = this.lastNonEraserBrushId;
+
         if (brushId !== 'EraserBrush') {
             this.lastNonEraserBrushId = brushId;
         }
@@ -1425,6 +1436,7 @@ export class KlHeadlessApp {
             color: this.uiState.primaryColorRgb,
         });
         this.easelBrush.setBrush({
+            radius: this.uiState.brushConfig[this.uiState.currentBrushId].size,
             type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
         });
         this.updateUi();
@@ -1459,7 +1471,7 @@ export class KlHeadlessApp {
         // if there is a "color" prop
         if ((data as any).color !== undefined && !!(data as any).color.r) {
             const color = (data as any).color as TRgb;
-            this.uiState.primaryColorRgb = BB.copyObj(color);
+            this.uiState.primaryColorRgb = copyObj(color);
             this.uiState.primaryColorHsv = ColorConverter.toHSV(color);
         }
         this.updateUi();
@@ -1500,4 +1512,32 @@ export class KlHeadlessApp {
         this.klCanvas.destroy();
     }
 
+    on(eventType: TUiEventType, handler: TUiEventHandler): void {
+        if (!this.uiUpdateListeners.has(eventType)) {
+            this.uiUpdateListeners.set(eventType, []);
+        }
+        this.uiUpdateListeners.get(eventType)!.push(handler);
+    }
+
+    off(eventType: TUiEventType, handler: TUiEventHandler): void {
+        const handlers = this.uiUpdateListeners.get(eventType);
+        if (handlers) {
+            const index = handlers.indexOf(handler);
+            if (index > -1) {
+                handlers.splice(index, 1);
+                if (handlers.length === 0) {
+                    this.uiUpdateListeners.delete(eventType);
+                }
+            }
+        }
+    }
+
+    resetView(): void {
+        this.easel.scaleToNormal(false);
+        this.triggerUiEvent('transformChanged', {
+            transform: this.easel.getTransform(),
+            isScaleOrAngleChanged: true,
+        });
+    }
 }
+
