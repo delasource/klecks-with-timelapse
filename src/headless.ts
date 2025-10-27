@@ -37,10 +37,7 @@ export {
     genBrushAlpha02
 } from './app/script/klecks/brushes/alphas/brush-alphas';
 
-export type {
-    TShapeToolType,
-    TShapeToolMode
-} from './app/script/klecks/kl-types';
+export * from './app/script/klecks/kl-types';
 
 export {
     LayerHeadlessController,
@@ -50,3 +47,7 @@ export type {
     TLayerInfo,
     TLayerThumbnailOptions
 } from './app/script/app/layer-headless-controller';
+
+export type {
+    TLayerId,
+} from './app/script/klecks/history/history.types';

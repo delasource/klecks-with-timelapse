@@ -24,10 +24,12 @@ import { drawGradient, GradientTool } from '../klecks/image-operations/gradient-
 import { drawShape, ShapeTool } from '../klecks/image-operations/shape-tool';
 import {
     TDrawEvent,
-    TExportType, TFillSampling,
+    TExportType,
+    TFillSampling,
     TGradient,
     TGradientType,
-    TKlProject, TMixMode,
+    TKlProject,
+    TMixMode,
     TRgb,
     TShapeToolMode,
     TShapeToolType
@@ -272,13 +274,6 @@ export class KlHeadlessApp {
     private setCurrentLayer(layer: TKlCanvasLayer) {
         this.uiState.currentLayerId = layer.id;
         this.currentLayer = layer;
-        this.setBrushConfig({}); // Update layer context on the brushes
-
-        // Sync layer controller active layer index
-        const layerIndex = this.klCanvas.getLayers().findIndex(l => l.id === layer.id);
-        if (layerIndex >= 0) {
-            this.layerController.setActiveLayer(layerIndex);
-        }
     };
 
     private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
@@ -1516,9 +1511,9 @@ export class KlHeadlessApp {
         }
         // if there is a "color" prop
         if ((data as any).color !== undefined && !!(data as any).color.r) {
-            const color = (data as any).color as TRgb;
-            this.uiState.primaryColorRgb = copyObj(color);
-            this.uiState.primaryColorHsv = ColorConverter.toHSV(color);
+            const color = copyObj<TRgb>((data as any).color as TRgb);
+            this.uiState.primaryColorRgb = color;
+            this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color);
         }
         this.updateUi();
     }
@@ -1545,11 +1540,19 @@ export class KlHeadlessApp {
     }
 
     setGradientConfig(config: Partial<typeof this.uiState.gradient>): void {
-        // TODO
+        this.uiState.gradient = {
+            ...this.uiState.gradient,
+            ...config,
+        };
+        this.updateUi();
     }
 
     setFillConfig(config: Partial<typeof this.uiState.fill>): void {
-        // TODO
+        this.uiState.fill = {
+            ...this.uiState.fill,
+            ...config,
+        };
+        this.updateUi();
     }
 
     setSelectConfig(config: Partial<typeof this.uiState.select>): void {
