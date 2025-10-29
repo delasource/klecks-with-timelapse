@@ -562,7 +562,7 @@ export class KlHeadlessApp {
                 );
             },
             onUiChange: (uiState) => {
-                console.log('SELECTION UI State:', uiState);
+                // console.log('SELECTION UI State:', uiState, (new Error()).stack);
                 this.updateUi();
             },
             onError: (message) => {
@@ -1415,8 +1415,6 @@ export class KlHeadlessApp {
     }
 
     resize(w: number, h: number): void {
-        console.log('resize', w, h);
-
         // iPad scrolls down when increasing text zoom
         if (window.scrollY > 0) {
             window.scrollTo(0, 0);

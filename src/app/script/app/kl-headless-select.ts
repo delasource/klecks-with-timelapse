@@ -214,7 +214,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         this.easelSelect.setRenderedSelection(selection);
         this.updateComposites();
         this.onUpdateProject();
-        this.notifyUi();
+        // this.notifyUi();
         this.tempHistoryReplaceTop();
     }
 
