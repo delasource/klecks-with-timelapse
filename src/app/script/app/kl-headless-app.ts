@@ -199,7 +199,7 @@ export type TKlHeadlessAppParams = {
 
 const exportType: TExportType = 'png';
 
-export type TUiEventType = 'isDrawing' | 'uiStateChanged' | 'transformChanged' | 'statusMessage';
+export type TUiEventType = 'isDrawing' | 'uiStateChanged' | 'transformChanged' | 'statusMessage' | 'colorPicked';
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
@@ -239,7 +239,7 @@ export class KlHeadlessApp {
         this.unloadWarningTrigger?.update();
     }
 
-    private triggerUiEvent(eventType: TUiEventType, state: any) {
+    private notifyUi(eventType: TUiEventType, state: any) {
         const listeners = this.uiUpdateListeners.get(eventType);
         if (listeners) {
             listeners.forEach((callback) => {
@@ -253,11 +253,11 @@ export class KlHeadlessApp {
     }
 
     private updateUi() {
-        this.triggerUiEvent('uiStateChanged', { ...this.uiState });
+        this.notifyUi('uiStateChanged', { ...this.uiState });
     }
 
     private showStatusMessageCallback = (message: string) => {
-        this.triggerUiEvent('statusMessage', message);
+        this.notifyUi('statusMessage', message);
     };
 
     private setCurrentLayer(layer: TKlCanvasLayer) {
@@ -504,7 +504,7 @@ export class KlHeadlessApp {
 
         drawEventChain.setChainOut(((event: TDrawEvent) => {
             if (event.type === 'down') {
-                this.triggerUiEvent('isDrawing', true);
+                this.notifyUi('isDrawing', true);
                 this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
                 this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
                 this.easel.requestRender();
@@ -515,7 +515,7 @@ export class KlHeadlessApp {
                 this.easel.requestRender();
             }
             if (event.type === 'up') {
-                this.triggerUiEvent('isDrawing', false);
+                this.notifyUi('isDrawing', false);
                 this.getCurrentBrush().endLine();
                 this.easel.requestRender();
             }
@@ -761,13 +761,14 @@ export class KlHeadlessApp {
                     onPick: (p) => {
                         // -> pointer move event
                         const color = this.klCanvas.getColorAt(p.x, p.y);
-                        this.setColor(color);
+                        this.setColors(color, undefined);
                         return color;
                     },
                     onPickEnd: () => {
                         // -> pointer up event
                         // Toggle the "pick ui" off.
-                        this.updateUi(); // again?
+                        this.notifyUi('colorPicked', this.uiState.primaryColorRgb)
+                        this.updateUi();
                     },
                 }),
                 paintBucket: new EaselPaintBucket({
@@ -854,7 +855,7 @@ export class KlHeadlessApp {
                 this.updateUi();
             },
             onTransformChange: (transform, isScaleOrAngleChanged) => {
-                this.triggerUiEvent('transformChanged', { transform, isScaleOrAngleChanged });
+                this.notifyUi('transformChanged', { transform, isScaleOrAngleChanged });
             },
             onUndo: () => {
                 this.undo(true);
@@ -1022,13 +1023,7 @@ export class KlHeadlessApp {
                 if (comboStr === 'x') {
                     event.preventDefault();
                     // Swap primary and secondary color
-                    const prevPrimaryRgb = this.uiState.primaryColorRgb;
-                    const prevPrimaryHsv = this.uiState.primaryColorHsv;
-                    this.uiState.primaryColorRgb = this.uiState.secondaryColorRgb;
-                    this.uiState.primaryColorHsv = this.uiState.secondaryColorHsv;
-                    this.uiState.secondaryColorRgb = prevPrimaryRgb;
-                    this.uiState.secondaryColorHsv = prevPrimaryHsv;
-                    this.updateUi();
+                    this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
                 }
             },
             onUp: (keyStr, event) => {
@@ -1456,9 +1451,14 @@ export class KlHeadlessApp {
         return this.lineSanitizer.getIsDrawing() || this.easel.getIsLocked();
     }
 
-    setColor(c: TRgb): void {
-        this.uiState.primaryColorRgb = c;
-        this.setBrushConfig({ color: c });
+    setColors(color1: TRgb, color2: TRgb | undefined): void {
+        this.uiState.primaryColorRgb = color1;
+        this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color1);
+        if (color2) {
+            this.uiState.secondaryColorRgb = color2;
+            this.uiState.secondaryColorHsv = ColorConverter._RGBtoHSV(color2);
+        }
+        this.setBrushConfig({ color: color1 });
         this.updateUi();
     }
 
@@ -1600,7 +1600,7 @@ export class KlHeadlessApp {
 
     resetView(): void {
         this.easel.scaleToNormal(false);
-        this.triggerUiEvent('transformChanged', {
+        this.notifyUi('transformChanged', {
             transform: this.easel.getTransform(),
             isScaleOrAngleChanged: true,
         });
