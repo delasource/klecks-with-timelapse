@@ -55,9 +55,10 @@ import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
+import { KlHeadlessSelect } from './kl-headless-select';
+import { IHeadlessSelectActions } from './kl-headless-select-types';
 import { LayerHeadlessController } from './layer-headless-controller';
 import { getDefaultProjectOptions } from './default-project';
-import { KlAppSelect } from './kl-app-select';
 
 /* TODO
  * Select UI fehlt
@@ -127,12 +128,6 @@ export type TKlHeadlessUiState = {
         isEraser: boolean;
         isContiguous: boolean;
     },
-    select: {
-        mode: 'select' | 'transform';
-        selectShape: 'rect' | 'ellipse' | 'lasso' | 'poly';
-        selectOperation: 'new' | 'union' | 'difference';
-        hasSelection: boolean;
-    }
     layers: {
         index: number;
         name: string;
@@ -173,12 +168,6 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
         doSnap: false,
         isReversed: false,
         isEraser: false,
-    },
-    select: {
-        mode: 'select',
-        selectShape: 'lasso',
-        selectOperation: 'new',
-        hasSelection: false
     },
     fill: {
         tolerance: 0.2,
@@ -228,7 +217,7 @@ export class KlHeadlessApp {
     private readonly saveReminder: SaveReminder | undefined;
     private readonly lineSanitizer: LineSanitizer;
     private readonly saveToComputer: SaveToComputer;
-    private readonly klAppSelect: KlAppSelect;
+    private readonly klAppSelect: KlHeadlessSelect;
     private readonly layerController: LayerHeadlessController;
 
     private lastSavedHistoryIndex: number = 0;
@@ -538,10 +527,13 @@ export class KlHeadlessApp {
         }) as any);
 
         // Selection
-        this.klAppSelect = new KlAppSelect({
+        this.klAppSelect = new KlHeadlessSelect({
             klCanvas: this.klCanvas,
             getCurrentLayerCtx: () => this.currentLayer.context,
-            onUpdateProject: () => this.easelProjectUpdater.update(),
+            onUpdateProject: () => {
+                this.easelProjectUpdater.update();
+                this.updateUi();
+            },
             klHistory: this.klHistory,
             tempHistory: this.tempHistory,
             statusOverlay: { out: this.showStatusMessageCallback } as StatusOverlay,
@@ -569,6 +561,14 @@ export class KlHeadlessApp {
                         : LANG('cleared-layer')
                 );
             },
+            onUiChange: (uiState) => {
+                console.log('SELECTION UI State:', uiState);
+                this.updateUi();
+            },
+            onError: (message) => {
+                console.error('Selection error:', message);
+                this.updateUi();
+            }
         });
 
 
@@ -1429,6 +1429,8 @@ export class KlHeadlessApp {
         this.uiWidth = Math.max(0, w);
         this.uiHeight = Math.max(0, h);
 
+        // Propagate resize:
+        this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
         this.updateUi();
     }
 
@@ -1555,9 +1557,6 @@ export class KlHeadlessApp {
         this.updateUi();
     }
 
-    setSelectConfig(config: Partial<typeof this.uiState.select>): void {
-    }
-
     getCurrentBrushConfig() {
         return this.uiState.brushConfig[this.uiState.currentBrushId];
     }
@@ -1608,5 +1607,10 @@ export class KlHeadlessApp {
             isScaleOrAngleChanged: true,
         });
     }
+
+    getSelectionController(): IHeadlessSelectActions {
+        return this.klAppSelect;
+    }
+
 }
 

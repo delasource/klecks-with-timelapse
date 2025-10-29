@@ -51,3 +51,18 @@ export type {
 export type {
     TLayerId,
 } from './app/script/klecks/history/history.types';
+
+export type {
+    TBooleanOperation,
+    TSelectShape
+} from './app/script/klecks/select-tool/select-tool';
+
+export type {
+    TSelectToolMode
+} from './app/script/klecks/ui/tool-tabs/select-ui';
+
+export type {
+    IHeadlessSelectActions,
+    IHeadlessSelectState
+} from './app/script/app/kl-headless-select-types';
+

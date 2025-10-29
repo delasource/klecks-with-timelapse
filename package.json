@@ -1,4 +1,5 @@
 {
+  "name": "klecks-headless",
   "type": "module",
   "browserslist": [
     "> 0.2%",
@@ -20,20 +21,18 @@
     "lang:build": "node src/languages/generate.js build"
   },
   "dependencies": {
-    "@parcel/transformer-glsl": "2.16.0",
-    "@parcel/transformer-sass": "2.16.0",
-    "@parcel/transformer-typescript-types": "^2.16.0",
-    "@swc/helpers": "^0.5.17",
     "ag-psd": "28.3.1",
     "buffer": "6.0.3",
     "js-beautify": "1.15.4",
     "json5": "2.2.3",
     "mdn-polyfills": "5.20.0",
-    "parcel": "2.16.0",
     "polygon-clipping": "0.15.7",
     "transformation-matrix": "3.1.0"
   },
   "devDependencies": {
+    "@parcel/transformer-glsl": "2.16.0",
+    "@parcel/transformer-sass": "2.16.0",
+    "@parcel/transformer-typescript-types": "^2.16.0",
     "@parcel/transformer-html": "^2.16.0",
     "@parcel/transformer-raw": "^2.16.0",
     "@parcel/transformer-svg": "^2.16.0",
@@ -45,7 +44,9 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.3.0",
     "@rollup/plugin-url": "^8.0.2",
+    "@swc/helpers": "^0.5.17",
     "@types/node": "^24.9.1",
+    "parcel": "2.16.0",
     "rollup": "^4.52.5",
     "rollup-plugin-dts": "^6.2.3",
     "rollup-plugin-scss": "^4.0.1",
