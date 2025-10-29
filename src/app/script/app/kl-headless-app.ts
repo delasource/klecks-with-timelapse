@@ -175,7 +175,7 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
         mode: 'all',
         grow: 0,
         isEraser: false,
-        isContiguous: false,
+        isContiguous: true,
     },
     layers: []
 };
@@ -538,6 +538,7 @@ export class KlHeadlessApp {
             tempHistory: this.tempHistory,
             statusOverlay: { out: this.showStatusMessageCallback } as StatusOverlay,
             onFill: () => {
+                // CLMR: No button for this
                 this.klCanvas.layerFill(
                     this.currentLayer.index,
                     this.uiState.primaryColorRgb,
@@ -549,6 +550,7 @@ export class KlHeadlessApp {
                 );
             },
             onErase: () => {
+                // CLMR: No button for this
                 const layerIndex = this.currentLayer.index;
                 this.klCanvas.eraseLayer({
                     layerIndex,
@@ -767,7 +769,7 @@ export class KlHeadlessApp {
                     onPickEnd: () => {
                         // -> pointer up event
                         // Toggle the "pick ui" off.
-                        this.notifyUi('colorPicked', this.uiState.primaryColorRgb)
+                        this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
                         this.updateUi();
                     },
                 }),
@@ -980,14 +982,23 @@ export class KlHeadlessApp {
                     this.setCurrentBrush('EraserBrush');
                     this.updateUi();
                 }
-                if (comboStr === 'b') {
+                if (['shift+b', 'b'].includes(comboStr)) {
                     event.preventDefault();
                     this.applyUncommitted();
                     const prevMode = this.easel.getTool();
                     this.easel.setTool('brush');
                     this.uiState.tool = 'brush';
                     if (prevMode === 'brush') {
-                        this.setCurrentBrush(this.getNextBrushId());
+                        if (event.shiftKey) {
+                            // Only toggle between Pen and Blend
+                            if (this.uiState.currentBrushId == 'PenBrush')
+                                this.setCurrentBrush('BlendBrush');
+                            else
+                                this.setCurrentBrush('PenBrush');
+                        } else {
+                            // Switch through
+                            this.setCurrentBrush(this.getNextBrushId());
+                        }
                     }
                 }
                 if (comboStr === 'g') {
@@ -999,13 +1010,13 @@ export class KlHeadlessApp {
                     this.uiState.tool = newMode;
                     this.updateUi();
                 }
-                if (comboStr === 't') {
+                /*if (comboStr === 't') {
                     event.preventDefault();
                     this.applyUncommitted();
                     this.easel.setTool('text');
                     this.uiState.tool = 'text';
                     this.updateUi();
-                }
+                }*/
                 if (comboStr === 'u') {
                     event.preventDefault();
                     this.applyUncommitted();
@@ -1014,11 +1025,22 @@ export class KlHeadlessApp {
                     this.updateUi();
                 }
                 if (comboStr === 'l') {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.easel.setTool('select');
-                    this.uiState.tool = 'select';
-                    this.updateUi();
+                    if (this.uiState.tool == 'select') {
+                        // Toggle between select and transform
+                        event.preventDefault();
+                        if (this.klAppSelect.getCurrentMode() == 'select' && this.klAppSelect.getState().hasSelection) {
+                            this.klAppSelect.setTransformMode();
+                        } else {
+                            this.klAppSelect.setSelectMode();
+                        }
+                    } else {
+                        event.preventDefault();
+                        this.applyUncommitted();
+                        this.easel.setTool('select');
+                        this.uiState.tool = 'select';
+                        this.klAppSelect.setSelectMode();
+                        this.updateUi();
+                    }
                 }
                 if (comboStr === 'x') {
                     event.preventDefault();

@@ -65,7 +65,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
     // state (integrated from SelectUi)
     private mode: 'select' | 'transform' = 'select';
-    private selectionShape: TSelectShape = 'rect';
+    private selectionShape: TSelectShape = 'lasso';
     private booleanOperation: TBooleanOperation = 'new';
 
     // transform state

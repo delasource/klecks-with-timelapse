@@ -25,7 +25,7 @@ export class SelectTool {
     // from params
     private readonly klCanvas: KlCanvas;
 
-    private shape: TSelectShape = 'rect';
+    private shape: TSelectShape = 'lasso';
     private selection: MultiPolygon | undefined;
     private selectOperation: TBooleanOperation = 'new';
     private selectDragInputs: TVector2D[] = [];
