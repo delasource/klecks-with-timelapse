@@ -2,6 +2,7 @@ import { TMixMode, TRgb } from '../klecks/kl-types';
 
 export type TLayerInfo = {
     index: number;
+    id: string;
     name: string;
     opacity: number;
     isVisible: boolean;
@@ -49,7 +50,7 @@ export interface IHeadlessLayerControllerActions {
 
     getState(): THeadlessLayerState;
 
-    getThumbnail(layerIndex: number, options: TLayerThumbnailOptions): Promise<Blob>;
+    getThumbnail(id: string, options: TLayerThumbnailOptions): Promise<Blob>;
 
     canAddLayer(): boolean;
 

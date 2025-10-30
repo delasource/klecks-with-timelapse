@@ -336,7 +336,7 @@ export class KlHeadlessApp {
         // Decide if we use the default color or alpha transparency
         this.klCanvas.eraseLayer({
             layerIndex,
-            useAlphaLock: layerIndex === 0 && !(this.brushes.eraserBrush as EraserBrush).getTransparentBG(),
+            useAlphaLock: layerIndex === 0 && !(this.brushes['EraserBrush'] as EraserBrush).getTransparentBG(),
             useSelection: !ignoreSelection,
         });
 
@@ -1652,6 +1652,13 @@ export class KlHeadlessApp {
 
     getSelectionController(): IHeadlessSelectActions {
         return this.klAppSelect;
+    }
+
+    getDimensions() {
+        return {
+            width: this.klCanvas.getWidth(),
+            height: this.klCanvas.getHeight(),
+        };
     }
 
     /* TODO bei den Layern geht noch nix

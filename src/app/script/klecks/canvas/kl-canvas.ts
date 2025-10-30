@@ -1438,6 +1438,10 @@ export class KlCanvas {
         return this.layers[index];
     }
 
+    getLayerById(id: string): TKlCanvasLayer | undefined {
+        return this.layers.find((layer) => layer.id === id);
+    }
+
     getColorAt(x: number, y: number): TRgb {
         return this.eyedropper.getColorAt(x, y, this.klHistory.getComposed());
     }

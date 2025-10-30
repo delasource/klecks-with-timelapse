@@ -69,6 +69,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
             const layerObj = this.klCanvas.getLayer(index);
             return {
                 index,
+                id: layerObj.id,
                 name: layerObj?.name || `Layer ${index + 1}`,
                 opacity: layer.opacity,
                 isVisible: layerObj?.isVisible ?? true,
@@ -338,10 +339,10 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
 
     }
 
-    getThumbnail(index: number, options: TLayerThumbnailOptions = {}): Promise<Blob> {
-        const layer = this.klCanvas.getLayer(index);
+    getThumbnail(id: string, options: TLayerThumbnailOptions = {}): Promise<Blob> {
+        const layer = this.klCanvas.getLayerById(id);
         if (!layer) {
-            throw new Error(`Layer at index ${index} does not exist`);
+            throw new Error(`Layer ${id} does not exist`);
         }
 
         const sourceCanvas = layer.context.canvas;
