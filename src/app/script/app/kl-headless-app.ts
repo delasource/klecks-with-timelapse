@@ -19,6 +19,7 @@ import { IEventStorageProvider } from '../klecks/history/kl-event-storage-provid
 import { KlHistory } from '../klecks/history/kl-history';
 import { KlHistoryExecutor, THistoryExecutionType } from '../klecks/history/kl-history-executor';
 import { KlTempHistory } from '../klecks/history/kl-temp-history';
+import { isHistoryEntryActiveLayerChange } from '../klecks/history/push-helpers/is-history-entry-active-layer-change';
 import { projectToComposed } from '../klecks/history/push-helpers/project-to-composed';
 import { drawGradient, GradientTool } from '../klecks/image-operations/gradient-tool';
 import { drawShape, ShapeTool } from '../klecks/image-operations/shape-tool';
@@ -55,6 +56,7 @@ import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
+import { IHeadlessLayerControllerActions } from './kl-headless-layer-types';
 import { KlHeadlessSelect } from './kl-headless-select';
 import { IHeadlessSelectActions } from './kl-headless-select-types';
 import { LayerHeadlessController } from './layer-headless-controller';
@@ -98,7 +100,6 @@ export type TKlHeadlessUiState = {
     secondaryColorHsv: HSV;
     brushConfig: { [key: string]: TBrushConfigTypes; }
     currentBrushId: TKlBrushId;
-    currentLayerId: TLayerId;
     tool: TKlToolId;
     shape: {
         shape: TShapeToolType;
@@ -127,14 +128,7 @@ export type TKlHeadlessUiState = {
         grow: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
         isEraser: boolean;
         isContiguous: boolean;
-    },
-    layers: {
-        index: number;
-        name: string;
-        opacity: number;
-        isVisible: boolean;
-        mixModeStr: TMixMode;
-    }[]
+    }
 }
 
 const DEFAULT_UI_STATE: TKlHeadlessUiState = {
@@ -148,7 +142,6 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
     brushConfig: {},
     currentBrushId: 'PenBrush',
     tool: 'brush',
-    currentLayerId: '0', // ?
     shape: {
         shape: 'rect',
         mode: 'stroke',
@@ -176,12 +169,12 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
         grow: 0,
         isEraser: false,
         isContiguous: true,
-    },
-    layers: []
+    }
 };
 
 export type TKlFeatureConfiguration = {
     // TODO limit available tools and features
+    maxNumberOfLayers?: number;
 }
 
 export type TKlHeadlessAppParams = {
@@ -199,7 +192,13 @@ export type TKlHeadlessAppParams = {
 
 const exportType: TExportType = 'png';
 
-export type TUiEventType = 'isDrawing' | 'uiStateChanged' | 'transformChanged' | 'statusMessage' | 'colorPicked';
+export type TUiEventType =
+    'isDrawing'
+    | 'uiStateChanged'
+    | 'transformChanged'
+    | 'statusMessage'
+    | 'colorPicked'
+    | 'layersChanged';
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
@@ -219,6 +218,7 @@ export class KlHeadlessApp {
     private readonly saveToComputer: SaveToComputer;
     private readonly klAppSelect: KlHeadlessSelect;
     private readonly layerController: LayerHeadlessController;
+    private readonly featureConfiguration: TKlFeatureConfiguration = {};
 
     private lastSavedHistoryIndex: number = 0;
     private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
@@ -261,8 +261,14 @@ export class KlHeadlessApp {
     };
 
     private setCurrentLayer(layer: TKlCanvasLayer) {
-        this.uiState.currentLayerId = layer.id;
         this.currentLayer = layer;
+
+        // set layer context in brush
+        const brushLogic = this.brushes[this.uiState.currentBrushId];
+        if ('setLayer' in brushLogic)
+            brushLogic.setLayer(this.currentLayer);
+        else if ('setContext' in brushLogic)
+            brushLogic.setContext(this.currentLayer.context);
     };
 
     private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
@@ -327,17 +333,20 @@ export class KlHeadlessApp {
     private clearLayer(showStatus?: boolean, ignoreSelection?: boolean) {
         this.applyUncommitted();
         const layerIndex = this.currentLayer.index;
+        // Decide if we use the default color or alpha transparency
         this.klCanvas.eraseLayer({
             layerIndex,
             useAlphaLock: layerIndex === 0 && !(this.brushes.eraserBrush as EraserBrush).getTransparentBG(),
             useSelection: !ignoreSelection,
         });
-        showStatus &&
-        this.showStatusMessageCallback(
-            this.klCanvas.getSelection()
-                ? LANG('cleared-selected-area')
-                : LANG('cleared-layer')
-        );
+
+        if (showStatus)
+            this.showStatusMessageCallback(
+                this.klCanvas.getSelection()
+                    ? LANG('cleared-selected-area')
+                    : LANG('cleared-layer')
+            );
+        this.notifyUi('layersChanged', this.layerController.getState());
     };
 
     // when cycling through brushes you need to know the next non-eraser brush
@@ -395,6 +404,7 @@ export class KlHeadlessApp {
         if (showMessage) {
             this.showStatusMessageCallback(LANG('undo'));
         }
+        this.updateUi();
     };
 
     public redo(showMessage?: boolean) {
@@ -409,10 +419,13 @@ export class KlHeadlessApp {
         if (showMessage) {
             this.showStatusMessageCallback(LANG('redo'));
         }
+        this.updateUi();
     };
 
 
     constructor(p: TKlHeadlessAppParams) {
+        this.featureConfiguration = { ...p.featureConfiguration };
+
         // Register parameter
         this.on('statusMessage', p.showStatusMessageCallback);
 
@@ -470,7 +483,6 @@ export class KlHeadlessApp {
         this.currentLayer = this.klCanvas.getLayer(
             this.klCanvas.getLayerCount() - 1,
         );
-        this.uiState.currentLayerId = this.currentLayer.id;
 
         // create brushes
         Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
@@ -1311,20 +1323,29 @@ export class KlHeadlessApp {
         this.layerController = new LayerHeadlessController({
             klCanvas: this.klCanvas,
             klHistory: this.klHistory,
+            maxNumLayers: this.featureConfiguration.maxNumberOfLayers,
             applyUncommitted: () => this.applyUncommitted(),
             onUpdateProject: () => this.easelProjectUpdater.update(),
             onClearLayer: () => this.clearLayer(true),
-            onActiveLayerChange: (layerIndex: number) => {
+            onSelect: (layerIndex: number) => {
                 const layer = this.klCanvas.getLayer(layerIndex);
-                if (layer) {
-                    this.setCurrentLayer(layer);
-                }
+                if (!layer) return;
+
+                this.setCurrentLayer(layer);
+                if (this.layerController) this.notifyUi('layersChanged', this.layerController?.getState());
+
+                // Fix the history, if there were two active layer changes in a row, replace the top one.
+                const topEntry = this.klHistory.getEntries().at(-1)!.data;
+                const replaceTop = isHistoryEntryActiveLayerChange(topEntry);
+
+                this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
+                this.klRecorder?.record('l-select', [layerIndex]);
             },
-            onLayersChange: (layers) => {
-                this.uiState.layers = layers;
-                this.updateUi();
+            onLayersChange: (state) => {
+                this.notifyUi('layersChanged', state);
             }
         });
+
 
         // TODO enable if you like
         /*this.unloadWarningTrigger = new UnloadWarningTrigger({
@@ -1548,6 +1569,7 @@ export class KlHeadlessApp {
     }
 
     setTool(toolId: TKlToolId): void {
+        this.applyUncommitted();
         this.easel.setTool(toolId);
         this.uiState.tool = toolId;
         this.updateUi();
@@ -1616,10 +1638,6 @@ export class KlHeadlessApp {
         }
     }
 
-    getLayerController(): LayerHeadlessController {
-        return this.layerController;
-    }
-
     resetView(): void {
         this.easel.scaleToNormal(false);
         this.notifyUi('transformChanged', {
@@ -1628,9 +1646,15 @@ export class KlHeadlessApp {
         });
     }
 
+    getLayerController(): IHeadlessLayerControllerActions {
+        return this.layerController;
+    }
+
     getSelectionController(): IHeadlessSelectActions {
         return this.klAppSelect;
     }
 
-}
+    /* TODO bei den Layern geht noch nix
+     */
 
+}

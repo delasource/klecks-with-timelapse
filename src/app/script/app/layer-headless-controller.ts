@@ -1,23 +1,14 @@
 import { fitInto } from '../bb/base/base';
 import { canvasToBlob, freeCanvas } from '../bb/base/canvas';
-import { KlCanvas, MAX_LAYERS, TKlCanvasLayer } from '../klecks/canvas/kl-canvas';
+import { KlCanvas, MAX_LAYERS } from '../klecks/canvas/kl-canvas';
 import { KlHistory } from '../klecks/history/kl-history';
 import { TMixMode, TRgb } from '../klecks/kl-types';
-
-export type TLayerInfo = {
-    index: number;
-    id: number;
-    name: string;
-    opacity: number;
-    isVisible: boolean;
-    mixModeStr: TMixMode;
-};
-
-export type TLayerThumbnailOptions = {
-    width?: number;
-    height?: number;
-    fitInside?: boolean;
-};
+import {
+    IHeadlessLayerControllerActions,
+    THeadlessLayerState,
+    TLayerInfo,
+    TLayerThumbnailOptions
+} from './kl-headless-layer-types';
 
 export type TLayerHeadlessControllerParams = {
     klCanvas: KlCanvas;
@@ -25,18 +16,20 @@ export type TLayerHeadlessControllerParams = {
     applyUncommitted: () => void;
     onUpdateProject: () => void;
     onClearLayer: () => void;
-    onActiveLayerChange?: (layerIndex: number) => void;
-    onLayersChange?: (layers: TLayerInfo[]) => void;
+    onSelect?: (layerIndex: number) => void;
+    onLayersChange?: (state: THeadlessLayerState) => void;
+    maxNumLayers?: number;
 };
 
-export class LayerHeadlessController {
+export class LayerHeadlessController implements IHeadlessLayerControllerActions {
     private readonly klCanvas: KlCanvas;
     private readonly klHistory: KlHistory;
     private readonly applyUncommitted: () => void;
     private readonly onUpdateProject: () => void;
     private readonly onClearLayer: () => void;
-    private readonly onActiveLayerChange?: (layerIndex: number) => void;
-    private readonly onLayersChange?: (layers: TLayerInfo[]) => void;
+    private readonly onSelectLayer?: (layerIndex: number) => void;
+    private readonly onLayersChange?: (state: THeadlessLayerState) => void;
+    private readonly maxNumLayers: number = MAX_LAYERS;
 
     private activeLayerIndex: number;
     private thumbnailCanvas: HTMLCanvasElement;
@@ -47,8 +40,12 @@ export class LayerHeadlessController {
         this.applyUncommitted = params.applyUncommitted;
         this.onUpdateProject = params.onUpdateProject;
         this.onClearLayer = params.onClearLayer;
-        this.onActiveLayerChange = params.onActiveLayerChange;
+        this.onSelectLayer = params.onSelect;
         this.onLayersChange = params.onLayersChange;
+
+        if (params.maxNumLayers) {
+            this.maxNumLayers = params.maxNumLayers;
+        }
 
         // Initialize with the top layer
         const layers = this.klCanvas.getLayers();
@@ -60,19 +57,18 @@ export class LayerHeadlessController {
 
     private notifyLayersChange(): void {
         if (this.onLayersChange) {
-            this.onLayersChange(this.getLayers());
+            this.onLayersChange(this.getState());
         }
     }
 
     // ------------------- Layer Information -------------------
 
-    getLayers(): TLayerInfo[] {
+    private getLayers(): TLayerInfo[] {
         const canvasLayers = this.klCanvas.getLayers();
         return canvasLayers.map((layer, index) => {
             const layerObj = this.klCanvas.getLayer(index);
             return {
                 index,
-                id: layerObj?.index || 0,
                 name: layerObj?.name || `Layer ${index + 1}`,
                 opacity: layer.opacity,
                 isVisible: layerObj?.isVisible ?? true,
@@ -81,24 +77,14 @@ export class LayerHeadlessController {
         });
     }
 
-    getLayer(index: number): TLayerInfo | null {
+    private getLayer(index: number): TLayerInfo | null {
         const layers = this.getLayers();
         return index >= 0 && index < layers.length ? layers[index] : null;
     }
 
-    getActiveLayerIndex(): number {
-        return this.activeLayerIndex;
-    }
-
-    getActiveLayer(): TLayerInfo | null {
-        return this.getLayer(this.activeLayerIndex);
-    }
-
-    getLayerCount(): number {
+    private getLayerCount(): number {
         return this.klCanvas.getLayerCount();
     }
-
-    // ------------------- Layer Selection -------------------
 
     setActiveLayer(index: number): void {
         if (index < 0 || index >= this.getLayerCount()) {
@@ -107,111 +93,87 @@ export class LayerHeadlessController {
 
         this.applyUncommitted();
         this.activeLayerIndex = index;
-        this.onActiveLayerChange?.(index);
+        this.onSelectLayer?.(index);
     }
 
-    // ------------------- Layer Creation -------------------
+    addLayer(): boolean {
+        if (!this.canAddLayer()) {
+            return false;
+        }
 
-    addLayer(index?: number): boolean {
         this.applyUncommitted();
 
-        const result = this.klCanvas.addLayer(index ?? this.activeLayerIndex);
+        const result = this.klCanvas.addLayer(this.activeLayerIndex);
         if (result === false) {
             return false;
         }
 
-        // If no index specified, add above current layer
-        if (index === undefined) {
-            this.activeLayerIndex++;
-        } else {
-            this.activeLayerIndex = index;
-        }
+        this.activeLayerIndex++;
+        this.onSelectLayer?.(this.activeLayerIndex);
 
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
         this.notifyLayersChange();
         return true;
     }
 
-    duplicateLayer(index?: number): boolean {
+    duplicateLayer(): boolean {
         this.applyUncommitted();
 
-        const targetIndex = index ?? this.activeLayerIndex;
-        const result = this.klCanvas.duplicateLayer(targetIndex);
-
+        const result = this.klCanvas.duplicateLayer(this.activeLayerIndex);
         if (result === false) {
             return false;
         }
 
         // Set active layer to the duplicated layer
-        this.activeLayerIndex = targetIndex + 1;
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.activeLayerIndex++;
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
         return true;
     }
 
-    // ------------------- Layer Removal -------------------
-
-    removeLayer(index?: number): boolean {
+    removeLayer(): boolean {
         this.applyUncommitted();
-
-        const targetIndex = index ?? this.activeLayerIndex;
 
         if (this.getLayerCount() <= 1) {
             return false; // Cannot remove the last layer
         }
 
-        this.klCanvas.removeLayer(targetIndex);
+        this.klCanvas.removeLayer(this.activeLayerIndex);
 
         // Adjust active layer index if necessary
-        if (index === undefined || index === this.activeLayerIndex) {
-            if (this.activeLayerIndex > 0) {
-                this.activeLayerIndex--;
-            }
-        } else if (index < this.activeLayerIndex) {
+        if (this.activeLayerIndex > 0) {
             this.activeLayerIndex--;
         }
 
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
         return true;
     }
 
-    clearLayer(index?: number): void {
-        this.applyUncommitted();
-
-        const targetIndex = index ?? this.activeLayerIndex;
-        const layer = this.klCanvas.getLayer(targetIndex);
-
+    clearLayer(): void {
+        const layer = this.klCanvas.getLayer(this.activeLayerIndex);
         if (!layer) {
             return;
         }
 
-        this.klCanvas.eraseLayer({
-            layerIndex: targetIndex,
-            useAlphaLock: targetIndex === 0, // Background layer
-            useSelection: false,
-        });
-
-        this.onUpdateProject();
+        this.applyUncommitted();
+        this.onClearLayer?.(); // Canvas will be cleared here -> The AppState will decide if it will be cleared with the default color or with transparency
+        // 
     }
 
-    // ------------------- Layer Properties -------------------
-
-    setLayerName(index: number, name: string): void {
-        const layer = this.getLayer(index);
+    setLayerName(name: string): void {
+        const layer = this.getLayer(this.activeLayerIndex);
         if (!layer || layer.name === name) {
             return;
         }
 
-        this.klCanvas.renameLayer(index, name);
-        this.onUpdateProject();
+        this.klCanvas.renameLayer(this.activeLayerIndex, name);
+
         this.notifyLayersChange();
     }
 
-    setLayerOpacity(index: number, opacity: number, isTemp: boolean = false): void {
+    setLayerOpacity(index: number, opacity: number, isTemp?: boolean): void {
         const layer = this.getLayer(index);
         if (!layer || layer.opacity === opacity) {
             return;
@@ -241,11 +203,10 @@ export class LayerHeadlessController {
         // Pause history for visibility changes to avoid cluttering undo stack
         this.klHistory.pause(true);
         if (index === this.activeLayerIndex) {
-            this.onActiveLayerChange?.(this.activeLayerIndex);
+            this.onSelectLayer?.(this.activeLayerIndex);
         }
         this.klHistory.pause(false);
 
-        this.onUpdateProject();
         this.notifyLayersChange();
     }
 
@@ -256,12 +217,9 @@ export class LayerHeadlessController {
         }
 
         this.klCanvas.setMixMode(index, mixMode);
-        this.onUpdateProject();
+
         this.notifyLayersChange();
     }
-
-  
-    // ------------------- Layer Ordering -------------------
 
     moveLayer(fromIndex: number, toIndex: number): void {
         const layers = this.getLayers();
@@ -283,13 +241,13 @@ export class LayerHeadlessController {
             this.activeLayerIndex++;
         }
 
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
     }
 
-    moveLayerUp(index?: number): boolean {
-        const targetIndex = index ?? this.activeLayerIndex;
+    moveLayerUp(): boolean {
+        const targetIndex = this.activeLayerIndex;
         if (targetIndex >= this.getLayerCount() - 1) {
             return false; // Already at top
         }
@@ -298,8 +256,8 @@ export class LayerHeadlessController {
         return true;
     }
 
-    moveLayerDown(index?: number): boolean {
-        const targetIndex = index ?? this.activeLayerIndex;
+    moveLayerDown(): boolean {
+        const targetIndex = this.activeLayerIndex;
         if (targetIndex <= 0) {
             return false; // Already at bottom
         }
@@ -307,8 +265,6 @@ export class LayerHeadlessController {
         this.moveLayer(targetIndex, targetIndex - 1);
         return true;
     }
-
-    // ------------------- Layer Merging -------------------
 
     mergeWithLayerBelow(index?: number): boolean {
         this.applyUncommitted();
@@ -327,8 +283,8 @@ export class LayerHeadlessController {
 
         // Set active layer to the merged layer below
         this.activeLayerIndex = targetIndex - 1;
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
         return true;
     }
@@ -349,8 +305,8 @@ export class LayerHeadlessController {
         }
 
         // Active layer stays the same (now contains merged content)
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
         return true;
     }
@@ -364,27 +320,23 @@ export class LayerHeadlessController {
         }
 
         this.activeLayerIndex = result;
-        this.onActiveLayerChange?.(this.activeLayerIndex);
-        this.onUpdateProject();
+        this.onSelectLayer?.(this.activeLayerIndex);
+
         this.notifyLayersChange();
         return result;
     }
 
-    // ------------------- Layer Operations -------------------
-
-    fillLayer(index: number, color: TRgb): void {
+    fillLayer(color: TRgb): void {
         this.applyUncommitted();
 
-        const layer = this.klCanvas.getLayer(index);
+        const layer = this.klCanvas.getLayer(this.activeLayerIndex);
         if (!layer) {
             return;
         }
 
-        this.klCanvas.layerFill(index, color, undefined, true);
-        this.onUpdateProject();
-    }
+        this.klCanvas.layerFill(this.activeLayerIndex, color, undefined, true);
 
-    // ------------------- Thumbnail Generation -------------------
+    }
 
     getThumbnail(index: number, options: TLayerThumbnailOptions = {}): Promise<Blob> {
         const layer = this.klCanvas.getLayer(index);
@@ -427,8 +379,7 @@ export class LayerHeadlessController {
         ctx.clearRect(0, 0, this.thumbnailCanvas.width, this.thumbnailCanvas.height);
 
         // Disable smoothing for pixel art when scaling up
-        const smoothingEnabled = this.thumbnailCanvas.width <= sourceCanvas.width;
-        ctx.imageSmoothingEnabled = smoothingEnabled;
+        ctx.imageSmoothingEnabled = this.thumbnailCanvas.width <= sourceCanvas.width;
         ctx.imageSmoothingQuality = 'high';
 
         ctx.drawImage(
@@ -441,35 +392,39 @@ export class LayerHeadlessController {
         return canvasToBlob(this.thumbnailCanvas, 'image/png');
     }
 
-    // ------------------- Utility Methods -------------------
-
-    canAddLayer(): boolean {
-        return this.getLayerCount() < MAX_LAYERS;
+    getState(): THeadlessLayerState {
+        return {
+            activeLayerIndex: this.activeLayerIndex,
+            layers: this.getLayers()
+        };
     }
 
-    canRemoveLayer(index?: number): boolean {
+
+    canAddLayer(): boolean {
+        return this.getLayerCount() < this.maxNumLayers;
+    }
+
+    canRemoveLayer(): boolean {
         return this.getLayerCount() > 1;
     }
 
-    canDuplicateLayer(index?: number): boolean {
+    canDuplicateLayer(): boolean {
         return this.canAddLayer();
     }
 
-    canMergeDown(index?: number): boolean {
-        const targetIndex = index ?? this.activeLayerIndex;
+    canMergeDown(): boolean {
+        const targetIndex = this.activeLayerIndex;
         return targetIndex > 0;
     }
 
-    canMergeUp(index?: number): boolean {
-        const targetIndex = index ?? this.activeLayerIndex;
+    canMergeUp(): boolean {
+        const targetIndex = this.activeLayerIndex;
         return targetIndex < this.getLayerCount() - 1;
     }
 
     canMergeAll(): boolean {
         return this.getLayerCount() > 1;
     }
-
-    // ------------------- Cleanup -------------------
 
     destroy(): void {
         if (this.thumbnailCanvas) {

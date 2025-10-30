@@ -1,6 +1,5 @@
 // Headless entry point - only exports the KlHeadlessApp and essential types
 
-
 export * from './app/script/app/kl-headless-app';
 
 export type {
@@ -9,6 +8,8 @@ export type {
     TProjectId,
     TRgb,
     TFillSampling,
+    TLayerFill,
+    TMixMode
 } from './app/script/klecks/kl-types';
 
 export type {
@@ -45,8 +46,10 @@ export {
 
 export type {
     TLayerInfo,
-    TLayerThumbnailOptions
-} from './app/script/app/layer-headless-controller';
+    TLayerThumbnailOptions,
+    THeadlessLayerState,
+    IHeadlessLayerControllerActions
+} from './app/script/app/kl-headless-layer-types';
 
 export type {
     TLayerId,
@@ -65,4 +68,9 @@ export type {
     IHeadlessSelectActions,
     IHeadlessSelectState
 } from './app/script/app/kl-headless-select-types';
+
+export {
+    SplineInterpolator,
+    powerSplineInput
+} from './app/script/bb/math/line';
 

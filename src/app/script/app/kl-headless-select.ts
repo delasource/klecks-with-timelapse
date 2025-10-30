@@ -222,11 +222,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         const layerIndex = throwIfNull(
             this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas),
         );
-        const result = !!this.klCanvas.getSelectionArea(layerIndex);
-        if (!result) {
-            this.notifyError(LANG('select-transform-empty'));
-        }
-        return result;
+        return !!this.klCanvas.getSelectionArea(layerIndex);
     }
 
     private notifyUi(): void {
