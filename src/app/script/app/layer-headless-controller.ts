@@ -181,7 +181,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
 
     setLayerOpacity(index: number, opacity: number, isTemp?: boolean): void {
         const layer = this.getLayer(index);
-        if (!layer || layer.opacity === opacity) {
+        if (!layer || (layer.opacity === opacity && isTemp)) {
             return;
         }
 

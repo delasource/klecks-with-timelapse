@@ -85,7 +85,7 @@ export class KlEventRecorder {
             timestamp: Date.now(),
             type: type,
             data: data,
-            sequenceNumber: this.sequenceNumber++,
+            sequenceNumber: this.sequenceNumber + 1,
         };
 
         // Some user action is taking place, record the time!
@@ -98,6 +98,9 @@ export class KlEventRecorder {
             // }
             return;
         }
+
+        // Increase counter
+        this.sequenceNumber++;
 
         if (DEBUG_RECORDER) {
             console.log('%c[REC]', LOG_STYLE_RECORDER, 'Recording event', event);
