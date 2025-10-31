@@ -87,6 +87,10 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
         return this.klCanvas.getLayerCount();
     }
 
+    setActiveLayerInternal(index: number) {
+        this.activeLayerIndex = index;
+    }
+
     setActiveLayer(index: number): void {
         if (index < 0 || index >= this.getLayerCount()) {
             //throw new Error(`Invalid layer index: ${index}`);

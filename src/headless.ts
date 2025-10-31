@@ -78,3 +78,8 @@ export {
     powerSplineInput
 } from './app/script/bb/math/line';
 
+export type {
+    TRecordedEvent,
+    TGetEventsOptions,
+    TEventType,
+} from './app/script/klecks/history/kl-event-types';

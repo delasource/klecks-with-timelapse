@@ -178,7 +178,7 @@ export type TKlFeatureConfiguration = {
 }
 
 export type TKlHeadlessAppParams = {
-    project?: TKlProject;
+    project?: TKlProject | string | undefined;
     eventStorageProvider?: IEventStorageProvider;
     saveReminderEnabled?: boolean;
     showStatusMessageCallback: (message: string) => void;
@@ -188,6 +188,8 @@ export type TKlHeadlessAppParams = {
     canvasWidth?: number;
     canvasHeight?: number;
     featureConfiguration?: TKlFeatureConfiguration;
+    initialLayerConfiguration?: { name: string | undefined; }[]
+    onReady?: () => void;
 }
 
 const exportType: TExportType = 'png';
@@ -455,15 +457,18 @@ export class KlHeadlessApp {
         const initialWidth = Math.max(10, Math.min(maxCanvasSize, desiredWidth));
         const initialHeight = Math.max(10, Math.min(maxCanvasSize, desiredHeight));
 
+
         const oldestComposed = projectToComposed(
-            p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight),
+            typeof p.project === 'string'
+                ? getDefaultProjectOptions(p.project, initialWidth, initialHeight)
+                : p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight),
         );
 
         this.klHistory = new KlHistory({
             oldest: oldestComposed
         });
 
-        if (p.project) {
+        if (p.project && typeof p.project !== 'string') {
             // attempt at freeing memory
             p.project.layers.forEach((layer) => {
                 if (layer.image instanceof HTMLCanvasElement) {
@@ -1104,6 +1109,7 @@ export class KlHeadlessApp {
                     this.klHistory.push({
                         activeLayerId: layer.id,
                     }, false);
+                    this.layerController.setActiveLayerInternal(layer.index);
                 }
             });
 
@@ -1134,55 +1140,47 @@ export class KlHeadlessApp {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.addLayer>;
                 this.klCanvas.addLayer(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-dupl', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.duplicateLayer>;
                 this.klCanvas.duplicateLayer(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-rm', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.removeLayer>;
                 this.klCanvas.removeLayer(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-ren', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.renameLayer>;
                 this.klCanvas.renameLayer(...data);
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-opac', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.setOpacity>;
                 this.klCanvas.setOpacity(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-vis', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.setLayerIsVisible>;
                 this.klCanvas.setLayerIsVisible(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-move', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.moveLayer>;
                 this.klCanvas.moveLayer(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-merge', event => {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.mergeLayers>;
                 this.klCanvas.mergeLayers(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('l-merge-all', event => {
@@ -1427,21 +1425,58 @@ export class KlHeadlessApp {
         });*/
         this.saveReminder?.init();
 
-        // Load the drawing from the storage provider, or start a new one.
-        this.klRecorder?.loadFromStorage()
-            .then(x => {
-                if (x === 'empty-storage') {
-                    // Initial clear
-                    this.klRecorder?.record('reset', [{
-                        width: oldestComposed.size.width,
-                        height: oldestComposed.size.height,
-                        color: { r: 255, g: 255, b: 255 } as TRgb
-                    }]);
+        const seedLayerConfig = () => {
+            if (p.initialLayerConfiguration) {
+                // rename first layer
+                if (p.initialLayerConfiguration[0].name !== undefined)
+                    this.layerController.setLayerName(p.initialLayerConfiguration[0].name);
+                // Add and rename other layer
+                for (let i = 1 ; i < p.initialLayerConfiguration.length ; i++) {
+                    this.layerController.addLayer();
+                    if (p.initialLayerConfiguration[i].name !== undefined)
+                        this.layerController.setLayerName(p.initialLayerConfiguration[i].name!);
                 }
-                // Finalise
-                this.klCanvas.fixHistoryState();
-                this.klRecorder?.start();
-            });
+
+            }
+        };
+
+        // Load the drawing from the storage provider, or start a new one.
+        if (!!this.klRecorder) {
+            this.klRecorder?.loadFromStorage()
+                .then(x => {
+                    if (x === 'empty-storage') {
+                        // Initial clear
+                        this.klRecorder?.record('reset', [{
+                            width: oldestComposed.size.width,
+                            height: oldestComposed.size.height,
+                            color: { r: 255, g: 255, b: 255 } as TRgb
+                        }]);
+
+                        // Start with layerconfiguration
+                        seedLayerConfig();
+                    }
+                    // Finalise
+                    this.klCanvas.fixHistoryState();
+
+                    // Select the 1st layer, instead of the 0th
+                    if (this.klCanvas.getLayerCount() >= 1)
+                        this.layerController.setActiveLayerInternal(1);
+
+                    // Propagate the state to the ui
+                    this.updateUi();
+                    this.notifyUi('layersChanged', this.layerController.getState());
+                    this.resetView();
+
+                    // We are ready to rock
+                    p.onReady?.();
+                    this.klRecorder?.start();
+                });
+        } else {
+            // Start without recorder
+            seedLayerConfig();
+            this.klCanvas.fixHistoryState();
+            p.onReady?.();
+        }
 
 
     } // end of constructor

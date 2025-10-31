@@ -42,7 +42,7 @@ export class PixelBrush {
     private settingColorStr: string = '';
     private settingLockLayerAlpha: boolean = false;
     private settingIsEraser: boolean = false;
-    private settingUseDither: boolean = true;
+    private settingUseDither: boolean = false;
     private inputIsDrawing: boolean = false;
     private lineToolLastDot: number = 0;
     private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 };

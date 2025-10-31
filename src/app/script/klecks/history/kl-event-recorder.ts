@@ -15,7 +15,8 @@ import {
 import { IEventStorageProvider } from './kl-event-storage-provider';
 
 /**
- * Records user events for later replay functionality
+ * Records user events for later replay functionality.
+ * Recording is paused by default, please call "start()" to begin.
  */
 export class KlEventRecorder {
     private projectId: string = '';
@@ -23,7 +24,7 @@ export class KlEventRecorder {
     private lastTimestamp: number = 0; // ms since epoch
     private totalTimeTaken: number = 0; // ms taken drawing in this project
     private listeners: Array<TEventRecordedCallback> = [];
-    private isPaused: boolean = false;
+    private isPaused: boolean = true;
     private replayer: KlEventReplayer;
     private storageProvider: IEventStorageProvider | undefined;
     private isStoringInProgress: boolean = false;
