@@ -1,5 +1,9 @@
 // Headless entry point - only exports the KlHeadlessApp and essential types
 
+export {
+    ColorConverter
+} from './app/script/bb/color/color';
+
 export * from './app/script/app/kl-headless-app';
 
 export type {

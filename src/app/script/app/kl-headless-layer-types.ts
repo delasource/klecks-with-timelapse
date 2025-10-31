@@ -24,17 +24,17 @@ export interface IHeadlessLayerControllerActions {
 
     setLayerName(newName: string): void;
 
-    addLayer(): void;
+    addLayer(): boolean;
 
-    duplicateLayer(): void;
+    duplicateLayer(): boolean;
 
-    removeLayer(): void;
+    removeLayer(): boolean;
 
-    mergeWithLayerBelow(index?: number): void;
+    mergeWithLayerBelow(index?: number): boolean;
 
-    mergeWithLayerAbove(index?: number): void;
+    mergeWithLayerAbove(index?: number): boolean;
 
-    mergeAll(): void;
+    mergeAll(): number | false;
 
     clearLayer(): void;
 
@@ -42,9 +42,9 @@ export interface IHeadlessLayerControllerActions {
 
     moveLayer(fromIndex: number, toIndex: number): void;
 
-    moveLayerUp(): void;
+    moveLayerUp(): boolean;
 
-    moveLayerDown(): void;
+    moveLayerDown(): boolean;
 
     fillLayer(color: TRgb): void;
 

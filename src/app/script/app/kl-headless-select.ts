@@ -74,9 +74,9 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         transform: identity(),
         doClone: false,
         targetLayerIndex: 0,
-        backgroundIsTransparent: false,
+        backgroundIsTransparent: true,
     };
-    private backgroundIsTransparent: boolean = false;
+    private backgroundIsTransparent: boolean = true;
 
     constructor(p: TKlHeadlessSelectParams) {
         this.klCanvas = p.klCanvas;

@@ -54,6 +54,7 @@ const globalKey = ((): TGlobalKey => {
         x: ['x', 'X'],
         y: ['y', 'Y'],
         z: ['z', 'Z'],
+        equals: '=',
         plus: '+',
         minus: '-',
         left: 'ArrowLeft',

@@ -383,6 +383,7 @@ export class KlHeadlessApp {
             }
             this.easelBrush.setLastDrawEvent();
             this.updateUi();
+            this.notifyUi('layersChanged', this.layerController.getState());
         }
 
         // This may also happen on a "tempUndo"

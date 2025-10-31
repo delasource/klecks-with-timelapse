@@ -556,11 +556,11 @@ export class Easel<GToolId extends string> {
                     return;
                 }
 
-                if (comboStr === 'plus') {
+                if (comboStr === 'plus' || comboStr === 'equals') {
                     const oldScale = this.getTransform().scale;
                     const newScale = zoomByStep(
                         oldScale,
-                        this.keyListener.isPressed('shift') ? 1 / 8 : 1 / 2,
+                        this.keyListener.isPressed('shift') ? 1 / 8 : 1 / 4,
                     );
                     this.scale(newScale / oldScale);
                 }
@@ -568,7 +568,7 @@ export class Easel<GToolId extends string> {
                     const oldScale = this.getTransform().scale;
                     const newScale = zoomByStep(
                         oldScale,
-                        this.keyListener.isPressed('shift') ? -1 / 8 : -1 / 2,
+                        this.keyListener.isPressed('shift') ? -1 / 8 : -1 / 4,
                     );
                     this.scale(newScale / oldScale);
                 }

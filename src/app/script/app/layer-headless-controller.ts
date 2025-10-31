@@ -89,7 +89,8 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
 
     setActiveLayer(index: number): void {
         if (index < 0 || index >= this.getLayerCount()) {
-            throw new Error(`Invalid layer index: ${index}`);
+            //throw new Error(`Invalid layer index: ${index}`);
+            index = 0;
         }
 
         this.applyUncommitted();
@@ -278,7 +279,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
         // Default merge mode is normal
         const result = this.klCanvas.mergeLayers(targetIndex, targetIndex - 1, 'source-over');
 
-        if (!result) {
+        if (result === undefined) {
             return false;
         }
 
@@ -301,7 +302,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
         // Merge the layer above into the current layer
         const result = this.klCanvas.mergeLayers(targetIndex + 1, targetIndex, 'source-over');
 
-        if (!result) {
+        if (result === undefined) {
             return false;
         }
 
