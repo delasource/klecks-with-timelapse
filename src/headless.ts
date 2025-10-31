@@ -82,4 +82,7 @@ export type {
     TRecordedEvent,
     TGetEventsOptions,
     TEventType,
+    TReplayConfig,
+    TReplayStats,
+    TEventReplayingHandler
 } from './app/script/klecks/history/kl-event-types';

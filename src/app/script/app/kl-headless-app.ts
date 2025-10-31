@@ -16,6 +16,7 @@ import { THistoryEntryDataComposed, TLayerId } from '../klecks/history/history.t
 import { KlChainRecorder } from '../klecks/history/kl-chain-recorder';
 import { KlEventRecorder } from '../klecks/history/kl-event-recorder';
 import { IEventStorageProvider } from '../klecks/history/kl-event-storage-provider';
+import { TReplayConfig } from '../klecks/history/kl-event-types';
 import { KlHistory } from '../klecks/history/kl-history';
 import { KlHistoryExecutor, THistoryExecutionType } from '../klecks/history/kl-history-executor';
 import { KlTempHistory } from '../klecks/history/kl-temp-history';
@@ -200,7 +201,8 @@ export type TUiEventType =
     | 'transformChanged'
     | 'statusMessage'
     | 'colorPicked'
-    | 'layersChanged';
+    | 'layersChanged'
+    | 'isReplaying';
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
@@ -349,6 +351,7 @@ export class KlHeadlessApp {
                     : LANG('cleared-layer')
             );
         this.notifyUi('layersChanged', this.layerController.getState());
+        this.easelProjectUpdater.update();
     };
 
     // when cycling through brushes you need to know the next non-eraser brush
@@ -1120,6 +1123,7 @@ export class KlHeadlessApp {
                 this.easelProjectUpdater.update();
                 this.easel.resetOrFitTransform(true);
                 this.updateUi();
+                this.notifyUi('layersChanged', this.layerController.getState());
             });
 
             replayer.addReplayHandler('resize', (event) => {
@@ -1187,7 +1191,6 @@ export class KlHeadlessApp {
                 const data = event.data as Parameters<typeof KlCanvas.prototype.mergeAll>;
                 this.klCanvas.mergeAll(...data);
                 this.easelProjectUpdater.update();
-                this.updateUi();
             });
 
             replayer.addReplayHandler('rotate', (event) => {
@@ -1697,7 +1700,33 @@ export class KlHeadlessApp {
         };
     }
 
-    /* TODO bei den Layern geht noch nix
-     */
+    async replayAnimation(config?: TReplayConfig) {
+        if (!this.klRecorder) {
+            console.log('No recorder available for replay');
+            return 'recorder-is-disabled';
+        }
 
+        // Prepare
+        this.klRecorder.pause();
+        this.klHistory.pause(true);
+        this.notifyUi('isReplaying', true);
+
+        // Start
+        const events = await this.klRecorder.getEvents();
+        const result = await this.klRecorder.getReplayer().startReplay(events, config);
+
+        // Fix ui state
+        this.klCanvas.fixHistoryState();
+        this.layerController.setActiveLayerInternal(0);
+
+        this.updateUi();
+        this.notifyUi('layersChanged', this.layerController.getState());
+        this.resetView();
+        console.log("layerstate", this.layerController.getState());
+
+        // Done
+        this.klRecorder.start();
+        this.notifyUi('isReplaying', false);
+        return result;
+    }
 }
