@@ -576,7 +576,7 @@ export class PenBrush {
     setBrushConfig(config: Partial<TPenBrushConfig>): void {
         if (config.size !== undefined) {
             this.setSize(config.size);
-            if (!config.spacing) {
+            if (!config.spacing || config.spacing === 0) {
                 this.settingSpacing = Math.max(2, spacingSpline.interpolate(config.size)) / 15;
             }
         }

@@ -498,6 +498,10 @@ export class KlHeadlessApp {
             const brush = new brushType();
             this.brushes[brushId] = brush;
             this.uiState.brushConfig[brushId] = brush.getBrushConfig();
+            if ('spacing' in this.uiState.brushConfig[brushId]) {
+                // Fix: We do not start with a spacing variable set
+                (this.uiState.brushConfig[brushId] as any).spacing = undefined;
+            }
             brush.setHistory(this.klHistory);
             // this.setBrushConfig(brush.getBrushConfig());
         });
@@ -1448,6 +1452,9 @@ export class KlHeadlessApp {
             this.klRecorder?.loadFromStorage()
                 .then(x => {
                     if (x === 'empty-storage') {
+                        // Begin recording already
+                        this.klRecorder?.start();
+
                         // Initial clear
                         this.klRecorder?.record('reset', [{
                             width: oldestComposed.size.width,
@@ -1471,8 +1478,8 @@ export class KlHeadlessApp {
                     this.resetView();
 
                     // We are ready to rock
-                    p.onReady?.();
                     this.klRecorder?.start();
+                    p.onReady?.();
                 });
         } else {
             // Start without recorder
@@ -1708,7 +1715,7 @@ export class KlHeadlessApp {
 
         // Prepare
         this.klRecorder.pause();
-        this.klHistory.pause(true);
+        this.resetView();
         this.notifyUi('isReplaying', true);
 
         // Start
@@ -1718,11 +1725,11 @@ export class KlHeadlessApp {
         // Fix ui state
         this.klCanvas.fixHistoryState();
         this.layerController.setActiveLayerInternal(0);
+        this.setBrushConfig(this.getCurrentBrushConfig());
 
-        this.updateUi();
         this.notifyUi('layersChanged', this.layerController.getState());
+        this.updateUi();
         this.resetView();
-        console.log("layerstate", this.layerController.getState());
 
         // Done
         this.klRecorder.start();

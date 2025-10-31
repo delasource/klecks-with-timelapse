@@ -3,9 +3,9 @@ import { TSanitizedDrawEvent } from './kl-event-types';
 
 
 // Draw-points are rounded to an integer in order to save memory and bandwidth, and also because you
-// can not draw more precise than 1x1px. Precision, Scale and other values are rounded to 3 decimals.
-const r0 = Math.round;
-const r3 = (v: number) => Math.round(v * 1000) / 1000;
+// can not draw more precise than 1/10 of a Pixel. Precision, Scale and other values are rounded to 3 decimals.
+const rCoordinate = (v: number) => Math.round(v * 10) / 10;
+const rPercentage = (v: number) => Math.round(v * 1000) / 1000;
 
 /**
  * This Recorder-class lives in the Draw-Event Chain. It records all events that gets
@@ -61,20 +61,20 @@ export class KlChainRecorder {
 
         if (event.type == 'down') {
             return (event.shiftIsPressed ? 'D' : 'd') +
-                `${r0(event.x)}|${r0(event.y)}|${r3(event.pressure)}@${r3(event.scale)}`;
+                `${rCoordinate(event.x)}|${rCoordinate(event.y)}|${rPercentage(event.pressure)}@${rPercentage(event.scale)}`;
         }
         if (event.type == 'move') {
             return (event.shiftIsPressed ? 'M' : 'm') +
-                `${r0(event.x)}|${r0(event.y)}|${r3(event.pressure)}@${r3(event.scale)}`;
+                `${rCoordinate(event.x)}|${rCoordinate(event.y)}|${rPercentage(event.pressure)}@${rPercentage(event.scale)}`;
         }
         if (event.type == 'up') {
             return (event.shiftIsPressed ? 'U' : 'u') +
-                `@${r3(event.scale)}`;
+                `@${rPercentage(event.scale)}`;
         }
         if (event.type == 'line') {
             return 'L' +
-                `${event.x0 !== null ? r0(event.x0) : 'x'}|${event.y0 !== null ? r0(event.y0) : 'x'}|${event.pressure0 !== null ? r3(event.pressure0) : 'x'}` +
-                `-${r0(event.x1)}|${r0(event.y1)}|${r3(event.pressure1)}`;
+                `${event.x0 !== null ? rCoordinate(event.x0) : 'x'}|${event.y0 !== null ? rCoordinate(event.y0) : 'x'}|${event.pressure0 !== null ? rPercentage(event.pressure0) : 'x'}` +
+                `-${rCoordinate(event.x1)}|${rCoordinate(event.y1)}|${rPercentage(event.pressure1)}`;
         }
 
         // unknown event type
@@ -90,8 +90,8 @@ export class KlChainRecorder {
             const scale = parseFloat(rest);
             return {
                 type: 'down',
-                x: parseInt(xStr),
-                y: parseInt(yStr),
+                x: parseFloat(xStr),
+                y: parseFloat(yStr),
                 pressure: parseFloat(pressureStr),
                 scale: scale,
                 shiftIsPressed: shiftIsPressed,
@@ -105,8 +105,8 @@ export class KlChainRecorder {
             const scale = parseFloat(rest);
             return {
                 type: 'move',
-                x: parseInt(xStr),
-                y: parseInt(yStr),
+                x: parseFloat(xStr),
+                y: parseFloat(yStr),
                 pressure: parseFloat(pressureStr),
                 scale: scale,
                 shiftIsPressed: shiftIsPressed,
@@ -132,11 +132,11 @@ export class KlChainRecorder {
             const [x1Str, y1Str, pressure1Str] = endPart.split('|');
             return {
                 type: 'line',
-                x0: x0Str != 'x' ? parseInt(x0Str) : null,
-                y0: y0Str != 'x' ? parseInt(y0Str) : null,
+                x0: x0Str != 'x' ? parseFloat(x0Str) : null,
+                y0: y0Str != 'x' ? parseFloat(y0Str) : null,
                 pressure0: pressure0Str != 'x' ? parseFloat(pressure0Str) : null,
-                x1: parseInt(x1Str),
-                y1: parseInt(y1Str),
+                x1: parseFloat(x1Str),
+                y1: parseFloat(y1Str),
                 pressure1: parseFloat(pressure1Str),
             } as TDrawLine;
         }
