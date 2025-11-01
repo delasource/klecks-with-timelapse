@@ -12,8 +12,5 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": [
-    "src/headless.ts",
-    "src/app/declaration.d.ts"
-  ]
+  "include": ["src/headless.ts", "src/app/declaration.d.ts"]
 }

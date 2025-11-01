@@ -34,7 +34,7 @@ import {
   TMixMode,
   TRgb,
   TShapeToolMode,
-  TShapeToolType
+  TShapeToolType,
 } from '../klecks/kl-types';
 import { klCanvasToPsdBlob } from '../klecks/storage/kl-canvas-to-psd-blob';
 import { SaveToComputer } from '../klecks/storage/save-to-computer';
@@ -153,7 +153,7 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
     isSnap: false,
     isEraser: false,
     isLockAlpha: false,
-    isPanning: false
+    isPanning: false,
   },
   gradient: {
     opacity: 1,
@@ -161,7 +161,7 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
     doLockAlpha: false,
     doSnap: false,
     isReversed: false,
-    isEraser: false
+    isEraser: false,
   },
   fill: {
     tolerance: 0.2,
@@ -169,8 +169,8 @@ const DEFAULT_UI_STATE: TKlHeadlessUiState = {
     mode: 'all',
     grow: 0,
     isEraser: false,
-    isContiguous: true
-  }
+    isContiguous: true,
+  },
 };
 
 export type TKlFeatureConfiguration = {
@@ -288,7 +288,7 @@ export class KlHeadlessApp {
           layer: this.currentLayer,
           klCanvas: this.klCanvas,
           input: inputObj,
-          klHistory: this.klHistory
+          klHistory: this.klHistory,
         });
         // this.layersUi.update();
         this.easelProjectUpdater.update();
@@ -334,7 +334,7 @@ export class KlHeadlessApp {
     this.klCanvas.eraseLayer({
       layerIndex,
       useAlphaLock: layerIndex === 0 && !(this.brushes['EraserBrush'] as EraserBrush).getTransparentBG(),
-      useSelection: !ignoreSelection
+      useSelection: !ignoreSelection,
     });
 
     if (showStatus)
@@ -428,8 +428,8 @@ export class KlHeadlessApp {
         left: '0',
         top: '0',
         right: '0',
-        bottom: '0'
-      }
+        bottom: '0',
+      },
     });
 
     // default 2048, unless your screen is bigger than that (that computer then probably has the horsepower for that)
@@ -447,7 +447,7 @@ export class KlHeadlessApp {
     );
 
     this.klHistory = new KlHistory({
-      oldest: oldestComposed
+      oldest: oldestComposed,
     });
 
     if (p.project && typeof p.project !== 'string') {
@@ -487,7 +487,7 @@ export class KlHeadlessApp {
     this.chainRecorder = this.klRecorder?.createChainRecorder(() => {
       return {
         id: this.uiState.currentBrushId,
-        cfg: this.getCurrentBrushConfig()
+        cfg: this.getCurrentBrushConfig(),
       };
     });
 
@@ -496,12 +496,12 @@ export class KlHeadlessApp {
 
     // Event Chain 3:
     const lineSmoothing = new LineSmoothing({
-      smoothing: translateSmoothing(1)
+      smoothing: translateSmoothing(1),
     });
 
     const drawEventChain = new EventChain({
       // TODO replace any with proper type/interface. EventChain needs to get a change here.
-      chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c)
+      chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c),
     });
 
     drawEventChain.setChainOut(((event: TDrawEvent) => {
@@ -550,7 +550,7 @@ export class KlHeadlessApp {
         this.klCanvas.eraseLayer({
           layerIndex,
           useAlphaLock: layerIndex === 0 && !(this.brushes.eraserBrush as EraserBrush).getTransparentBG(),
-          useSelection: true
+          useSelection: true,
         });
         this.showStatusMessageCallback(
           this.klCanvas.getSelection() ? LANG('cleared-selected-area') : LANG('cleared-layer')
@@ -563,7 +563,7 @@ export class KlHeadlessApp {
       onError: message => {
         console.error('Selection error:', message);
         this.updateUi();
-      }
+      },
     });
 
     let isEraserPen: boolean = false;
@@ -586,7 +586,7 @@ export class KlHeadlessApp {
           pressure: e.pressure,
           isCoalesced: e.isCoalesced,
           x: e.x,
-          y: e.y
+          y: e.y,
         } as TDrawEvent as any);
       },
       onLineGo: e => {
@@ -598,7 +598,7 @@ export class KlHeadlessApp {
           pressure: e.pressure,
           isCoalesced: e.isCoalesced,
           x: e.x,
-          y: e.y
+          y: e.y,
         } as TDrawEvent as any);
       },
       onLineEnd: () => {
@@ -607,7 +607,7 @@ export class KlHeadlessApp {
           type: 'up',
           scale: this.easel.getTransform().scale,
           shiftIsPressed: this.keyListener.isPressed('shift'),
-          isCoalesced: false
+          isCoalesced: false,
         } as TDrawEvent as any);
         if (isEraserPen) {
           isEraserPen = false;
@@ -626,7 +626,7 @@ export class KlHeadlessApp {
           x1: p2.x,
           y1: p2.y,
           pressure0: 1,
-          pressure1: 1
+          pressure1: 1,
         } as TDrawEvent as any);
         if (isEraserPen) {
           isEraserPen = false;
@@ -635,7 +635,7 @@ export class KlHeadlessApp {
           this.setCurrentBrush(this.lastNonEraserBrushId);
           this.updateUi();
         }
-      }
+      },
     });
 
     const shapeTool = new ShapeTool({
@@ -652,7 +652,7 @@ export class KlHeadlessApp {
           isOutwards: this.uiState.shape.isOutwards,
           opacity: this.uiState.shape.opacity,
           isEraser: this.uiState.shape.isEraser,
-          doLockAlpha: this.uiState.shape.isLockAlpha
+          doLockAlpha: this.uiState.shape.isLockAlpha,
         };
         if (this.uiState.shape.shape === 'line') {
           shapeObj.strokeRgb = this.uiState.primaryColorRgb;
@@ -677,12 +677,12 @@ export class KlHeadlessApp {
           this.klCanvas.setComposite(layerIndex, {
             draw: ctx => {
               drawShape(ctx, shapeObj, selectionPath);
-            }
+            },
           });
         }
 
         this.easelProjectUpdater.update();
-      }
+      },
     });
 
     const gradientTool = new GradientTool({
@@ -700,7 +700,7 @@ export class KlHeadlessApp {
           y1,
           x2,
           y2,
-          angleRad
+          angleRad,
         };
 
         if (isDone) {
@@ -712,12 +712,12 @@ export class KlHeadlessApp {
           this.klCanvas.setComposite(layerIndex, {
             draw: ctx => {
               drawGradient(ctx, gradientObj, selectionPath);
-            }
+            },
           });
         }
 
         this.easelProjectUpdater.update();
-      }
+      },
     });
 
     const easelHand = new EaselHand({});
@@ -731,7 +731,7 @@ export class KlHeadlessApp {
       },
       onUp: p => {
         shapeTool.onUp(p.x, p.y);
-      }
+      },
     });
 
     // This is the canvas:
@@ -741,7 +741,7 @@ export class KlHeadlessApp {
       project: {
         width: this.klCanvas.getWidth(),
         height: this.klCanvas.getHeight(),
-        layers: []
+        layers: [],
       }, // temp
       tools: {
         brush: this.easelBrush,
@@ -759,7 +759,7 @@ export class KlHeadlessApp {
             // Toggle the "pick ui" off.
             this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
             this.updateUi();
-          }
+          },
         }),
         paintBucket: new EaselPaintBucket({
           onFill: p => {
@@ -775,7 +775,7 @@ export class KlHeadlessApp {
               this.uiState.fill.isContiguous
             );
             this.easel.requestRender();
-          }
+          },
         }),
         gradient: new EaselGradient({
           onDown: (p, angleRad) => {
@@ -786,7 +786,7 @@ export class KlHeadlessApp {
           },
           onUp: p => {
             gradientTool.onUp(p.x, p.y);
-          }
+          },
         }),
         text: new EaselText({
           onDown: (p, angleRad) => {
@@ -834,11 +834,11 @@ export class KlHeadlessApp {
                     this.klCanvas.text(this.currentLayer.index, val);
                 },
             });*/
-          }
+          },
         }),
         shape: easelShape,
         rotate: new EaselRotate({}),
-        zoom: new EaselZoom({})
+        zoom: new EaselZoom({}),
       },
       tool: 'brush',
       onChangeTool: toolId => {
@@ -852,20 +852,20 @@ export class KlHeadlessApp {
       },
       onRedo: () => {
         this.redo(true);
-      }
+      },
     });
 
     css(this.easel.getElement(), {
       position: 'absolute',
       left: '0',
-      top: '0'
+      top: '0',
     });
 
     append(this.rootEl, [this.easel.getElement()]);
 
     this.easelProjectUpdater = new EaselProjectUpdater({
       klCanvas: this.klCanvas,
-      easel: this.easel
+      easel: this.easel,
     });
 
     this.klHistory.addListener(() => {
@@ -1022,8 +1022,7 @@ export class KlHeadlessApp {
           this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
         }
       },
-      onUp: (keyStr, event) => {
-      }
+      onUp: (keyStr, event) => {},
     });
 
     // Register replay handlers if recorder is enabled
@@ -1038,10 +1037,11 @@ export class KlHeadlessApp {
 
         // Set the brush configuration
         if (brushData && this.brushes[brushData.id]) {
-          this.setCurrentBrush(brushData.id);
-          if (brushData.cfg) {
-            this.brushes[brushData.id].setBrushConfig(brushData.cfg);
-          }
+          this.setCurrentBrush(brushData.id, brushData.cfg);
+          // if (brushData.cfg) {
+            // console.log("PUSH ", brushData.cfg, "to", brushData.id);
+            // this.brushes[brushData.id].setBrushConfig(brushData.cfg);
+          // }
         } else {
           console.log('Unknown brush during replay:', brushData);
         }
@@ -1060,14 +1060,7 @@ export class KlHeadlessApp {
       replayer.addReplayHandler('l-select', event => {
         const layer = this.klCanvas.getLayer((event.data as number[])[0]);
         if (layer) {
-          this.setCurrentLayer(layer);
-          this.klHistory.push(
-            {
-              activeLayerId: layer.id
-            },
-            false
-          );
-          this.layerController.setActiveLayerInternal(layer.index);
+          this.layerController.setActiveLayer(layer.index);
         }
       });
 
@@ -1228,7 +1221,7 @@ export class KlHeadlessApp {
           layer: this.currentLayer,
           klCanvas: this.klCanvas,
           klHistory: this.klHistory,
-          input: filterInput
+          input: filterInput,
         });
         if (!filterResult) {
           console.log('Failed to apply filter during replay:', filterKey);
@@ -1246,7 +1239,7 @@ export class KlHeadlessApp {
         this.uiState.canUndo = canUndo;
         this.uiState.canRedo = canRedo;
         this.updateUi();
-      }
+      },
     });
 
     // Viewport initialization
@@ -1257,7 +1250,7 @@ export class KlHeadlessApp {
     this.setBrushConfig({
       ...this.uiState.brushConfig[this.uiState.currentBrushId],
       size: 4,
-      color: this.uiState.primaryColorRgb
+      color: this.uiState.primaryColorRgb,
     });
 
     if (p.initialViewport?.canvasWidth && p.canvasWidth) {
@@ -1299,7 +1292,7 @@ export class KlHeadlessApp {
       },
       onLayersChange: state => {
         this.notifyUi('layersChanged', state);
-      }
+      },
     });
 
     // TODO enable if you like
@@ -1336,8 +1329,8 @@ export class KlHeadlessApp {
           bottom: '0',
           pointerEvents: 'none',
           zIndex: '-1',
-          userSelect: 'none'
-        }
+          userSelect: 'none',
+        },
       });
       try {
         // Not all browsers support ResizeObserver. Not critical though.
@@ -1386,7 +1379,7 @@ export class KlHeadlessApp {
         if (p.initialLayerConfiguration[0].name !== undefined)
           this.layerController.setLayerName(p.initialLayerConfiguration[0].name);
         // Add and rename other layer
-        for (let i = 1 ; i < p.initialLayerConfiguration.length ; i++) {
+        for (let i = 1; i < p.initialLayerConfiguration.length; i++) {
           this.layerController.addLayer();
           if (p.initialLayerConfiguration[i].name !== undefined)
             this.layerController.setLayerName(p.initialLayerConfiguration[i].name!);
@@ -1406,26 +1399,28 @@ export class KlHeadlessApp {
             {
               width: oldestComposed.size.width,
               height: oldestComposed.size.height,
-              color: { r: 255, g: 255, b: 255 } as TRgb
-            }
+              color: { r: 255, g: 255, b: 255 } as TRgb,
+            },
           ]);
 
           // Start with layerconfiguration
           seedLayerConfig();
         }
 
-        // Select the 1st layer, instead of the 0th
-        /*if (this.klCanvas.getLayerCount() >= 1) {
-          this.layerController.setActiveLayerInternal(1);
-          this.setCurrentLayer(this.klCanvas.getLayer(1)!);
-        }*/
-
         // Finalise
         this.klCanvas.fixHistoryState();
+        this.applyUncommitted();
+
+        this.klRecorder?.pause();
+
+        // this.layerController.setActiveLayerInternal(0);
+        // this.setCurrentLayer(this.klCanvas.getLayer(0));
+        this.layerController.setActiveLayer(0);
 
         // Propagate the state to the ui
         this.updateUi();
         this.notifyUi('layersChanged', this.layerController.getState());
+        this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
         this.resetView();
 
         // We are ready to rock
@@ -1499,38 +1494,40 @@ export class KlHeadlessApp {
     this.updateUi();
   }
 
-  setCurrentBrush(brushId: TKlBrushId | -1) {
-    if (brushId == -1) brushId = this.lastNonEraserBrushId;
+  setCurrentBrush(brushId: TKlBrushId | -1, brushData?: Partial<TBrushConfigTypes>) {
+    if (brushId == -1) {
+      brushId = this.lastNonEraserBrushId;
+    }
 
     if (brushId !== 'EraserBrush') {
       this.lastNonEraserBrushId = brushId;
     }
 
     this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
-
     this.uiState.currentBrushId = brushId;
+
     this.setBrushConfig({
-      color: this.uiState.primaryColorRgb
+      ...brushData,
+      color: (brushData as any)?.color ?? this.uiState.primaryColorRgb,
     });
     this.easelBrush.setBrush({
       radius: this.uiState.brushConfig[this.uiState.currentBrushId].size,
-      type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round'
+      type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
     });
-    this.updateUi();
   }
 
   setBrushConfig(data: Partial<TBrushConfigTypes>) {
     if (data == undefined) return;
 
-    const brushLogic = this.brushes[this.uiState.currentBrushId];
-    brushLogic.setBrushConfig(data);
-
+    // Save the whole config object here
     this.uiState.brushConfig[this.uiState.currentBrushId] = {
       ...this.uiState.brushConfig[this.uiState.currentBrushId],
-      ...data
+      ...data,
     };
 
-    // console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
+    // Push the new properties to the logic-class
+    const brushLogic = this.brushes[this.uiState.currentBrushId];
+    brushLogic.setBrushConfig(data);
 
     // Update context (varies)
     if ('setLayer' in brushLogic) brushLogic.setLayer(this.currentLayer);
@@ -1567,7 +1564,7 @@ export class KlHeadlessApp {
   setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
     this.uiState.shape = {
       ...this.uiState.shape,
-      ...config
+      ...config,
     };
     this.updateUi();
   }
@@ -1575,7 +1572,7 @@ export class KlHeadlessApp {
   setGradientConfig(config: Partial<typeof this.uiState.gradient>): void {
     this.uiState.gradient = {
       ...this.uiState.gradient,
-      ...config
+      ...config,
     };
     this.updateUi();
   }
@@ -1583,7 +1580,7 @@ export class KlHeadlessApp {
   setFillConfig(config: Partial<typeof this.uiState.fill>): void {
     this.uiState.fill = {
       ...this.uiState.fill,
-      ...config
+      ...config,
     };
     this.updateUi();
   }
@@ -1632,7 +1629,7 @@ export class KlHeadlessApp {
     this.easel.scaleToNormal(false);
     this.notifyUi('transformChanged', {
       transform: this.easel.getTransform(),
-      isScaleOrAngleChanged: true
+      isScaleOrAngleChanged: true,
     });
   }
 
@@ -1647,7 +1644,7 @@ export class KlHeadlessApp {
   getDimensions() {
     return {
       width: this.klCanvas.getWidth(),
-      height: this.klCanvas.getHeight()
+      height: this.klCanvas.getHeight(),
     };
   }
 

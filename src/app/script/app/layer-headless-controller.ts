@@ -88,6 +88,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
   }
 
   setActiveLayerInternal(index: number) {
+    this.applyUncommitted();
     this.activeLayerIndex = index;
   }
 
