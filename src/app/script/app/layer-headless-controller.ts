@@ -4,437 +4,426 @@ import { KlCanvas, MAX_LAYERS } from '../klecks/canvas/kl-canvas';
 import { KlHistory } from '../klecks/history/kl-history';
 import { TMixMode, TRgb } from '../klecks/kl-types';
 import {
-    IHeadlessLayerControllerActions,
-    THeadlessLayerState,
-    TLayerInfo,
-    TLayerThumbnailOptions
+  IHeadlessLayerControllerActions,
+  THeadlessLayerState,
+  TLayerInfo,
+  TLayerThumbnailOptions,
 } from './kl-headless-layer-types';
 
 export type TLayerHeadlessControllerParams = {
-    klCanvas: KlCanvas;
-    klHistory: KlHistory;
-    applyUncommitted: () => void;
-    onUpdateProject: () => void;
-    onClearLayer: () => void;
-    onSelect?: (layerIndex: number) => void;
-    onLayersChange?: (state: THeadlessLayerState) => void;
-    maxNumLayers?: number;
+  klCanvas: KlCanvas;
+  klHistory: KlHistory;
+  applyUncommitted: () => void;
+  onUpdateProject: () => void;
+  onClearLayer: () => void;
+  onSelect?: (layerIndex: number) => void;
+  onLayersChange?: (state: THeadlessLayerState) => void;
+  maxNumLayers?: number;
 };
 
 export class LayerHeadlessController implements IHeadlessLayerControllerActions {
-    private readonly klCanvas: KlCanvas;
-    private readonly klHistory: KlHistory;
-    private readonly applyUncommitted: () => void;
-    private readonly onUpdateProject: () => void;
-    private readonly onClearLayer: () => void;
-    private readonly onSelectLayer?: (layerIndex: number) => void;
-    private readonly onLayersChange?: (state: THeadlessLayerState) => void;
-    private readonly maxNumLayers: number = MAX_LAYERS;
+  private readonly klCanvas: KlCanvas;
+  private readonly klHistory: KlHistory;
+  private readonly applyUncommitted: () => void;
+  private readonly onUpdateProject: () => void;
+  private readonly onClearLayer: () => void;
+  private readonly onSelectLayer?: (layerIndex: number) => void;
+  private readonly onLayersChange?: (state: THeadlessLayerState) => void;
+  private readonly maxNumLayers: number = MAX_LAYERS;
 
-    private activeLayerIndex: number;
-    private thumbnailCanvas: HTMLCanvasElement;
+  private activeLayerIndex: number;
+  private thumbnailCanvas: HTMLCanvasElement;
 
-    constructor(params: TLayerHeadlessControllerParams) {
-        this.klCanvas = params.klCanvas;
-        this.klHistory = params.klHistory;
-        this.applyUncommitted = params.applyUncommitted;
-        this.onUpdateProject = params.onUpdateProject;
-        this.onClearLayer = params.onClearLayer;
-        this.onSelectLayer = params.onSelect;
-        this.onLayersChange = params.onLayersChange;
+  constructor(params: TLayerHeadlessControllerParams) {
+    this.klCanvas = params.klCanvas;
+    this.klHistory = params.klHistory;
+    this.applyUncommitted = params.applyUncommitted;
+    this.onUpdateProject = params.onUpdateProject;
+    this.onClearLayer = params.onClearLayer;
+    this.onSelectLayer = params.onSelect;
+    this.onLayersChange = params.onLayersChange;
 
-        if (params.maxNumLayers) {
-            this.maxNumLayers = params.maxNumLayers;
-        }
-
-        // Initialize with the top layer
-        const layers = this.klCanvas.getLayers();
-        this.activeLayerIndex = layers.length - 1;
-
-        // Create reusable thumbnail canvas
-        this.thumbnailCanvas = document.createElement('canvas');
+    if (params.maxNumLayers) {
+      this.maxNumLayers = params.maxNumLayers;
     }
 
-    private notifyLayersChange(): void {
-        if (this.onLayersChange) {
-            this.onLayersChange(this.getState());
-        }
+    // Initialize with the top layer
+    const layers = this.klCanvas.getLayers();
+    this.activeLayerIndex = layers.length - 1;
+
+    // Create reusable thumbnail canvas
+    this.thumbnailCanvas = document.createElement('canvas');
+  }
+
+  private notifyLayersChange(): void {
+    if (this.onLayersChange) {
+      this.onLayersChange(this.getState());
+    }
+  }
+
+  // ------------------- Layer Information -------------------
+
+  private getLayers(): TLayerInfo[] {
+    const canvasLayers = this.klCanvas.getLayers();
+    return canvasLayers.map((layer, index) => {
+      const layerObj = this.klCanvas.getLayer(index);
+      return {
+        index,
+        id: layerObj.id,
+        name: layerObj?.name || `Layer ${index + 1}`,
+        opacity: layer.opacity,
+        isVisible: layerObj?.isVisible ?? true,
+        mixModeStr: layer.mixModeStr,
+      };
+    });
+  }
+
+  private getLayer(index: number): TLayerInfo | null {
+    const layers = this.getLayers();
+    return index >= 0 && index < layers.length ? layers[index] : null;
+  }
+
+  private getLayerCount(): number {
+    return this.klCanvas.getLayerCount();
+  }
+
+  setActiveLayerInternal(index: number) {
+    this.activeLayerIndex = index;
+  }
+
+  setActiveLayer(index: number): void {
+    if (index < 0 || index >= this.getLayerCount()) {
+      //throw new Error(`Invalid layer index: ${index}`);
+      index = 0;
     }
 
-    // ------------------- Layer Information -------------------
+    this.applyUncommitted();
+    this.activeLayerIndex = index;
+    this.onSelectLayer?.(index);
+  }
 
-    private getLayers(): TLayerInfo[] {
-        const canvasLayers = this.klCanvas.getLayers();
-        return canvasLayers.map((layer, index) => {
-            const layerObj = this.klCanvas.getLayer(index);
-            return {
-                index,
-                id: layerObj.id,
-                name: layerObj?.name || `Layer ${index + 1}`,
-                opacity: layer.opacity,
-                isVisible: layerObj?.isVisible ?? true,
-                mixModeStr: layer.mixModeStr,
-            };
-        });
+  addLayer(): boolean {
+    if (!this.canAddLayer()) {
+      return false;
     }
 
-    private getLayer(index: number): TLayerInfo | null {
-        const layers = this.getLayers();
-        return index >= 0 && index < layers.length ? layers[index] : null;
+    this.applyUncommitted();
+
+    const result = this.klCanvas.addLayer(this.activeLayerIndex);
+    if (result === false) {
+      return false;
     }
 
-    private getLayerCount(): number {
-        return this.klCanvas.getLayerCount();
+    this.activeLayerIndex++;
+    this.onSelectLayer?.(this.activeLayerIndex);
+
+    this.notifyLayersChange();
+    return true;
+  }
+
+  duplicateLayer(): boolean {
+    this.applyUncommitted();
+
+    const result = this.klCanvas.duplicateLayer(this.activeLayerIndex);
+    if (result === false) {
+      return false;
     }
 
-    setActiveLayerInternal(index: number) {
-        this.activeLayerIndex = index;
+    // Set active layer to the duplicated layer
+    this.activeLayerIndex++;
+    this.onSelectLayer?.(this.activeLayerIndex);
+
+    this.notifyLayersChange();
+    return true;
+  }
+
+  removeLayer(): boolean {
+    this.applyUncommitted();
+
+    if (this.getLayerCount() <= 1) {
+      return false; // Cannot remove the last layer
     }
 
-    setActiveLayer(index: number): void {
-        if (index < 0 || index >= this.getLayerCount()) {
-            //throw new Error(`Invalid layer index: ${index}`);
-            index = 0;
-        }
+    this.klCanvas.removeLayer(this.activeLayerIndex);
 
-        this.applyUncommitted();
-        this.activeLayerIndex = index;
-        this.onSelectLayer?.(index);
+    // Adjust active layer index if necessary
+    if (this.activeLayerIndex > 0) {
+      this.activeLayerIndex--;
     }
 
-    addLayer(): boolean {
-        if (!this.canAddLayer()) {
-            return false;
-        }
+    this.onSelectLayer?.(this.activeLayerIndex);
 
-        this.applyUncommitted();
+    this.notifyLayersChange();
+    return true;
+  }
 
-        const result = this.klCanvas.addLayer(this.activeLayerIndex);
-        if (result === false) {
-            return false;
-        }
-
-        this.activeLayerIndex++;
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return true;
+  clearLayer(): void {
+    const layer = this.klCanvas.getLayer(this.activeLayerIndex);
+    if (!layer) {
+      return;
     }
 
-    duplicateLayer(): boolean {
-        this.applyUncommitted();
+    this.applyUncommitted();
+    this.onClearLayer?.(); // Canvas will be cleared here -> The AppState will decide if it will be cleared with the default color or with transparency
+    //
+  }
 
-        const result = this.klCanvas.duplicateLayer(this.activeLayerIndex);
-        if (result === false) {
-            return false;
-        }
-
-        // Set active layer to the duplicated layer
-        this.activeLayerIndex++;
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return true;
+  setLayerName(name: string): void {
+    const layer = this.getLayer(this.activeLayerIndex);
+    if (!layer || layer.name === name) {
+      return;
     }
 
-    removeLayer(): boolean {
-        this.applyUncommitted();
+    this.klCanvas.renameLayer(this.activeLayerIndex, name);
 
-        if (this.getLayerCount() <= 1) {
-            return false; // Cannot remove the last layer
-        }
+    this.notifyLayersChange();
+  }
 
-        this.klCanvas.removeLayer(this.activeLayerIndex);
-
-        // Adjust active layer index if necessary
-        if (this.activeLayerIndex > 0) {
-            this.activeLayerIndex--;
-        }
-
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return true;
+  setLayerOpacity(index: number, opacity: number, isTemp?: boolean): void {
+    const layer = this.getLayer(index);
+    if (!layer || (layer.opacity === opacity && isTemp)) {
+      return;
     }
 
-    clearLayer(): void {
-        const layer = this.klCanvas.getLayer(this.activeLayerIndex);
-        if (!layer) {
-            return;
-        }
-
-        this.applyUncommitted();
-        this.onClearLayer?.(); // Canvas will be cleared here -> The AppState will decide if it will be cleared with the default color or with transparency
-        // 
+    if (isTemp) {
+      this.klHistory.pause(true);
     }
 
-    setLayerName(name: string): void {
-        const layer = this.getLayer(this.activeLayerIndex);
-        if (!layer || layer.name === name) {
-            return;
-        }
+    this.klCanvas.setOpacity(index, opacity);
+    this.onUpdateProject();
+    this.notifyLayersChange();
 
-        this.klCanvas.renameLayer(this.activeLayerIndex, name);
+    if (isTemp) {
+      this.klHistory.pause(false);
+    }
+  }
 
-        this.notifyLayersChange();
+  setLayerVisibility(index: number, isVisible: boolean): void {
+    const layer = this.getLayer(index);
+    if (!layer || layer.isVisible === isVisible) {
+      return;
     }
 
-    setLayerOpacity(index: number, opacity: number, isTemp?: boolean): void {
-        const layer = this.getLayer(index);
-        if (!layer || (layer.opacity === opacity && isTemp)) {
-            return;
-        }
+    this.klCanvas.setLayerIsVisible(index, isVisible);
 
-        if (isTemp) {
-            this.klHistory.pause(true);
-        }
+    // Pause history for visibility changes to avoid cluttering undo stack
+    this.klHistory.pause(true);
+    if (index === this.activeLayerIndex) {
+      this.onSelectLayer?.(this.activeLayerIndex);
+    }
+    this.klHistory.pause(false);
 
-        this.klCanvas.setOpacity(index, opacity);
-        this.onUpdateProject();
-        this.notifyLayersChange();
+    this.notifyLayersChange();
+  }
 
-        if (isTemp) {
-            this.klHistory.pause(false);
-        }
+  setLayerMixMode(index: number, mixMode: TMixMode): void {
+    const layer = this.getLayer(index);
+    if (!layer || layer.mixModeStr === mixMode) {
+      return;
     }
 
-    setLayerVisibility(index: number, isVisible: boolean): void {
-        const layer = this.getLayer(index);
-        if (!layer || layer.isVisible === isVisible) {
-            return;
-        }
+    this.klCanvas.setMixMode(index, mixMode);
 
-        this.klCanvas.setLayerIsVisible(index, isVisible);
+    this.notifyLayersChange();
+  }
 
-        // Pause history for visibility changes to avoid cluttering undo stack
-        this.klHistory.pause(true);
-        if (index === this.activeLayerIndex) {
-            this.onSelectLayer?.(this.activeLayerIndex);
-        }
-        this.klHistory.pause(false);
-
-        this.notifyLayersChange();
+  moveLayer(fromIndex: number, toIndex: number): void {
+    const layers = this.getLayers();
+    if (
+      fromIndex < 0 ||
+      fromIndex >= layers.length ||
+      toIndex < 0 ||
+      toIndex >= layers.length ||
+      fromIndex === toIndex
+    ) {
+      return;
     }
 
-    setLayerMixMode(index: number, mixMode: TMixMode): void {
-        const layer = this.getLayer(index);
-        if (!layer || layer.mixModeStr === mixMode) {
-            return;
-        }
+    this.applyUncommitted();
+    this.klCanvas.moveLayer(fromIndex, toIndex - fromIndex);
 
-        this.klCanvas.setMixMode(index, mixMode);
-
-        this.notifyLayersChange();
+    // Adjust active layer index
+    if (fromIndex === this.activeLayerIndex) {
+      this.activeLayerIndex = toIndex;
+    } else if (fromIndex < this.activeLayerIndex && toIndex >= this.activeLayerIndex) {
+      this.activeLayerIndex--;
+    } else if (fromIndex > this.activeLayerIndex && toIndex <= this.activeLayerIndex) {
+      this.activeLayerIndex++;
     }
 
-    moveLayer(fromIndex: number, toIndex: number): void {
-        const layers = this.getLayers();
-        if (fromIndex < 0 || fromIndex >= layers.length ||
-            toIndex < 0 || toIndex >= layers.length ||
-            fromIndex === toIndex) {
-            return;
-        }
+    this.onSelectLayer?.(this.activeLayerIndex);
 
-        this.applyUncommitted();
-        this.klCanvas.moveLayer(fromIndex, toIndex - fromIndex);
+    this.notifyLayersChange();
+  }
 
-        // Adjust active layer index
-        if (fromIndex === this.activeLayerIndex) {
-            this.activeLayerIndex = toIndex;
-        } else if (fromIndex < this.activeLayerIndex && toIndex >= this.activeLayerIndex) {
-            this.activeLayerIndex--;
-        } else if (fromIndex > this.activeLayerIndex && toIndex <= this.activeLayerIndex) {
-            this.activeLayerIndex++;
-        }
-
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
+  moveLayerUp(): boolean {
+    const targetIndex = this.activeLayerIndex;
+    if (targetIndex >= this.getLayerCount() - 1) {
+      return false; // Already at top
     }
 
-    moveLayerUp(): boolean {
-        const targetIndex = this.activeLayerIndex;
-        if (targetIndex >= this.getLayerCount() - 1) {
-            return false; // Already at top
-        }
+    this.moveLayer(targetIndex, targetIndex + 1);
+    return true;
+  }
 
-        this.moveLayer(targetIndex, targetIndex + 1);
-        return true;
+  moveLayerDown(): boolean {
+    const targetIndex = this.activeLayerIndex;
+    if (targetIndex <= 0) {
+      return false; // Already at bottom
     }
 
-    moveLayerDown(): boolean {
-        const targetIndex = this.activeLayerIndex;
-        if (targetIndex <= 0) {
-            return false; // Already at bottom
-        }
+    this.moveLayer(targetIndex, targetIndex - 1);
+    return true;
+  }
 
-        this.moveLayer(targetIndex, targetIndex - 1);
-        return true;
+  mergeWithLayerBelow(index?: number): boolean {
+    this.applyUncommitted();
+
+    const targetIndex = index ?? this.activeLayerIndex;
+    if (targetIndex <= 0) {
+      return false; // Cannot merge background layer down
     }
 
-    mergeWithLayerBelow(index?: number): boolean {
-        this.applyUncommitted();
+    // Default merge mode is normal
+    const result = this.klCanvas.mergeLayers(targetIndex, targetIndex - 1, 'source-over');
 
-        const targetIndex = index ?? this.activeLayerIndex;
-        if (targetIndex <= 0) {
-            return false; // Cannot merge background layer down
-        }
-
-        // Default merge mode is normal
-        const result = this.klCanvas.mergeLayers(targetIndex, targetIndex - 1, 'source-over');
-
-        if (result === undefined) {
-            return false;
-        }
-
-        // Set active layer to the merged layer below
-        this.activeLayerIndex = targetIndex - 1;
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return true;
+    if (result === undefined) {
+      return false;
     }
 
-    mergeWithLayerAbove(index?: number): boolean {
-        this.applyUncommitted();
+    // Set active layer to the merged layer below
+    this.activeLayerIndex = targetIndex - 1;
+    this.onSelectLayer?.(this.activeLayerIndex);
 
-        const targetIndex = index ?? this.activeLayerIndex;
-        if (targetIndex >= this.getLayerCount() - 1) {
-            return false; // Cannot merge top layer up
-        }
+    this.notifyLayersChange();
+    return true;
+  }
 
-        // Merge the layer above into the current layer
-        const result = this.klCanvas.mergeLayers(targetIndex + 1, targetIndex, 'source-over');
+  mergeWithLayerAbove(index?: number): boolean {
+    this.applyUncommitted();
 
-        if (result === undefined) {
-            return false;
-        }
-
-        // Active layer stays the same (now contains merged content)
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return true;
+    const targetIndex = index ?? this.activeLayerIndex;
+    if (targetIndex >= this.getLayerCount() - 1) {
+      return false; // Cannot merge top layer up
     }
 
-    mergeAll(): number | false {
-        this.applyUncommitted();
+    // Merge the layer above into the current layer
+    const result = this.klCanvas.mergeLayers(targetIndex + 1, targetIndex, 'source-over');
 
-        const result = this.klCanvas.mergeAll();
-        if (result === false) {
-            return false;
-        }
-
-        this.activeLayerIndex = result;
-        this.onSelectLayer?.(this.activeLayerIndex);
-
-        this.notifyLayersChange();
-        return result;
+    if (result === undefined) {
+      return false;
     }
 
-    fillLayer(color: TRgb): void {
-        this.applyUncommitted();
+    // Active layer stays the same (now contains merged content)
+    this.onSelectLayer?.(this.activeLayerIndex);
 
-        const layer = this.klCanvas.getLayer(this.activeLayerIndex);
-        if (!layer) {
-            return;
-        }
+    this.notifyLayersChange();
+    return true;
+  }
 
-        this.klCanvas.layerFill(this.activeLayerIndex, color, undefined, true);
+  mergeAll(): number | false {
+    this.applyUncommitted();
 
+    const result = this.klCanvas.mergeAll();
+    if (result === false) {
+      return false;
     }
 
-    getThumbnail(id: string, options: TLayerThumbnailOptions = {}): Promise<Blob> {
-        const layer = this.klCanvas.getLayerById(id);
-        if (!layer) {
-            throw new Error(`Layer ${id} does not exist`);
-        }
+    this.activeLayerIndex = result;
+    this.onSelectLayer?.(this.activeLayerIndex);
 
-        const sourceCanvas = layer.context.canvas;
-        const {
-            width = 100,
-            height = 100,
-            fitInside = true
-        } = options;
+    this.notifyLayersChange();
+    return result;
+  }
 
-        let thumbnailDimensions;
-        if (fitInside) {
-            thumbnailDimensions = fitInto(
-                sourceCanvas.width,
-                sourceCanvas.height,
-                width,
-                height,
-                1
-            );
-        } else {
-            thumbnailDimensions = { width, height };
-        }
+  fillLayer(color: TRgb): void {
+    this.applyUncommitted();
 
-        // Resize the temporary thumbnail canvas if needed
-        if (this.thumbnailCanvas.width !== thumbnailDimensions.width ||
-            this.thumbnailCanvas.height !== thumbnailDimensions.height) {
-            this.thumbnailCanvas.width = thumbnailDimensions.width;
-            this.thumbnailCanvas.height = thumbnailDimensions.height;
-        }
-
-        const ctx = this.thumbnailCanvas.getContext('2d');
-        if (!ctx) {
-            throw new Error('Failed to get 2D context from thumbnail canvas');
-        }
-
-        ctx.clearRect(0, 0, this.thumbnailCanvas.width, this.thumbnailCanvas.height);
-
-        // Disable smoothing for pixel art when scaling up
-        ctx.imageSmoothingEnabled = this.thumbnailCanvas.width <= sourceCanvas.width;
-        ctx.imageSmoothingQuality = 'high';
-
-        ctx.drawImage(
-            sourceCanvas,
-            0, 0,
-            this.thumbnailCanvas.width,
-            this.thumbnailCanvas.height
-        );
-
-        return canvasToBlob(this.thumbnailCanvas, 'image/png');
+    const layer = this.klCanvas.getLayer(this.activeLayerIndex);
+    if (!layer) {
+      return;
     }
 
-    getState(): THeadlessLayerState {
-        return {
-            activeLayerIndex: this.activeLayerIndex,
-            layers: this.getLayers()
-        };
+    this.klCanvas.layerFill(this.activeLayerIndex, color, undefined, true);
+  }
+
+  getThumbnail(id: string, options: TLayerThumbnailOptions = {}): Promise<Blob> {
+    const layer = this.klCanvas.getLayerById(id);
+    if (!layer) {
+      throw new Error(`Layer ${id} does not exist`);
     }
 
+    const sourceCanvas = layer.context.canvas;
+    const { width = 100, height = 100, fitInside = true } = options;
 
-    canAddLayer(): boolean {
-        return this.getLayerCount() < this.maxNumLayers;
+    let thumbnailDimensions;
+    if (fitInside) {
+      thumbnailDimensions = fitInto(sourceCanvas.width, sourceCanvas.height, width, height, 1);
+    } else {
+      thumbnailDimensions = { width, height };
     }
 
-    canRemoveLayer(): boolean {
-        return this.getLayerCount() > 1;
+    // Resize the temporary thumbnail canvas if needed
+    if (
+      this.thumbnailCanvas.width !== thumbnailDimensions.width ||
+      this.thumbnailCanvas.height !== thumbnailDimensions.height
+    ) {
+      this.thumbnailCanvas.width = thumbnailDimensions.width;
+      this.thumbnailCanvas.height = thumbnailDimensions.height;
     }
 
-    canDuplicateLayer(): boolean {
-        return this.canAddLayer();
+    const ctx = this.thumbnailCanvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2D context from thumbnail canvas');
     }
 
-    canMergeDown(): boolean {
-        const targetIndex = this.activeLayerIndex;
-        return targetIndex > 0;
-    }
+    ctx.clearRect(0, 0, this.thumbnailCanvas.width, this.thumbnailCanvas.height);
 
-    canMergeUp(): boolean {
-        const targetIndex = this.activeLayerIndex;
-        return targetIndex < this.getLayerCount() - 1;
-    }
+    // Disable smoothing for pixel art when scaling up
+    ctx.imageSmoothingEnabled = this.thumbnailCanvas.width <= sourceCanvas.width;
+    ctx.imageSmoothingQuality = 'high';
 
-    canMergeAll(): boolean {
-        return this.getLayerCount() > 1;
-    }
+    ctx.drawImage(sourceCanvas, 0, 0, this.thumbnailCanvas.width, this.thumbnailCanvas.height);
 
-    destroy(): void {
-        if (this.thumbnailCanvas) {
-            freeCanvas(this.thumbnailCanvas);
-        }
+    return canvasToBlob(this.thumbnailCanvas, 'image/png');
+  }
+
+  getState(): THeadlessLayerState {
+    return {
+      activeLayerIndex: this.activeLayerIndex,
+      layers: this.getLayers(),
+    };
+  }
+
+  canAddLayer(): boolean {
+    return this.getLayerCount() < this.maxNumLayers;
+  }
+
+  canRemoveLayer(): boolean {
+    return this.getLayerCount() > 1;
+  }
+
+  canDuplicateLayer(): boolean {
+    return this.canAddLayer();
+  }
+
+  canMergeDown(): boolean {
+    const targetIndex = this.activeLayerIndex;
+    return targetIndex > 0;
+  }
+
+  canMergeUp(): boolean {
+    const targetIndex = this.activeLayerIndex;
+    return targetIndex < this.getLayerCount() - 1;
+  }
+
+  canMergeAll(): boolean {
+    return this.getLayerCount() > 1;
+  }
+
+  destroy(): void {
+    if (this.thumbnailCanvas) {
+      freeCanvas(this.thumbnailCanvas);
     }
+  }
 }

@@ -15,11 +15,11 @@ import { simpleShader } from '../core/simple-shader';
  * @param size    The diameter of a dot in pixels.
  */
 export function colorHalftone(centerX, centerY, angle, size) {
-    gl.colorHalftone =
-        gl.colorHalftone ||
-        new Shader(
-            null,
-            '\
+  gl.colorHalftone =
+    gl.colorHalftone ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform vec2 center;\
         uniform float angle;\
@@ -47,15 +47,15 @@ export function colorHalftone(centerX, centerY, angle, size) {
             gl_FragColor = vec4(1.0 - cmy - k, color.a);\
         }\
     ',
-            'colorHalftone',
-        );
+      'colorHalftone'
+    );
 
-    simpleShader.call(this, gl.colorHalftone, {
-        center: [centerX, centerY],
-        angle: angle,
-        scale: Math.PI / size,
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.colorHalftone, {
+    center: [centerX, centerY],
+    angle: angle,
+    scale: Math.PI / size,
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 }

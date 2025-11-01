@@ -14,19 +14,19 @@ import { simpleShader } from '../core/simple-shader';
  *                 where 0 doesn't change the image and 1 creates a highly blurred image.
  */
 export function zoomBlur(centerX, centerY, strength) {
-    gl.zoomBlur =
-        gl.zoomBlur ||
-        new Shader(
-            null,
-            '\
+  gl.zoomBlur =
+    gl.zoomBlur ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform vec2 center;\
         uniform float strength;\
         uniform vec2 texSize;\
         varying vec2 texCoord;\
         ' +
-                randomShaderFunc +
-                '\
+        randomShaderFunc +
+        '\
         void main() {\
             vec4 color = vec4(0.0);\
             float total = 0.0;\
@@ -53,14 +53,14 @@ export function zoomBlur(centerX, centerY, strength) {
             gl_FragColor.rgb /= gl_FragColor.a + 0.00001;\
         }\
     ',
-            'zoomBlur',
-        );
+      'zoomBlur'
+    );
 
-    simpleShader.call(this, gl.zoomBlur, {
-        center: [centerX, centerY],
-        strength: strength,
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.zoomBlur, {
+    center: [centerX, centerY],
+    strength: strength,
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 }

@@ -9,170 +9,163 @@ import { c } from '../../../bb/base/c';
  * Rectangular buttons.
  */
 export class ColorOptions {
-    private readonly rootEl: HTMLElement;
-    private readonly buttonArr: {
-        el: HTMLElement;
-        setIsSelected: (b: boolean) => void;
-    }[];
-    private readonly colorArr: (TRgba | null)[] = [];
-    private selectedIndex: number = 0;
-    private readonly colorInput: HTMLInputElement;
+  private readonly rootEl: HTMLElement;
+  private readonly buttonArr: {
+    el: HTMLElement;
+    setIsSelected: (b: boolean) => void;
+  }[];
+  private readonly colorArr: (TRgba | null)[] = [];
+  private selectedIndex: number = 0;
+  private readonly colorInput: HTMLInputElement;
 
-    private readonly onColorInputChange: () => void;
+  private readonly onColorInputChange: () => void;
 
-    // ----------------------------------- public -----------------------------------
-    constructor(p: {
-        colorArr: (TRgba | null)[]; // duplicates will be removed
-        onChange: (rgbaObj: TRgba | null) => void;
-        label?: string;
-        initialIndex?: number; // index before duplicates were removed
-        title?: string;
-        css?: Partial<CSSStyleDeclaration>;
-    }) {
-        this.rootEl = BB.el({
-            content: p.label ? p.label : '',
-            title: p.title ?? undefined,
-            css: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: '7px',
-                position: 'relative',
-                ...p.css,
-            },
+  // ----------------------------------- public -----------------------------------
+  constructor(p: {
+    colorArr: (TRgba | null)[]; // duplicates will be removed
+    onChange: (rgbaObj: TRgba | null) => void;
+    label?: string;
+    initialIndex?: number; // index before duplicates were removed
+    title?: string;
+    css?: Partial<CSSStyleDeclaration>;
+  }) {
+    this.rootEl = BB.el({
+      content: p.label ? p.label : '',
+      title: p.title ?? undefined,
+      css: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '7px',
+        position: 'relative',
+        ...p.css,
+      },
+    });
+
+    this.buttonArr = [];
+    const buttonSize = 22;
+
+    this.onColorInputChange = () => {
+      const i = this.selectedIndex;
+      const color = this.colorArr[i];
+      if (!color || color.a < 1) {
+        // ignore
+        return;
+      }
+
+      const newRawColor = this.colorInput.value;
+      this.buttonArr[this.selectedIndex].el.style.backgroundColor = newRawColor;
+      this.colorArr[i] = {
+        ...ColorConverter.hexToRGB(newRawColor)!,
+        a: 1,
+      };
+      p.onChange(this.colorArr[i]);
+    };
+    this.colorInput = BB.el({
+      tagName: 'input',
+      custom: {
+        type: 'color',
+        tabIndex: '-1',
+      },
+    });
+    this.colorInput.onchange = this.onColorInputChange;
+    this.colorInput.oninput = this.onColorInputChange;
+
+    // build colorArr while removing duplicates
+    for (let i = 0; i < p.colorArr.length; i++) {
+      const item = p.colorArr[i];
+      let found = false;
+      for (let e = 0; e < this.colorArr.length; e++) {
+        const sItem = this.colorArr[e];
+        if (sItem === item) {
+          found = true;
+          break;
+        }
+        if (sItem === null || item === null) {
+          continue;
+        }
+        if (sItem.r === item.r && sItem.g === item.g && sItem.b === item.b && sItem.a === item.a) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        continue;
+      }
+      this.colorArr.push(item);
+      if ('initialIndex' in p && p.initialIndex === i) {
+        this.selectedIndex = this.colorArr.length - 1;
+      }
+    }
+
+    for (let i = 0; i < this.colorArr.length; i++) {
+      (i => {
+        const color = this.colorArr[i];
+
+        const colorButton = BB.el({
+          parent: this.rootEl,
+          content: color ? '' : 'X',
+          className: 'kl-color-option',
+          css: {
+            width: buttonSize + 'px',
+            height: buttonSize + 'px',
+            backgroundColor: color ? BB.ColorConverter.toRgbaStr(color) : 'transparent',
+            lineHeight: buttonSize + 1 + 'px',
+          },
+          onClick: e => {
+            if (this.selectedIndex === i) {
+              if (color && color.a === 1) {
+                this.colorInput.showPicker ? this.colorInput.showPicker() : this.colorInput.click();
+              }
+              return;
+            }
+
+            e.preventDefault();
+            this.selectedIndex = i;
+            update();
+            p.onChange(this.colorArr[i]); // color may change
+          },
         });
-
-        this.buttonArr = [];
-        const buttonSize = 22;
-
-        this.onColorInputChange = () => {
-            const i = this.selectedIndex;
-            const color = this.colorArr[i];
-            if (!color || color.a < 1) {
-                // ignore
-                return;
-            }
-
-            const newRawColor = this.colorInput.value;
-            this.buttonArr[this.selectedIndex].el.style.backgroundColor = newRawColor;
-            this.colorArr[i] = {
-                ...ColorConverter.hexToRGB(newRawColor)!,
-                a: 1,
-            };
-            p.onChange(this.colorArr[i]);
-        };
-        this.colorInput = BB.el({
-            tagName: 'input',
-            custom: {
-                type: 'color',
-                tabIndex: '-1',
-            },
-        });
-        this.colorInput.onchange = this.onColorInputChange;
-        this.colorInput.oninput = this.onColorInputChange;
-
-        // build colorArr while removing duplicates
-        for (let i = 0; i < p.colorArr.length; i++) {
-            const item = p.colorArr[i];
-            let found = false;
-            for (let e = 0; e < this.colorArr.length; e++) {
-                const sItem = this.colorArr[e];
-                if (sItem === item) {
-                    found = true;
-                    break;
-                }
-                if (sItem === null || item === null) {
-                    continue;
-                }
-                if (
-                    sItem.r === item.r &&
-                    sItem.g === item.g &&
-                    sItem.b === item.b &&
-                    sItem.a === item.a
-                ) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                continue;
-            }
-            this.colorArr.push(item);
-            if ('initialIndex' in p && p.initialIndex === i) {
-                this.selectedIndex = this.colorArr.length - 1;
-            }
+        if (color && color.a === 0) {
+          colorButton.style.background = 'var(--kl-checkerboard-background)';
         }
 
-        for (let i = 0; i < this.colorArr.length; i++) {
-            ((i) => {
-                const color = this.colorArr[i];
-
-                const colorButton = BB.el({
-                    parent: this.rootEl,
-                    content: color ? '' : 'X',
-                    className: 'kl-color-option',
-                    css: {
-                        width: buttonSize + 'px',
-                        height: buttonSize + 'px',
-                        backgroundColor: color ? BB.ColorConverter.toRgbaStr(color) : 'transparent',
-                        lineHeight: buttonSize + 1 + 'px',
-                    },
-                    onClick: (e) => {
-                        if (this.selectedIndex === i) {
-                            if (color && color.a === 1) {
-                                this.colorInput.showPicker
-                                    ? this.colorInput.showPicker()
-                                    : this.colorInput.click();
-                            }
-                            return;
-                        }
-
-                        e.preventDefault();
-                        this.selectedIndex = i;
-                        update();
-                        p.onChange(this.colorArr[i]); // color may change
-                    },
-                });
-                if (color && color.a === 0) {
-                    colorButton.style.background = 'var(--kl-checkerboard-background)';
-                }
-
-                const setIsSelected = (b: boolean): void => {
-                    colorButton.classList.toggle('kl-color-option--active', b);
-                };
-
-                this.buttonArr.push({
-                    el: colorButton,
-                    setIsSelected,
-                });
-            })(i);
-        }
-
-        this.rootEl.append(c(',w-0,h-0,overflow-hidden,abs-0-0', [this.colorInput]));
-
-        const update = () => {
-            for (let i = 0; i < this.buttonArr.length; i++) {
-                this.buttonArr[i].setIsSelected(i === this.selectedIndex);
-            }
+        const setIsSelected = (b: boolean): void => {
+          colorButton.classList.toggle('kl-color-option--active', b);
         };
-        update();
-    }
 
-    // ---- interface ----
-    getElement(): HTMLElement {
-        return this.rootEl;
-    }
-
-    getValue(): TRgba | null {
-        return this.colorArr[this.selectedIndex];
-    }
-
-    destroy(): void {
-        this.rootEl.remove();
-        this.buttonArr.forEach((item) => {
-            BB.destroyEl(item.el);
+        this.buttonArr.push({
+          el: colorButton,
+          setIsSelected,
         });
-        this.buttonArr.splice(0, this.buttonArr.length);
-        this.colorInput.onchange = null;
-        this.colorInput.oninput = null;
+      })(i);
     }
+
+    this.rootEl.append(c(',w-0,h-0,overflow-hidden,abs-0-0', [this.colorInput]));
+
+    const update = () => {
+      for (let i = 0; i < this.buttonArr.length; i++) {
+        this.buttonArr[i].setIsSelected(i === this.selectedIndex);
+      }
+    };
+    update();
+  }
+
+  // ---- interface ----
+  getElement(): HTMLElement {
+    return this.rootEl;
+  }
+
+  getValue(): TRgba | null {
+    return this.colorArr[this.selectedIndex];
+  }
+
+  destroy(): void {
+    this.rootEl.remove();
+    this.buttonArr.forEach(item => {
+      BB.destroyEl(item.el);
+    });
+    this.buttonArr.splice(0, this.buttonArr.length);
+    this.colorInput.onchange = null;
+    this.colorInput.oninput = null;
+  }
 }

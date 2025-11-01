@@ -2,7 +2,7 @@ import { TPointerEvent } from '../event.types';
 import { copyObj } from '../../base/base';
 
 export type TCoalescedPointerEvent = TPointerEvent & {
-    isCoalesced: boolean;
+  isCoalesced: boolean;
 };
 
 /**
@@ -15,44 +15,42 @@ export type TCoalescedPointerEvent = TPointerEvent & {
  * but how could that even work?
  */
 export class CoalescedExploder {
-    private chainOut: ((e: TCoalescedPointerEvent) => void) | undefined;
+  private chainOut: ((e: TCoalescedPointerEvent) => void) | undefined;
 
-    // ----------------------------------- public -----------------------------------
+  // ----------------------------------- public -----------------------------------
 
-    setChainOut(func: (e: TCoalescedPointerEvent) => void) {
-        this.chainOut = func;
-    }
+  setChainOut(func: (e: TCoalescedPointerEvent) => void) {
+    this.chainOut = func;
+  }
 
-    chainIn(event: TPointerEvent): TPointerEvent | null {
-        if (event.type === 'pointermove') {
-            if (event.coalescedArr && event.coalescedArr.length > 0) {
-                for (let i = 0; i < event.coalescedArr.length; i++) {
-                    const eventCopy: TCoalescedPointerEvent = copyObj(
-                        event,
-                    ) as TCoalescedPointerEvent;
-                    if (i === 0) {
-                        eventCopy.coalescedArr = [];
-                    }
-                    const coalescedItem = event.coalescedArr[i];
+  chainIn(event: TPointerEvent): TPointerEvent | null {
+    if (event.type === 'pointermove') {
+      if (event.coalescedArr && event.coalescedArr.length > 0) {
+        for (let i = 0; i < event.coalescedArr.length; i++) {
+          const eventCopy: TCoalescedPointerEvent = copyObj(event) as TCoalescedPointerEvent;
+          if (i === 0) {
+            eventCopy.coalescedArr = [];
+          }
+          const coalescedItem = event.coalescedArr[i];
 
-                    eventCopy.pageX = coalescedItem.pageX;
-                    eventCopy.pageY = coalescedItem.pageY;
-                    eventCopy.relX = coalescedItem.relX;
-                    eventCopy.relY = coalescedItem.relY;
-                    eventCopy.dX = coalescedItem.dX;
-                    eventCopy.dY = coalescedItem.dY;
-                    eventCopy.time = coalescedItem.time;
-                    eventCopy.isCoalesced = i < event.coalescedArr.length - 1;
+          eventCopy.pageX = coalescedItem.pageX;
+          eventCopy.pageY = coalescedItem.pageY;
+          eventCopy.relX = coalescedItem.relX;
+          eventCopy.relY = coalescedItem.relY;
+          eventCopy.dX = coalescedItem.dX;
+          eventCopy.dY = coalescedItem.dY;
+          eventCopy.time = coalescedItem.time;
+          eventCopy.isCoalesced = i < event.coalescedArr.length - 1;
 
-                    this.chainOut && this.chainOut(eventCopy);
-                }
-            } else {
-                return event;
-            }
-        } else {
-            return event;
+          this.chainOut && this.chainOut(eventCopy);
         }
-
-        return null;
+      } else {
+        return event;
+      }
+    } else {
+      return event;
     }
+
+    return null;
+  }
 }

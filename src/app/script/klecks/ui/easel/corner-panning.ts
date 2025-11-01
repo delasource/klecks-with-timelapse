@@ -3,103 +3,99 @@ import { TPointerEvent } from '../../../bb/input/event.types';
 import { TViewportTransform } from '../project-viewport/project-viewport';
 
 export type TCornerPanningParams = {
-    getEaselSize: () => TSize2D;
-    getTransform: () => TViewportTransform;
-    setTransform: (transform: TViewportTransform) => void;
-    testCanPan: (buttonIsPressed: boolean) => boolean;
-    onRepeatEvent: (e: TPointerEvent) => void;
+  getEaselSize: () => TSize2D;
+  getTransform: () => TViewportTransform;
+  setTransform: (transform: TViewportTransform) => void;
+  testCanPan: (buttonIsPressed: boolean) => boolean;
+  onRepeatEvent: (e: TPointerEvent) => void;
 };
 
 export class CornerPanning {
-    // from params
-    private getEaselSize: () => TSize2D;
-    private readonly getTransform: () => TViewportTransform;
-    private readonly setTransform: (transform: TViewportTransform) => void;
-    private readonly testCanPan: (buttonIsPressed: boolean) => boolean;
-    private readonly onRepeatEvent: (e: TPointerEvent) => void;
+  // from params
+  private getEaselSize: () => TSize2D;
+  private readonly getTransform: () => TViewportTransform;
+  private readonly setTransform: (transform: TViewportTransform) => void;
+  private readonly testCanPan: (buttonIsPressed: boolean) => boolean;
+  private readonly onRepeatEvent: (e: TPointerEvent) => void;
 
-    private readonly thresholdPx = 25;
+  private readonly thresholdPx = 25;
 
-    // state
-    private animationFrameHandle: ReturnType<typeof requestAnimationFrame> | undefined;
-    private lastFrameTimestamp = 0;
-    private cornerDirection: TVector2D | undefined;
-    private repeatEvent: TPointerEvent = {} as TPointerEvent;
+  // state
+  private animationFrameHandle: ReturnType<typeof requestAnimationFrame> | undefined;
+  private lastFrameTimestamp = 0;
+  private cornerDirection: TVector2D | undefined;
+  private repeatEvent: TPointerEvent = {} as TPointerEvent;
 
-    // only call through requestAnimationFrame when animationFrameHandle undefined
-    private movementLoop(): void {
-        if (!this.cornerDirection) {
-            if (this.animationFrameHandle) {
-                cancelAnimationFrame(this.animationFrameHandle);
-            }
-            this.animationFrameHandle = undefined;
-            this.lastFrameTimestamp = 0;
-            return;
-        }
-        this.animationFrameHandle = requestAnimationFrame(() => this.movementLoop());
+  // only call through requestAnimationFrame when animationFrameHandle undefined
+  private movementLoop(): void {
+    if (!this.cornerDirection) {
+      if (this.animationFrameHandle) {
+        cancelAnimationFrame(this.animationFrameHandle);
+      }
+      this.animationFrameHandle = undefined;
+      this.lastFrameTimestamp = 0;
+      return;
+    }
+    this.animationFrameHandle = requestAnimationFrame(() => this.movementLoop());
 
-        const now = performance.now();
-        const deltaMs = now - this.lastFrameTimestamp;
-        const defaultDeltaMs = 1000 / 60;
-        const timeFactor = Math.min(deltaMs / defaultDeltaMs, 10);
-        this.lastFrameTimestamp = now;
+    const now = performance.now();
+    const deltaMs = now - this.lastFrameTimestamp;
+    const defaultDeltaMs = 1000 / 60;
+    const timeFactor = Math.min(deltaMs / defaultDeltaMs, 10);
+    this.lastFrameTimestamp = now;
 
-        const transform = this.getTransform();
-        transform.x += this.cornerDirection.x * timeFactor;
-        transform.y += this.cornerDirection.y * timeFactor;
-        this.setTransform(transform);
-        this.onRepeatEvent(this.repeatEvent);
+    const transform = this.getTransform();
+    transform.x += this.cornerDirection.x * timeFactor;
+    transform.y += this.cornerDirection.y * timeFactor;
+    this.setTransform(transform);
+    this.onRepeatEvent(this.repeatEvent);
+  }
+
+  getSpeed(thresholdDelta: number): number {
+    return Math.min(thresholdDelta, this.thresholdPx) * (2 / 5);
+  }
+
+  // ----------------------------------- public -----------------------------------
+
+  constructor(p: TCornerPanningParams) {
+    this.getEaselSize = p.getEaselSize;
+    this.getTransform = p.getTransform;
+    this.setTransform = p.setTransform;
+    this.testCanPan = p.testCanPan;
+    this.onRepeatEvent = p.onRepeatEvent;
+  }
+
+  onPointer(event: TPointerEvent): void {
+    let isMoving = false;
+    this.cornerDirection = { x: 0, y: 0 };
+
+    if (this.testCanPan(event.button !== undefined) && event.type === 'pointermove') {
+      if (event.relX > this.getEaselSize().width - this.thresholdPx) {
+        this.cornerDirection.x -= this.getSpeed(event.relX - (this.getEaselSize().width - this.thresholdPx));
+        isMoving = true;
+      }
+      if (event.relX < this.thresholdPx) {
+        this.cornerDirection.x += this.getSpeed(this.thresholdPx - event.relX);
+        isMoving = true;
+      }
+      if (event.relY > this.getEaselSize().height - this.thresholdPx) {
+        this.cornerDirection.y -= this.getSpeed(event.relY - (this.getEaselSize().height - this.thresholdPx));
+        isMoving = true;
+      }
+      if (event.relY < this.thresholdPx) {
+        this.cornerDirection.y += this.getSpeed(this.thresholdPx - event.relY);
+        isMoving = true;
+      }
     }
 
-    getSpeed(thresholdDelta: number): number {
-        return Math.min(thresholdDelta, this.thresholdPx) * (2 / 5);
+    if (isMoving) {
+      if (this.lastFrameTimestamp === 0) {
+        this.lastFrameTimestamp = performance.now();
+      }
+      this.repeatEvent = event;
+      this.animationFrameHandle = requestAnimationFrame(() => this.movementLoop());
+    } else {
+      this.cornerDirection = undefined;
     }
-
-    // ----------------------------------- public -----------------------------------
-
-    constructor(p: TCornerPanningParams) {
-        this.getEaselSize = p.getEaselSize;
-        this.getTransform = p.getTransform;
-        this.setTransform = p.setTransform;
-        this.testCanPan = p.testCanPan;
-        this.onRepeatEvent = p.onRepeatEvent;
-    }
-
-    onPointer(event: TPointerEvent): void {
-        let isMoving = false;
-        this.cornerDirection = { x: 0, y: 0 };
-
-        if (this.testCanPan(event.button !== undefined) && event.type === 'pointermove') {
-            if (event.relX > this.getEaselSize().width - this.thresholdPx) {
-                this.cornerDirection.x -= this.getSpeed(
-                    event.relX - (this.getEaselSize().width - this.thresholdPx),
-                );
-                isMoving = true;
-            }
-            if (event.relX < this.thresholdPx) {
-                this.cornerDirection.x += this.getSpeed(this.thresholdPx - event.relX);
-                isMoving = true;
-            }
-            if (event.relY > this.getEaselSize().height - this.thresholdPx) {
-                this.cornerDirection.y -= this.getSpeed(
-                    event.relY - (this.getEaselSize().height - this.thresholdPx),
-                );
-                isMoving = true;
-            }
-            if (event.relY < this.thresholdPx) {
-                this.cornerDirection.y += this.getSpeed(this.thresholdPx - event.relY);
-                isMoving = true;
-            }
-        }
-
-        if (isMoving) {
-            if (this.lastFrameTimestamp === 0) {
-                this.lastFrameTimestamp = performance.now();
-            }
-            this.repeatEvent = event;
-            this.animationFrameHandle = requestAnimationFrame(() => this.movementLoop());
-        } else {
-            this.cornerDirection = undefined;
-        }
-    }
+  }
 }

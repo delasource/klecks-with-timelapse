@@ -1,71 +1,71 @@
 import { TMixMode, TRgb } from '../klecks/kl-types';
 
 export type TLayerInfo = {
-    index: number;
-    id: string;
-    name: string;
-    opacity: number;
-    isVisible: boolean;
-    mixModeStr: TMixMode;
+  index: number;
+  id: string;
+  name: string;
+  opacity: number;
+  isVisible: boolean;
+  mixModeStr: TMixMode;
 };
 
 export type TLayerThumbnailOptions = {
-    width?: number;
-    height?: number;
-    fitInside?: boolean;
+  width?: number;
+  height?: number;
+  fitInside?: boolean;
 };
 
 export interface IHeadlessLayerControllerActions {
-    setLayerVisibility(layerIndex: number, isVisible: boolean): void;
+  setLayerVisibility(layerIndex: number, isVisible: boolean): void;
 
-    setLayerOpacity(layerIndex: number, opacity: number, isTemp?: boolean): void;
+  setLayerOpacity(layerIndex: number, opacity: number, isTemp?: boolean): void;
 
-    setLayerMixMode(layerIndex: number, mixMode: TMixMode): void;
+  setLayerMixMode(layerIndex: number, mixMode: TMixMode): void;
 
-    setLayerName(newName: string): void;
+  setLayerName(newName: string): void;
 
-    addLayer(): boolean;
+  addLayer(): boolean;
 
-    duplicateLayer(): boolean;
+  duplicateLayer(): boolean;
 
-    removeLayer(): boolean;
+  removeLayer(): boolean;
 
-    mergeWithLayerBelow(index?: number): boolean;
+  mergeWithLayerBelow(index?: number): boolean;
 
-    mergeWithLayerAbove(index?: number): boolean;
+  mergeWithLayerAbove(index?: number): boolean;
 
-    mergeAll(): number | false;
+  mergeAll(): number | false;
 
-    clearLayer(): void;
+  clearLayer(): void;
 
-    setActiveLayer(layerIndex: number): void;
+  setActiveLayer(layerIndex: number): void;
 
-    moveLayer(fromIndex: number, toIndex: number): void;
+  moveLayer(fromIndex: number, toIndex: number): void;
 
-    moveLayerUp(): boolean;
+  moveLayerUp(): boolean;
 
-    moveLayerDown(): boolean;
+  moveLayerDown(): boolean;
 
-    fillLayer(color: TRgb): void;
+  fillLayer(color: TRgb): void;
 
-    getState(): THeadlessLayerState;
+  getState(): THeadlessLayerState;
 
-    getThumbnail(id: string, options: TLayerThumbnailOptions): Promise<Blob>;
+  getThumbnail(id: string, options: TLayerThumbnailOptions): Promise<Blob>;
 
-    canAddLayer(): boolean;
+  canAddLayer(): boolean;
 
-    canRemoveLayer(): boolean;
+  canRemoveLayer(): boolean;
 
-    canDuplicateLayer(): boolean;
+  canDuplicateLayer(): boolean;
 
-    canMergeDown(): boolean;
+  canMergeDown(): boolean;
 
-    canMergeUp(): boolean;
+  canMergeUp(): boolean;
 
-    canMergeAll(): boolean;
+  canMergeAll(): boolean;
 }
 
 export type THeadlessLayerState = {
-    layers: TLayerInfo[];
-    activeLayerIndex: number;
-}
+  layers: TLayerInfo[];
+  activeLayerIndex: number;
+};

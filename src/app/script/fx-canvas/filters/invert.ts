@@ -10,11 +10,11 @@ import { TFxCanvas } from '../fx-canvas-types';
 export type TFilterInvert = (this: TFxCanvas) => TFxCanvas;
 
 export const invert: TFilterInvert = function () {
-    gl.invert =
-        gl.invert ||
-        new FxShader(
-            null,
-            '\
+  gl.invert =
+    gl.invert ||
+    new FxShader(
+      null,
+      '\
     uniform sampler2D texture;\
     uniform vec2 texSize;\
     varying vec2 texCoord;\
@@ -25,12 +25,12 @@ export const invert: TFilterInvert = function () {
         gl_FragColor = color;\
     }\
 ',
-            'invert',
-        );
+      'invert'
+    );
 
-    simpleShader.call(this, gl.invert, {
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.invert, {
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 };

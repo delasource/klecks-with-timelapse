@@ -22,446 +22,443 @@ import { TRecordedEvent } from '../../history/kl-event-types';
 const LS_SHOW_SAVE_DIALOG = 'kl-save-dialog';
 
 const createSpacer = (): HTMLElement => {
-    const el = document.createElement('div');
-    const clearer = document.createElement('div');
-    const line = BB.el({
-        className: 'grid-hr',
-    });
-    el.append(clearer, line);
-    css(clearer, {
-        clear: 'both',
-    });
-    return el;
+  const el = document.createElement('div');
+  const clearer = document.createElement('div');
+  const line = BB.el({
+    className: 'grid-hr',
+  });
+  el.append(clearer, line);
+  css(clearer, {
+    clear: 'both',
+  });
+  return el;
 };
 
 const createButtonContent = (text: string, icon: string, noInvert?: boolean): string => {
-    return `<img ${noInvert ? 'class="dark-no-invert"' : ''} src='${icon}' alt='icon' height='20'/>${text}`;
+  return `<img ${noInvert ? 'class="dark-no-invert"' : ''} src='${icon}' alt='icon' height='20'/>${text}`;
 };
 
 export type TFileUiParams = {
-    klRootEl: HTMLElement;
-    projectStore?: ProjectStore;
-    getProject: () => TKlProject;
-    exportType: TExportType;
-    onExportTypeChange: (type: TExportType) => void;
-    onFileSelect: (fileList: FileList, optionStr: TDropOption) => void;
-    onSaveImageToComputer: () => void;
-    onNewImage: () => void;
-    onShareImage: (callback: () => void) => void;
-    onUpload: () => void;
-    applyUncommitted: () => void;
-    onChangeShowSaveDialog: (b: boolean) => void;
-    klRecoveryManager?: KlRecoveryManager;
-    klEventRecorder?: KlEventRecorder;
-    onOpenBrowserStorage: () => void;
-    onStoredToBrowserStorage: () => void;
+  klRootEl: HTMLElement;
+  projectStore?: ProjectStore;
+  getProject: () => TKlProject;
+  exportType: TExportType;
+  onExportTypeChange: (type: TExportType) => void;
+  onFileSelect: (fileList: FileList, optionStr: TDropOption) => void;
+  onSaveImageToComputer: () => void;
+  onNewImage: () => void;
+  onShareImage: (callback: () => void) => void;
+  onUpload: () => void;
+  applyUncommitted: () => void;
+  onChangeShowSaveDialog: (b: boolean) => void;
+  klRecoveryManager?: KlRecoveryManager;
+  klEventRecorder?: KlEventRecorder;
+  onOpenBrowserStorage: () => void;
+  onStoredToBrowserStorage: () => void;
 };
 
 export class FileUi {
-    // from params
-    private exportType: TExportType;
-    private readonly applyUncommitted: () => void;
+  // from params
+  private exportType: TExportType;
+  private readonly applyUncommitted: () => void;
 
-    private readonly rootEl: HTMLDivElement;
-    private importInput: undefined | HTMLInputElement;
-    private browserStorageUi: undefined | BrowserStorageUi;
-    private klRecoveryManager: KlRecoveryManager | undefined;
-    private klEventRecorder: KlEventRecorder | undefined;
-    private recoveryCountBubble: HTMLElement | undefined;
-    private recoveryListener: TKlRecoveryListener = (metas) => {
-        if (!this.recoveryCountBubble) {
-            return;
+  private readonly rootEl: HTMLDivElement;
+  private importInput: undefined | HTMLInputElement;
+  private browserStorageUi: undefined | BrowserStorageUi;
+  private klRecoveryManager: KlRecoveryManager | undefined;
+  private klEventRecorder: KlEventRecorder | undefined;
+  private recoveryCountBubble: HTMLElement | undefined;
+  private recoveryListener: TKlRecoveryListener = metas => {
+    if (!this.recoveryCountBubble) {
+      return;
+    }
+    const count = metas.length;
+    if (count === 0) {
+      this.recoveryCountBubble.style.display = 'none';
+    } else {
+      this.recoveryCountBubble.textContent = '' + count;
+      this.recoveryCountBubble.style.display = 'inline-block';
+    }
+  };
+
+  private recorderTimeTakenInfo: HTMLElement | undefined;
+  private recorderListener = (evnt: TRecordedEvent, timeTaken: number): void => {
+    if (!this.recorderTimeTakenInfo) {
+      return;
+    }
+    const secondsTotal = Math.floor(timeTaken / 1000);
+    const minutesTotal = Math.floor(timeTaken / 60000);
+    const hoursTotal = Math.floor(minutesTotal / 60);
+    const minutesComponent = minutesTotal - hoursTotal * 60;
+    const secondsComponent = secondsTotal - minutesTotal * 60;
+    this.recorderTimeTakenInfo.textContent =
+      LANG('file-time-taken-info') +
+      ` ${hoursTotal > 0 ? `${hoursTotal} h` : ''} ${minutesComponent} min ${secondsComponent} s`;
+  };
+
+  // ----------------------------------- public -----------------------------------
+
+  constructor(p: TFileUiParams) {
+    this.exportType = p.exportType;
+    this.applyUncommitted = p.applyUncommitted;
+
+    this.rootEl = document.createElement('div');
+
+    const asyncCreation = (): void => {
+      // --- hint ---
+      const saveNote = BB.el({
+        className: 'kl-toolspace-note',
+        textContent: LANG('file-no-autosave'),
+        css: {
+          margin: '10px 10px 0 10px',
+        },
+      });
+
+      // --- new, import, save ---
+      const newButton = BB.el({
+        tagName: 'button',
+        className: 'grid-button',
+        content: createButtonContent(LANG('file-new'), newImageImg, true),
+        custom: {
+          tabIndex: '-1',
+        },
+        css: {
+          cssFloat: 'left',
+        },
+        onClick: () => p.onNewImage(),
+      });
+      const importButton = BB.el({
+        tagName: 'button',
+        className: 'grid-button',
+        content: createButtonContent(LANG('file-import'), importImg, true),
+        css: {
+          position: 'relative',
+          cursor: 'pointer',
+          cssFloat: 'left',
+        },
+        custom: {
+          tabIndex: '-1',
+        },
+        onClick: () => this.importInput!.click(),
+      });
+      this.importInput = BB.el({
+        tagName: 'input',
+        css: {
+          display: 'none',
+        },
+        onChange: () => {
+          this.applyUncommitted();
+          this.importInput!.files && p.onFileSelect(this.importInput!.files, 'default');
+          this.importInput!.value = '';
+        },
+        custom: {
+          tabIndex: '-1',
+        },
+      });
+      this.importInput.type = 'file';
+      this.importInput.multiple = true;
+      this.importInput.accept = 'image/*,.psd'; // .psd needed for chrome, although it's image/vnd.adobe.photoshop
+      const saveButton = BB.el({
+        tagName: 'button',
+        className: 'grid-button grid-button--filter',
+        content: createButtonContent(LANG('file-save'), exportImg),
+        custom: {
+          tabIndex: '-1',
+        },
+        css: {
+          cssFloat: 'left',
+          flex: '1 0 0',
+          margin: '0',
+        },
+        onClick: () => p.onSaveImageToComputer(),
+      });
+      const canShowSaveDialog = 'showSaveFilePicker' in window;
+      const showSaveDialogRaw = LocalStorage.getItem(LS_SHOW_SAVE_DIALOG);
+      const initialShowSaveDialog = showSaveDialogRaw === null ? false : showSaveDialogRaw === 'true';
+      const saveDialogCheckbox = new Checkbox({
+        init: initialShowSaveDialog,
+        label: LANG('file-show-save-dialog'),
+        callback: value => {
+          if (value) {
+            LocalStorage.setItem(LS_SHOW_SAVE_DIALOG, 'true');
+          } else {
+            LocalStorage.removeItem(LS_SHOW_SAVE_DIALOG); // default is false
+          }
+          p.onChangeShowSaveDialog(value);
+        },
+        css: {
+          maxWidth: 'fit-content',
+        },
+        name: 'show-save-dialog',
+      });
+      p.onChangeShowSaveDialog(initialShowSaveDialog);
+
+      // export filetype dropdown
+      const exportTypeSelect = new KL.Select({
+        optionArr: [
+          ['png', 'PNG'],
+          ['psd', 'PSD'],
+          ['layers', LANG('layers') + ' (PNG)'],
+        ],
+        initValue: this.exportType,
+        onChange: val => {
+          this.exportType = val as TExportType;
+          p.onExportTypeChange(this.exportType);
+          p.onSaveImageToComputer();
+        },
+        title: LANG('file-format'),
+        name: 'export-type',
+      });
+      css(exportTypeSelect.getElement(), {
+        height: '30px',
+        width: 'calc(50% - 10px)',
+        flex: '1 0 0',
+      });
+
+      // --- browser storage ---
+      let browserStorageFallbackEl: HTMLElement | undefined;
+      if (p.projectStore) {
+        this.browserStorageUi = new BrowserStorageUi({
+          projectStore: p.projectStore,
+          getProject: p.getProject,
+          klRootEl: p.klRootEl,
+          applyUncommitted: this.applyUncommitted,
+          onOpen: p.onOpenBrowserStorage,
+          onStored: () => p.onStoredToBrowserStorage(),
+        });
+        css(this.browserStorageUi.getElement(), {
+          margin: '10px',
+        });
+      } else {
+        const header = new BrowserStorageHeaderUi();
+        browserStorageFallbackEl = BB.el({
+          content: [
+            header.getElement(),
+            BB.el({
+              content: '🔴 ' + LANG('file-storage-cant-access'),
+              css: {
+                marginTop: '10px',
+              },
+            }),
+          ],
+          css: {
+            margin: '10px 10px 0 10px',
+          },
+        });
+      }
+
+      const saveRow = BB.el({
+        content: [
+          BB.el({
+            content: [saveButton, exportTypeSelect.getElement()],
+            css: {
+              display: 'flex',
+              gap: '10px',
+            },
+          }),
+          ...(canShowSaveDialog ? [saveDialogCheckbox.getElement()] : []),
+        ],
+        css: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          margin: '10px 10px 0 10px',
+        },
+      });
+
+      // --- recovery ---
+      this.klRecoveryManager = p.klRecoveryManager;
+      const recoveryWrapper = BB.el({});
+      this.recoveryCountBubble = BB.el({
+        className: (classes as any).recoveryBubble,
+      });
+
+      const recoveryBrowserButton = BB.el({
+        tagName: 'button',
+        content: [LANG('tab-recovery-recover-tabs'), this.recoveryCountBubble],
+        onClick: () => showRecoveryManagerPanel(this.klRecoveryManager),
+        custom: {
+          tabIndex: '-1',
+        },
+        css: {
+          margin: '10px 0 0 10px',
+          width: 'calc(100% - 20px)',
+        },
+      });
+
+      recoveryWrapper.append(recoveryBrowserButton, createSpacer());
+
+      (async () => {
+        if (!this.klRecoveryManager) {
+          return;
         }
-        const count = metas.length;
-        if (count === 0) {
-            this.recoveryCountBubble.style.display = 'none';
-        } else {
-            this.recoveryCountBubble.textContent = '' + count;
-            this.recoveryCountBubble.style.display = 'inline-block';
-        }
+        this.klRecoveryManager.subscribe(this.recoveryListener);
+        await this.klRecoveryManager.update();
+        this.klRecoveryManager.unsubscribe(this.recoveryListener);
+      })();
+
+      // --- upload, share ---
+      const shareButton = BB.el({
+        tagName: 'button',
+        className: 'grid-button',
+        content: createButtonContent(LANG('file-share'), shareImg),
+        custom: {
+          tabIndex: '-1',
+        },
+        css: {
+          cssFloat: 'left',
+        },
+        onClick: () => {
+          shareButton.disabled = true;
+          p.onShareImage(() => {
+            shareButton.disabled = false;
+          });
+        },
+      });
+      const uploadImgurButton = BB.el({
+        tagName: 'button',
+        className: 'grid-button',
+        content: createButtonContent(LANG('file-upload'), uploadImg),
+        custom: {
+          tabIndex: '-1',
+        },
+        css: {
+          cssFloat: 'left',
+        },
+        onClick: () => {
+          p.onUpload();
+        },
+      });
+
+      // --- time taken info and timelapse-replay button ---
+      this.klEventRecorder = p.klEventRecorder;
+      const recorderWrapper = BB.el({});
+
+      if (this.klEventRecorder === undefined) {
+        const infoText = BB.el({
+          tagName: 'p',
+          textContent: LANG('file-recorder-disabled-info'),
+          css: {
+            margin: '10px 10px 0 10px',
+          },
+        });
+        recorderWrapper.append(infoText);
+      } else {
+        // Subscribe to changes to the "time taken"
+        this.klEventRecorder.subscribe(this.recorderListener);
+
+        this.recorderTimeTakenInfo = BB.el({
+          tagName: 'p',
+          textContent: LANG('file-time-taken-info') + ' 0 min',
+          css: {
+            margin: '10px 10px 0 10px',
+          },
+        });
+
+        const replayTimelapseButton = BB.el({
+          tagName: 'button',
+          content: LANG('file-replay-timelapse'),
+          onClick: async () => {
+            // Start replay with custom timing
+            const startTime = performance.now();
+            if (!this.klEventRecorder) return;
+
+            // TODO add a modal to adjust fps and time (and maybe webm export)
+
+            await this.klEventRecorder?.loadFromStorage({
+              targetFps: 25,
+              replayTimeInMs: 4500, // 5 seconds total timelapse
+              onFrame: async (index, total) => {
+                console.log(`onFrame. Progress: ${index}/${total}`);
+                // Here you can take a snapshot of canvas and render a video
+              },
+            });
+            console.log('Replay completed. Took ' + (performance.now() - startTime) + ' ms');
+          },
+          custom: {
+            tabIndex: '-1',
+          },
+          css: {
+            margin: '10px 0 0 10px',
+            width: 'calc(100% - 20px)',
+          },
+        });
+
+        recorderWrapper.append(this.recorderTimeTakenInfo, replayTimelapseButton);
+
+        const replayClearButton = BB.el({
+          tagName: 'button',
+          content: LANG('file-replay-clear'),
+          onClick: async () => {
+            if (!this.klEventRecorder) return;
+
+            // ask to be sure
+            if (!confirm(LANG('file-replay-clear-confirm'))) {
+              return;
+            }
+
+            await this.klEventRecorder?.clearEvents();
+            // Clear canvas (aka reload)
+            window.location.reload();
+            console.log('Recorded events cleared');
+          },
+          custom: {
+            tabIndex: '-1',
+          },
+          css: {
+            margin: '10px 0 0 10px',
+            width: 'calc(100% - 20px)',
+          },
+        });
+
+        recorderWrapper.append(this.recorderTimeTakenInfo, replayClearButton);
+      }
+
+      // --- assemble ---
+      BB.append(this.rootEl, [
+        saveNote,
+        newButton,
+        importButton,
+        BB.el({ css: { clear: 'both' } }),
+        saveRow,
+        createSpacer(),
+        this.browserStorageUi?.getElement(),
+        browserStorageFallbackEl,
+        createSpacer(),
+        recoveryWrapper,
+        uploadImgurButton,
+        BB.canShareFiles() ? shareButton : undefined,
+        createSpacer(),
+        recorderWrapper,
+        BB.el({ css: { clear: 'both' } }),
+      ]);
     };
 
-    private recorderTimeTakenInfo: HTMLElement | undefined;
-    private recorderListener = (evnt: TRecordedEvent, timeTaken: number): void => {
-        if (!this.recorderTimeTakenInfo) {
-            return;
-        }
-        const secondsTotal = Math.floor(timeTaken / 1000);
-        const minutesTotal = Math.floor(timeTaken / 60000);
-        const hoursTotal = Math.floor(minutesTotal / 60);
-        const minutesComponent = minutesTotal - hoursTotal * 60;
-        const secondsComponent = secondsTotal - minutesTotal * 60;
-        this.recorderTimeTakenInfo.textContent =
-            LANG('file-time-taken-info') + ` ${hoursTotal > 0 ? `${hoursTotal} h` : ''} ${minutesComponent} min ${secondsComponent} s`;
+    setTimeout(asyncCreation, 1);
+  }
 
-    };
+  refresh(): void {}
 
-    // ----------------------------------- public -----------------------------------
+  getElement(): HTMLElement {
+    return this.rootEl;
+  }
 
-    constructor(p: TFileUiParams) {
-        this.exportType = p.exportType;
-        this.applyUncommitted = p.applyUncommitted;
-
-        this.rootEl = document.createElement('div');
-
-        const asyncCreation = (): void => {
-            // --- hint ---
-            const saveNote = BB.el({
-                className: 'kl-toolspace-note',
-                textContent: LANG('file-no-autosave'),
-                css: {
-                    margin: '10px 10px 0 10px',
-                },
-            });
-
-            // --- new, import, save ---
-            const newButton = BB.el({
-                tagName: 'button',
-                className: 'grid-button',
-                content: createButtonContent(LANG('file-new'), newImageImg, true),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    cssFloat: 'left',
-                },
-                onClick: () => p.onNewImage(),
-            });
-            const importButton = BB.el({
-                tagName: 'button',
-                className: 'grid-button',
-                content: createButtonContent(LANG('file-import'), importImg, true),
-                css: {
-                    position: 'relative',
-                    cursor: 'pointer',
-                    cssFloat: 'left',
-                },
-                custom: {
-                    tabIndex: '-1',
-                },
-                onClick: () => this.importInput!.click(),
-            });
-            this.importInput = BB.el({
-                tagName: 'input',
-                css: {
-                    display: 'none',
-                },
-                onChange: () => {
-                    this.applyUncommitted();
-                    this.importInput!.files && p.onFileSelect(this.importInput!.files, 'default');
-                    this.importInput!.value = '';
-                },
-                custom: {
-                    tabIndex: '-1',
-                },
-            });
-            this.importInput.type = 'file';
-            this.importInput.multiple = true;
-            this.importInput.accept = 'image/*,.psd'; // .psd needed for chrome, although it's image/vnd.adobe.photoshop
-            const saveButton = BB.el({
-                tagName: 'button',
-                className: 'grid-button grid-button--filter',
-                content: createButtonContent(LANG('file-save'), exportImg),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    cssFloat: 'left',
-                    flex: '1 0 0',
-                    margin: '0',
-                },
-                onClick: () => p.onSaveImageToComputer(),
-            });
-            const canShowSaveDialog = 'showSaveFilePicker' in window;
-            const showSaveDialogRaw = LocalStorage.getItem(LS_SHOW_SAVE_DIALOG);
-            const initialShowSaveDialog =
-                showSaveDialogRaw === null ? false : showSaveDialogRaw === 'true';
-            const saveDialogCheckbox = new Checkbox({
-                init: initialShowSaveDialog,
-                label: LANG('file-show-save-dialog'),
-                callback: (value) => {
-                    if (value) {
-                        LocalStorage.setItem(LS_SHOW_SAVE_DIALOG, 'true');
-                    } else {
-                        LocalStorage.removeItem(LS_SHOW_SAVE_DIALOG); // default is false
-                    }
-                    p.onChangeShowSaveDialog(value);
-                },
-                css: {
-                    maxWidth: 'fit-content',
-                },
-                name: 'show-save-dialog',
-            });
-            p.onChangeShowSaveDialog(initialShowSaveDialog);
-
-            // export filetype dropdown
-            const exportTypeSelect = new KL.Select({
-                optionArr: [
-                    ['png', 'PNG'],
-                    ['psd', 'PSD'],
-                    ['layers', LANG('layers') + ' (PNG)'],
-                ],
-                initValue: this.exportType,
-                onChange: (val) => {
-                    this.exportType = val as TExportType;
-                    p.onExportTypeChange(this.exportType);
-                    p.onSaveImageToComputer();
-                },
-                title: LANG('file-format'),
-                name: 'export-type',
-            });
-            css(exportTypeSelect.getElement(), {
-                height: '30px',
-                width: 'calc(50% - 10px)',
-                flex: '1 0 0',
-            });
-
-            // --- browser storage ---
-            let browserStorageFallbackEl: HTMLElement | undefined;
-            if (p.projectStore) {
-                this.browserStorageUi = new BrowserStorageUi({
-                    projectStore: p.projectStore,
-                    getProject: p.getProject,
-                    klRootEl: p.klRootEl,
-                    applyUncommitted: this.applyUncommitted,
-                    onOpen: p.onOpenBrowserStorage,
-                    onStored: () => p.onStoredToBrowserStorage(),
-                });
-                css(this.browserStorageUi.getElement(), {
-                    margin: '10px',
-                });
-            } else {
-                const header = new BrowserStorageHeaderUi();
-                browserStorageFallbackEl = BB.el({
-                    content: [
-                        header.getElement(),
-                        BB.el({
-                            content: '🔴 ' + LANG('file-storage-cant-access'),
-                            css: {
-                                marginTop: '10px',
-                            },
-                        }),
-                    ],
-                    css: {
-                        margin: '10px 10px 0 10px',
-                    },
-                });
-            }
-
-            const saveRow = BB.el({
-                content: [
-                    BB.el({
-                        content: [saveButton, exportTypeSelect.getElement()],
-                        css: {
-                            display: 'flex',
-                            gap: '10px',
-                        },
-                    }),
-                    ...(canShowSaveDialog ? [saveDialogCheckbox.getElement()] : []),
-                ],
-                css: {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    margin: '10px 10px 0 10px',
-                },
-            });
-
-            // --- recovery ---
-            this.klRecoveryManager = p.klRecoveryManager;
-            const recoveryWrapper = BB.el({});
-            this.recoveryCountBubble = BB.el({
-                className: (classes as any).recoveryBubble,
-            });
-
-            const recoveryBrowserButton = BB.el({
-                tagName: 'button',
-                content: [LANG('tab-recovery-recover-tabs'), this.recoveryCountBubble],
-                onClick: () => showRecoveryManagerPanel(this.klRecoveryManager),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    margin: '10px 0 0 10px',
-                    width: 'calc(100% - 20px)',
-                },
-            });
-
-            recoveryWrapper.append(recoveryBrowserButton, createSpacer());
-
-            (async () => {
-                if (!this.klRecoveryManager) {
-                    return;
-                }
-                this.klRecoveryManager.subscribe(this.recoveryListener);
-                await this.klRecoveryManager.update();
-                this.klRecoveryManager.unsubscribe(this.recoveryListener);
-            })();
-
-            // --- upload, share ---
-            const shareButton = BB.el({
-                tagName: 'button',
-                className: 'grid-button',
-                content: createButtonContent(LANG('file-share'), shareImg),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    cssFloat: 'left',
-                },
-                onClick: () => {
-                    shareButton.disabled = true;
-                    p.onShareImage(() => {
-                        shareButton.disabled = false;
-                    });
-                },
-            });
-            const uploadImgurButton = BB.el({
-                tagName: 'button',
-                className: 'grid-button',
-                content: createButtonContent(LANG('file-upload'), uploadImg),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    cssFloat: 'left',
-                },
-                onClick: () => {
-                    p.onUpload();
-                },
-            });
-
-            // --- time taken info and timelapse-replay button ---
-            this.klEventRecorder = p.klEventRecorder;
-            const recorderWrapper = BB.el({});
-
-            if (this.klEventRecorder === undefined) {
-                const infoText = BB.el({
-                    tagName: 'p',
-                    textContent: LANG('file-recorder-disabled-info'),
-                    css: {
-                        margin: '10px 10px 0 10px',
-                    },
-                });
-                recorderWrapper.append(infoText);
-            } else {
-                // Subscribe to changes to the "time taken"
-                this.klEventRecorder.subscribe(this.recorderListener);
-
-                this.recorderTimeTakenInfo = BB.el({
-                    tagName: 'p',
-                    textContent: LANG('file-time-taken-info') + ' 0 min',
-                    css: {
-                        margin: '10px 10px 0 10px',
-                    },
-                });
-
-                const replayTimelapseButton = BB.el({
-                    tagName: 'button',
-                    content: LANG('file-replay-timelapse'),
-                    onClick: async () => {
-                        // Start replay with custom timing
-                        const startTime = performance.now();
-                        if (!this.klEventRecorder)
-                            return;
-
-                        // TODO add a modal to adjust fps and time (and maybe webm export)
-
-                        await this.klEventRecorder?.loadFromStorage({
-                            targetFps: 25,
-                            replayTimeInMs: 4500, // 5 seconds total timelapse
-                            onFrame: async (index, total) => {
-                                console.log(`onFrame. Progress: ${index}/${total}`);
-                                // Here you can take a snapshot of canvas and render a video
-                            },
-                        });
-                        console.log('Replay completed. Took ' + (performance.now() - startTime) + ' ms');
-                    },
-                    custom: {
-                        tabIndex: '-1',
-                    },
-                    css: {
-                        margin: '10px 0 0 10px',
-                        width: 'calc(100% - 20px)',
-                    },
-                });
-
-                recorderWrapper.append(this.recorderTimeTakenInfo, replayTimelapseButton);
-
-                const replayClearButton = BB.el({
-                    tagName: 'button',
-                    content: LANG('file-replay-clear'),
-                    onClick: async () => {
-                        if (!this.klEventRecorder)
-                            return;
-
-                        // ask to be sure
-                        if (!confirm(LANG('file-replay-clear-confirm'))) {
-                            return;
-                        }
-
-                        await this.klEventRecorder?.clearEvents();
-                        // Clear canvas (aka reload)
-                        window.location.reload();
-                        console.log('Recorded events cleared');
-                    },
-                    custom: {
-                        tabIndex: '-1',
-                    },
-                    css: {
-                        margin: '10px 0 0 10px',
-                        width: 'calc(100% - 20px)',
-                    },
-                });
-
-                recorderWrapper.append(this.recorderTimeTakenInfo, replayClearButton);
-            }
-
-            // --- assemble ---
-            BB.append(this.rootEl, [
-                saveNote,
-                newButton,
-                importButton,
-                BB.el({ css: { clear: 'both' } }),
-                saveRow,
-                createSpacer(),
-                this.browserStorageUi?.getElement(),
-                browserStorageFallbackEl,
-                createSpacer(),
-                recoveryWrapper,
-                uploadImgurButton,
-                BB.canShareFiles() ? shareButton : undefined,
-                createSpacer(),
-                recorderWrapper,
-                BB.el({ css: { clear: 'both' } }),
-            ]);
-        };
-
-        setTimeout(asyncCreation, 1);
+  setIsVisible(isVisible: boolean): void {
+    if (isVisible) {
+      this.refresh();
+      this.browserStorageUi?.show();
+      if (this.klRecoveryManager) {
+        this.klRecoveryManager.subscribe(this.recoveryListener);
+        this.klRecoveryManager.update();
+      }
+    } else {
+      if (this.klRecoveryManager) {
+        this.klRecoveryManager.unsubscribe(this.recoveryListener);
+      }
     }
+  }
 
-    refresh(): void {}
-
-    getElement(): HTMLElement {
-        return this.rootEl;
-    }
-
-    setIsVisible(isVisible: boolean): void {
-        if (isVisible) {
-            this.refresh();
-            this.browserStorageUi?.show();
-            if (this.klRecoveryManager) {
-                this.klRecoveryManager.subscribe(this.recoveryListener);
-                this.klRecoveryManager.update();
-            }
-        } else {
-            if (this.klRecoveryManager) {
-                this.klRecoveryManager.unsubscribe(this.recoveryListener);
-            }
-        }
-    }
-
-    triggerImport(): void {
-        this.importInput && this.importInput.click();
-    }
+  triggerImport(): void {
+    this.importInput && this.importInput.click();
+  }
 }

@@ -5,24 +5,16 @@ import { canvasBounds } from '../../bb/base/canvas';
 import { MultiPolygon } from 'polygon-clipping';
 
 // returns bounds of selection, where layer is not empty (transparent)
-export function getSelectionBounds(
-    selection: MultiPolygon,
-    context: CanvasRenderingContext2D,
-): TRect | undefined {
-    const selectionBounds = getMultiPolyBounds(selection);
-    // integer bounds that are within the canvas
-    const canvasSelectionBounds = intBoundsWithinArea(
-        selectionBounds,
-        context.canvas.width,
-        context.canvas.height,
-        true,
-    );
+export function getSelectionBounds(selection: MultiPolygon, context: CanvasRenderingContext2D): TRect | undefined {
+  const selectionBounds = getMultiPolyBounds(selection);
+  // integer bounds that are within the canvas
+  const canvasSelectionBounds = intBoundsWithinArea(selectionBounds, context.canvas.width, context.canvas.height, true);
 
-    // selection area outside of canvas
-    if (!canvasSelectionBounds) {
-        return undefined;
-    }
+  // selection area outside of canvas
+  if (!canvasSelectionBounds) {
+    return undefined;
+  }
 
-    // bounds of where pixels are non-transparent
-    return canvasBounds(context, canvasSelectionBounds);
+  // bounds of where pixels are non-transparent
+  return canvasBounds(context, canvasSelectionBounds);
 }

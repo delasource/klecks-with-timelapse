@@ -10,27 +10,27 @@ import { TFxCanvas, TWrappedTexture } from '../fx-canvas-types';
  * @param originalTexture original/unfiltered image. undefined -> empty original
  */
 export type TFilterMask = (
-    this: TFxCanvas,
-    maskTexture: TWrappedTexture,
-    originalTexture?: TWrappedTexture,
+  this: TFxCanvas,
+  maskTexture: TWrappedTexture,
+  originalTexture?: TWrappedTexture
 ) => TFxCanvas;
 
 export const mask: TFilterMask = function (maskTexture, originalTexture) {
-    maskTexture._.use(1);
+  maskTexture._.use(1);
 
-    if (originalTexture) {
-        originalTexture._.use(2);
-    } else {
-        // should be faster than introducing a conditional in the shader
-        this._.extraTexture.use(2);
-        this._.extraTexture.initFromBytes(1, 1, [0, 0, 0, 0]);
-    }
+  if (originalTexture) {
+    originalTexture._.use(2);
+  } else {
+    // should be faster than introducing a conditional in the shader
+    this._.extraTexture.use(2);
+    this._.extraTexture.initFromBytes(1, 1, [0, 0, 0, 0]);
+  }
 
-    gl.mask =
-        gl.mask ||
-        new FxShader(
-            null,
-            `
+  gl.mask =
+    gl.mask ||
+    new FxShader(
+      null,
+      `
         uniform sampler2D texture;
         uniform sampler2D mask;
         uniform sampler2D original;
@@ -43,15 +43,15 @@ export const mask: TFilterMask = function (maskTexture, originalTexture) {
             gl_FragColor = mix(originalCol, filteredCol, maskStrength);
         }
         `,
-            'mask',
-        );
+      'mask'
+    );
 
-    gl.mask.textures({
-        mask: 1,
-        original: 2,
-    });
+  gl.mask.textures({
+    mask: 1,
+    original: 2,
+  });
 
-    simpleShader.call(this, gl.mask, {});
+  simpleShader.call(this, gl.mask, {});
 
-    return this;
+  return this;
 };

@@ -12,17 +12,17 @@ import { simpleShader } from '../core/simple-shader';
  * @param radius The radius of the effect in pixels.
  */
 export function edgeWork(radius) {
-    gl.edgeWork1 =
-        gl.edgeWork1 ||
-        new Shader(
-            null,
-            '\
+  gl.edgeWork1 =
+    gl.edgeWork1 ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform vec2 delta;\
         varying vec2 texCoord;\
         ' +
-                randomShaderFunc +
-                '\
+        randomShaderFunc +
+        '\
         void main() {\
             vec2 color = vec2(0.0);\
             vec2 total = vec2(0.0);\
@@ -46,19 +46,19 @@ export function edgeWork(radius) {
             gl_FragColor = vec4(color / total, 0.0, 1.0);\
         }\
     ',
-            'edgeWork1',
-        );
-    gl.edgeWork2 =
-        gl.edgeWork2 ||
-        new Shader(
-            null,
-            '\
+      'edgeWork1'
+    );
+  gl.edgeWork2 =
+    gl.edgeWork2 ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform vec2 delta;\
         varying vec2 texCoord;\
         ' +
-                randomShaderFunc +
-                '\
+        randomShaderFunc +
+        '\
         void main() {\
             vec2 color = vec2(0.0);\
             vec2 total = vec2(0.0);\
@@ -82,15 +82,15 @@ export function edgeWork(radius) {
             gl_FragColor = vec4(c, c, c, 1.0);\
         }\
     ',
-            'edgeWork2',
-        );
+      'edgeWork2'
+    );
 
-    simpleShader.call(this, gl.edgeWork1, {
-        delta: [radius / this.width, 0],
-    });
-    simpleShader.call(this, gl.edgeWork2, {
-        delta: [0, radius / this.height],
-    });
+  simpleShader.call(this, gl.edgeWork1, {
+    delta: [radius / this.width, 0],
+  });
+  simpleShader.call(this, gl.edgeWork2, {
+    delta: [0, radius / this.height],
+  });
 
-    return this;
+  return this;
 }

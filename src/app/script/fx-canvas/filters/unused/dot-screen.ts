@@ -14,11 +14,11 @@ import { simpleShader } from '../core/simple-shader';
  * @param size    The diameter of a dot in pixels.
  */
 export function dotScreen(centerX, centerY, angle, size) {
-    gl.dotScreen =
-        gl.dotScreen ||
-        new Shader(
-            null,
-            '\
+  gl.dotScreen =
+    gl.dotScreen ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform vec2 center;\
         uniform float angle;\
@@ -42,15 +42,15 @@ export function dotScreen(centerX, centerY, angle, size) {
             gl_FragColor = vec4(vec3(average * 10.0 - 5.0 + pattern()), color.a);\
         }\
     ',
-            'dotScreen',
-        );
+      'dotScreen'
+    );
 
-    simpleShader.call(this, gl.dotScreen, {
-        center: [centerX, centerY],
-        angle: angle,
-        scale: Math.PI / size,
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.dotScreen, {
+    center: [centerX, centerY],
+    angle: angle,
+    scale: Math.PI / size,
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 }

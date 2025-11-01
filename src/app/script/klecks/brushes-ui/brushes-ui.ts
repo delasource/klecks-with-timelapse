@@ -14,13 +14,13 @@ import { TBrushUi } from '../kl-types';
  */
 
 export const BRUSHES_UI: {
-    [key: string]: TBrushUi<any>;
+  [key: string]: TBrushUi<any>;
 } = {
-    penBrush: penBrushUi,
-    blendBrush: blendBrushUi,
-    sketchyBrush: sketchyBrushUi,
-    pixelBrush: pixelBrushUi,
-    chemyBrush: chemyBrushUi,
-    smudgeBrush: smudgeBrushUi,
-    eraserBrush: eraserBrushUi,
+  penBrush: penBrushUi,
+  blendBrush: blendBrushUi,
+  sketchyBrush: sketchyBrushUi,
+  pixelBrush: pixelBrushUi,
+  chemyBrush: chemyBrushUi,
+  smudgeBrush: smudgeBrushUi,
+  eraserBrush: eraserBrushUi,
 };

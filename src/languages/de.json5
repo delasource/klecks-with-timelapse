@@ -2,1804 +2,1804 @@
   'switch-ui-left-right': {
     hint: 'Button that switches layout from left to right, to accommodate left handed & right handed visitors.',
     original: 'Switch left/right UI',
-    value: 'Werkzeuge links / rechts'
+    value: 'Werkzeuge links / rechts',
   },
   'toggle-show-tools': {
     hint: 'Button that hides/shows the toolbar.',
     original: 'Show/Hide Tools',
-    value: 'Werkzeuge Anzeigen/Verbergen'
+    value: 'Werkzeuge Anzeigen/Verbergen',
   },
   scroll: {
     hint: 'Verb. As in scrolling a page.',
     original: 'Scroll',
-    value: 'Scroll'
+    value: 'Scroll',
   },
   donate: {
     original: 'Donate',
-    value: 'Spenden'
+    value: 'Spenden',
   },
   home: {
     hint: 'button with logo, top left of tools',
     original: 'Home',
-    value: 'Home'
+    value: 'Home',
   },
   'modal-new-tab': {
     hint: 'as in browser tab',
     original: 'Open in new tab',
-    value: 'In neuem Tab öffnen'
+    value: 'In neuem Tab öffnen',
   },
   'tab-edit': {
     hint: 'label for a tab that offer filters for making color adjustments, cropping, transforming, etc.',
     original: 'Edit',
-    value: 'Edit'
+    value: 'Edit',
   },
   'tab-file': {
     hint: 'label for a tab that lets user save the image, import, upload, etc.',
     original: 'File',
-    value: 'Datei'
+    value: 'Datei',
   },
   'tool-brush': {
     hint: 'tool that lets user paint (like in ms paint or photoshop)',
     original: 'Brush',
-    value: 'Pinsel'
+    value: 'Pinsel',
   },
   'tool-paint-bucket': {
     original: 'Paint Bucket',
-    value: 'Füllwerkzeug'
+    value: 'Füllwerkzeug',
   },
   'tool-gradient': {
     original: 'Gradient',
-    value: 'Verlauf'
+    value: 'Verlauf',
   },
   'tool-shape': {
     hint: 'Tool for drawing rectangles, circles, lines',
     original: 'Shape',
-    value: 'Form-Werkzeug'
+    value: 'Form-Werkzeug',
   },
   'tool-text': {
     hint: 'Tool for placing text on canvas',
     original: 'Text',
-    value: 'Text-Werkzeug'
+    value: 'Text-Werkzeug',
   },
   'tool-hand': {
     hint: 'Tool for navigating (or scrolling around) the canvas. Same name in Photoshop.',
     original: 'Hand Tool',
-    value: 'Hand-Werkzeug'
+    value: 'Hand-Werkzeug',
   },
   'tool-select': {
     original: 'Select Tool',
-    value: 'Auswahl-Werkzeug'
+    value: 'Auswahl-Werkzeug',
   },
   'tool-zoom': {
     original: 'Zoom',
-    value: 'Zoom-Werkzeug'
+    value: 'Zoom-Werkzeug',
   },
   'tool-more-tools': {
     hint: 'when hovering the caret on the tool button',
     original: 'More Tools',
-    value: 'Mehr Werkzeuge'
+    value: 'Mehr Werkzeuge',
   },
   'tool-more-tools-click-again': {
     original: 'Click again for more tools',
-    value: 'Klicke erneut für mehr Werkzeuge'
+    value: 'Klicke erneut für mehr Werkzeuge',
   },
   undo: {
     original: 'Undo',
-    value: 'Rückgängig'
+    value: 'Rückgängig',
   },
   redo: {
     original: 'Redo',
-    value: 'Wiederherstellen'
+    value: 'Wiederherstellen',
   },
   'brush-pen': {
     hint: 'Generic "brush" that feels a bit like a pen or marker, as opposed to a paint brush.',
     original: 'Pen',
-    value: 'Stift'
+    value: 'Stift',
   },
   'brush-blend': {
     hint: 'brush with watercolor feel. Makes colors blend/bleed into each other. Different from smudging though.',
     original: 'Blend',
-    value: 'Mischpinsel'
+    value: 'Mischpinsel',
   },
   'brush-sketchy': {
     hint: 'Made up brush name. Pictures drawn with this brush often look like sketches.',
     original: 'Sketchy',
-    value: 'Skizzierer'
+    value: 'Skizzierer',
   },
   'brush-pixel': {
     original: 'Pixel',
-    value: 'Pixel'
+    value: 'Pixel',
   },
   'brush-chemy': {
     hint: 'Made up brush name, derived from drawing applications "Webchemy" and "Alchemy"',
     original: 'Chemy',
-    value: 'Chemy'
+    value: 'Chemy',
   },
   'brush-smudge': {
     hint: 'Common brush/tool in image editing software. Smudges colors around canvas.',
     original: 'Smudge',
-    value: 'Wischfinger'
+    value: 'Wischfinger',
   },
   'brush-size': {
     original: 'Size',
-    value: 'Größe'
+    value: 'Größe',
   },
   'brush-blending': {
     hint: 'Wetness. How much colors will bleed into each other.',
     original: 'Blending',
-    value: 'Mischung'
+    value: 'Mischung',
   },
   'brush-toggle-pressure': {
     hint: 'google "pressure sensitivity". Feature of Wacom tablets, Apple Pencil, XP Pen, etc.',
     original: 'Toggle Pressure Sensitivity',
-    value: 'Drucksensitivität an/aus'
+    value: 'Drucksensitivität an/aus',
   },
   'brush-pen-circle': {
     hint: 'as in circle shape',
     original: 'Circle',
-    value: 'Kreis'
+    value: 'Kreis',
   },
   'brush-pen-chalk': {
     hint: 'as in chalk texture',
     original: 'Chalk',
-    value: 'Kreide'
+    value: 'Kreide',
   },
   'brush-pen-calligraphy': {
     hint: 'like a "chisel tip marker"',
     original: 'Calligraphy',
-    value: 'Kalligraphie'
+    value: 'Kalligraphie',
   },
   'brush-pen-square': {
     hint: 'as in square shape',
     original: 'Square',
-    value: 'Quadrat'
+    value: 'Quadrat',
   },
   'brush-sketchy-scale': {
     hint: 'How far the connecting lines of sketchy brush can reach.',
     original: 'Scale',
-    value: 'Ausmaß'
+    value: 'Ausmaß',
   },
   'brush-pixel-dither': {
     hint: 'Dithering/halftone pattern',
     original: 'Dither',
-    value: 'Dither'
+    value: 'Dither',
   },
   'brush-chemy-fill': {
     hint: 'Like in MS Paint. A shape can have be outlined, and filled.',
     original: 'Fill',
-    value: 'Füllen'
+    value: 'Füllen',
   },
   'brush-chemy-stroke': {
     original: 'Stroke',
-    value: 'Linie'
+    value: 'Linie',
   },
   'brush-chemy-mirror-x': {
     original: 'Horizontal Symmetry',
-    value: 'Horizontale Symmetrie'
+    value: 'Horizontale Symmetrie',
   },
   'brush-chemy-mirror-y': {
     original: 'Vertical Symmetry',
-    value: 'Vertikale Symmetrie'
+    value: 'Vertikale Symmetrie',
   },
   'brush-chemy-gradient': {
     hint: 'as in color gradient',
     original: 'Gradient',
-    value: 'Verlauf'
+    value: 'Verlauf',
   },
   'brush-eraser-transparent-bg': {
     hint: 'as in transparent background/bottom layer',
     original: 'Transparent Background',
-    value: 'Transparenter Hintergrund'
+    value: 'Transparenter Hintergrund',
   },
   stabilizer: {
     hint: 'Common feature in drawing software to make lines smoother',
     original: 'Stabilizer',
-    value: 'Stabilisierer'
+    value: 'Stabilisierer',
   },
   'stabilizer-title': {
     hint: '-title keys are usually more verbose description. shown as a tooltip.',
     original: 'Stroke Stabilizer',
-    value: 'Linien-Stabilisierer'
+    value: 'Linien-Stabilisierer',
   },
   eyedropper: {
     original: 'Eyedropper',
-    value: 'Pipette'
+    value: 'Pipette',
   },
   'secondary-color': {
     hint: 'or sometimes called "background" color. Photoshop, MS Paint, etc. allow user to switch between two colors.',
     original: 'Secondary Color',
-    value: 'Sekundäre Farbe'
+    value: 'Sekundäre Farbe',
   },
   'manual-color-input': {
     hint: 'A dialog where users can manually type the color, each channel a number. "mci" keys all related to this dialog.',
     original: 'Manual Color Input',
-    value: 'Manuelle Farbeingabe'
+    value: 'Manuelle Farbeingabe',
   },
   'mci-hex': {
     hint: 'as in hex code. Hex representation of color. „#f00“ → red',
     original: 'Hex',
-    value: 'Hex'
+    value: 'Hex',
   },
   'mci-copy': {
     hint: 'verb',
     original: 'Copy',
-    value: 'Kopieren'
+    value: 'Kopieren',
   },
   'modal-ok': {
     hint: 'main confirmation button in dialogs. Can be to confirm an action, not just acknowledge information.',
     original: 'Ok',
-    value: 'Ok'
+    value: 'Ok',
   },
   'modal-cancel': {
     original: 'Cancel',
-    value: 'Abbrechen'
+    value: 'Abbrechen',
   },
   'modal-close': {
     hint: 'as in close a dialog box',
     original: 'Close',
-    value: 'Schließen'
+    value: 'Schließen',
   },
   'layers-active-layer': {
     hint: 'currently selected layer that user is drawing on',
     original: 'Active Layer',
-    value: 'Aktive Ebene'
+    value: 'Aktive Ebene',
   },
   'layers-layer': {
     original: 'Layer',
-    value: 'Ebene'
+    value: 'Ebene',
   },
   'layers-copy': {
     hint: 'noun',
     original: 'copy',
-    value: 'Kopie'
+    value: 'Kopie',
   },
   'layers-blending': {
     hint: 'Common feature in image editing & drawing software. All layers-blend- keys relate to this. https://en.wikipedia.org/wiki/Blend_modes',
     original: 'Blending',
-    value: 'Modus'
+    value: 'Modus',
   },
   'layers-new': {
     hint: 'action',
     original: 'New Layer',
-    value: 'Neue Ebene'
+    value: 'Neue Ebene',
   },
   'layers-remove': {
     hint: 'action',
     original: 'Remove Layer',
-    value: 'Ebene löschen'
+    value: 'Ebene löschen',
   },
   'layers-duplicate': {
     hint: 'action',
     original: 'Duplicate Layer',
-    value: 'Ebene duplizieren'
+    value: 'Ebene duplizieren',
   },
   'layers-merge': {
     hint: 'action',
     original: 'Merge with layer below',
-    value: 'Auf untere Ebene reduzieren'
+    value: 'Auf untere Ebene reduzieren',
   },
   'layers-clear': {
     hint: 'to make a layer empty',
     original: 'Clear layer',
-    value: 'Ebene leeren'
+    value: 'Ebene leeren',
   },
   'layers-merge-all': {
     original: 'Merge all',
-    value: 'Alle Ebenen vereinen'
+    value: 'Alle Ebenen vereinen',
   },
   'layers-rename': {
     hint: 'action',
     original: 'Rename',
-    value: 'Umbenennen'
+    value: 'Umbenennen',
   },
   'layers-active-layer-visible': {
     original: 'Active layer is visible',
-    value: 'Aktive Ebene ist eingeblendet'
+    value: 'Aktive Ebene ist eingeblendet',
   },
   'layers-active-layer-hidden': {
     original: 'Active layer is hidden',
-    value: 'Aktive Ebene ist ausgeblendet'
+    value: 'Aktive Ebene ist ausgeblendet',
   },
   'layers-visibility-toggle': {
     original: 'Layer Visibility',
-    value: 'Ebenensichtbarkeit'
+    value: 'Ebenensichtbarkeit',
   },
   'layers-blend-normal': {
     original: 'normal',
-    value: 'Normal'
+    value: 'Normal',
   },
   'layers-blend-darken': {
     original: 'darken',
-    value: 'Abdunkeln'
+    value: 'Abdunkeln',
   },
   'layers-blend-multiply': {
     original: 'multiply',
-    value: 'Multiplizieren'
+    value: 'Multiplizieren',
   },
   'layers-blend-color-burn': {
     original: 'color burn',
-    value: 'Farbig nachbel.'
+    value: 'Farbig nachbel.',
   },
   'layers-blend-lighten': {
     original: 'lighten',
-    value: 'Aufhellen'
+    value: 'Aufhellen',
   },
   'layers-blend-screen': {
     original: 'screen',
-    value: 'Negativ multipl.'
+    value: 'Negativ multipl.',
   },
   'layers-blend-color-dodge': {
     original: 'color dodge',
-    value: 'Farbig abwedeln'
+    value: 'Farbig abwedeln',
   },
   'layers-blend-overlay': {
     original: 'overlay',
-    value: 'Überlagern'
+    value: 'Überlagern',
   },
   'layers-blend-soft-light': {
     original: 'soft light',
-    value: 'Weiches Licht'
+    value: 'Weiches Licht',
   },
   'layers-blend-hard-light': {
     original: 'hard light',
-    value: 'Hartes Licht'
+    value: 'Hartes Licht',
   },
   'layers-blend-difference': {
     original: 'difference',
-    value: 'Differenz'
+    value: 'Differenz',
   },
   'layers-blend-exclusion': {
     original: 'exclusion',
-    value: 'Ausschluss'
+    value: 'Ausschluss',
   },
   'layers-blend-hue': {
     original: 'hue',
-    value: 'Farbton'
+    value: 'Farbton',
   },
   'layers-blend-saturation': {
     original: 'saturation',
-    value: 'Sättigung'
+    value: 'Sättigung',
   },
   'layers-blend-color': {
     original: 'color',
-    value: 'Farbe'
+    value: 'Farbe',
   },
   'layers-blend-luminosity': {
     original: 'luminosity',
-    value: 'Luminanz'
+    value: 'Luminanz',
   },
   'layers-rename-title': {
     hint: '-title in code usually means it shows up in a tooltip, or it’s the header of a dialog box, so it can be a little bit longer.',
     original: 'Rename Layer',
-    value: 'Ebene umbenennen'
+    value: 'Ebene umbenennen',
   },
   'layers-rename-name': {
     hint: 'noun',
     original: 'Name',
-    value: 'Name'
+    value: 'Name',
   },
   'layers-rename-clear': {
     hint: 'aka action of deleting entered name',
     original: 'Clear Name',
-    value: 'Namen leeren'
+    value: 'Namen leeren',
   },
   'layers-rename-sketch': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Sketch',
-    value: 'Skizze'
+    value: 'Skizze',
   },
   'layers-rename-colors': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Colors',
-    value: 'Farben'
+    value: 'Farben',
   },
   'layers-rename-shading': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Shading',
-    value: 'Beleuchtung'
+    value: 'Beleuchtung',
   },
   'layers-rename-lines': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Lines',
-    value: 'Linien'
+    value: 'Linien',
   },
   'layers-rename-effects': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Effects',
-    value: 'Effekte'
+    value: 'Effekte',
   },
   'layers-rename-foreground': {
     hint: 'noun. Name suggestion for a layer',
     original: 'Foreground',
-    value: 'Vordergrund'
+    value: 'Vordergrund',
   },
   'layers-merge-modal-title': {
     original: 'Merge/Mix Layers',
-    value: 'Ebene Reduzieren'
+    value: 'Ebene Reduzieren',
   },
   'layers-merge-description': {
     hint: 'After ":" a list of mix/blend modes is shown.',
     original: 'Merges the selected layer with the one underneath. Select the mix mode:',
-    value: 'Reduziert gewählte Ebene auf die darunter liegende. Wähle den Mischmodus:'
+    value: 'Reduziert gewählte Ebene auf die darunter liegende. Wähle den Mischmodus:',
   },
   'file-no-autosave': {
     hint: "let user know they can't autosave, and there's no cloud storage. Keep short so fits on one line",
     original: 'No autosave, no cloud storage',
-    value: 'Kein Autosave & Cloud-Speicher'
+    value: 'Kein Autosave & Cloud-Speicher',
   },
   'file-new': {
     hint: 'action',
     original: 'New',
-    value: 'Neu'
+    value: 'Neu',
   },
   'file-import': {
     hint: 'action',
     original: 'Import',
-    value: 'Öffnen'
+    value: 'Öffnen',
   },
   'file-save': {
     hint: 'action',
     original: 'Save',
-    value: 'Speichern'
+    value: 'Speichern',
   },
   'file-format': {
     original: 'File Format',
-    value: 'Dateiformat'
+    value: 'Dateiformat',
   },
   'file-show-save-dialog': {
     hint: 'setting for showing/not showing a dialog where user picks folder and filename',
     original: 'Show save dialog',
-    value: 'Zeige Speicherdialog'
+    value: 'Zeige Speicherdialog',
   },
   'file-copy': {
     hint: 'verb',
     original: 'Copy',
-    value: 'Kopieren'
+    value: 'Kopieren',
   },
   'file-copy-title': {
     original: 'Copy To Clipboard',
-    value: 'Kopieren in Zwischenablage'
+    value: 'Kopieren in Zwischenablage',
   },
   'file-paste': {
     original: 'Paste',
-    value: 'Einfügen'
+    value: 'Einfügen',
   },
   'file-share': {
     hint: 'Common feature on phones. Pressing share button allows to send data to a different app, e.g. as a text message to someone.',
     original: 'Share',
-    value: 'Teilen'
+    value: 'Teilen',
   },
   'file-storage': {
     hint: 'Made up term. Allows users to store drawing in the browser. (not synced across devices)',
     original: 'Browser Storage',
-    value: 'Browser-Speicher'
+    value: 'Browser-Speicher',
   },
   'file-storage-about': {
     hint: 'link to Browser Storage help/user manual',
     original: 'About Browser Storage',
-    value: 'Über Browser-Speicher'
+    value: 'Über Browser-Speicher',
   },
   'file-storage-cant-access': {
     hint: 'an error. Can’t access the storage.',
     original: "Can't access storage.",
-    value: 'Kein Zugriff auf Speicher.'
+    value: 'Kein Zugriff auf Speicher.',
   },
   'file-storage-empty': {
     hint: 'nothing stored',
     original: 'Empty',
-    value: 'Leer'
+    value: 'Leer',
   },
   'file-storage-store': {
     hint: 'verb',
     original: 'Store',
-    value: 'Speichern'
+    value: 'Speichern',
   },
   'file-storage-open': {
     hint: 'verb. to open, or to load',
     original: 'Open',
-    value: 'Öffnen'
+    value: 'Öffnen',
   },
   'file-storage-open-confirmation': {
     original: 'This image is already open in another tab. Open it here too?',
-    value: 'Dieses Bild is bereits in einem anderen Tab geöffnet. Erneut öffnen?'
+    value: 'Dieses Bild is bereits in einem anderen Tab geöffnet. Erneut öffnen?',
   },
   'file-storage-open-failed': {
     original: 'Failed to load.',
-    value: 'Öffnen fehlgeschlagen.'
+    value: 'Öffnen fehlgeschlagen.',
   },
   'file-storage-clear': {
     original: 'Clear',
-    value: 'Leeren'
+    value: 'Leeren',
   },
   'file-storage-clear-prompt': {
     original: 'Clear Browser Storage? Clearing can not be undone.',
-    value: 'Browser-Speicher leeren? Löschen kann nicht rückgängig gemacht werden.'
+    value: 'Browser-Speicher leeren? Löschen kann nicht rückgängig gemacht werden.',
   },
   'file-storage-storing': {
     hint: 'while it is in the process of storing',
     original: 'Storing',
-    value: 'Speichert'
+    value: 'Speichert',
   },
   'file-storage-overwrite': {
     hint: 'overwrite what is already stored',
     original: 'Overwrite',
-    value: 'Überschreiben'
+    value: 'Überschreiben',
   },
   'file-storage-overwrite-confirm': {
     original: 'Overwrite Browser Storage? Overwritten data will be permanently deleted.',
-    value: 'Browser-Speicher überschreiben? Überschriebene Daten werden endgültig gelöscht.'
+    value: 'Browser-Speicher überschreiben? Überschriebene Daten werden endgültig gelöscht.',
   },
   'file-storage-min-ago': {
     hint: "{x} <- needs to stay, it's a placeholder.",
     original: '{x}min ago',
-    value: 'vor {x} Min'
+    value: 'vor {x} Min',
   },
   'file-storage-hours-ago': {
     original: '{x}h ago',
-    value: 'vor {x} h'
+    value: 'vor {x} h',
   },
   'file-storage-days-ago': {
     original: '{x}d ago',
-    value: 'vor {x} T'
+    value: 'vor {x} T',
   },
   'file-storage-month-ago': {
     original: '> 1month ago',
-    value: 'vor >1 Monat'
+    value: 'vor >1 Monat',
   },
   'file-storage-restored': {
     original: 'Restored from Browser Storage',
-    value: 'Wiederhergestellt (Browser-Speicher)'
+    value: 'Wiederhergestellt (Browser-Speicher)',
   },
   'file-storage-stored': {
     original: 'Stored to Browser Storage',
-    value: 'Gespeichert (Browser-Speicher)'
+    value: 'Gespeichert (Browser-Speicher)',
   },
   'file-storage-failed': {
     original: 'Failed to store to Browser Storage',
-    value: 'Speichern fehlgeschlagen (Browser-Speicher)'
+    value: 'Speichern fehlgeschlagen (Browser-Speicher)',
   },
   'file-storage-failed-1': {
     original: 'Failed to store. Possible causes:',
-    value: 'Speichern fehlgeschlagen. Mögliche Gründe:'
+    value: 'Speichern fehlgeschlagen. Mögliche Gründe:',
   },
   'file-storage-failed-2': {
     original: 'Out of disk space',
-    value: 'Ungenügend Speicherplatz vorhanden'
+    value: 'Ungenügend Speicherplatz vorhanden',
   },
   'file-storage-failed-3': {
     original: 'Storage disabled in incognito tab',
-    value: 'Speicher deaktiviert in Inkognito-Tab'
+    value: 'Speicher deaktiviert in Inkognito-Tab',
   },
   'file-storage-failed-4': {
     hint: 'as in: unsupported feature',
     original: "Browser doesn't support storage",
-    value: 'Browser unterstützt Speicher nicht'
+    value: 'Browser unterstützt Speicher nicht',
   },
   'file-storage-failed-clear': {
     original: 'Failed to clear.',
-    value: 'Leeren fehlgeschlagen.'
+    value: 'Leeren fehlgeschlagen.',
   },
   'file-upload': {
     hint: 'verb',
     original: 'Upload',
-    value: 'Hochladen'
+    value: 'Hochladen',
   },
   'file-time-taken-info': {
     hint: 'show the time drawing in this project',
     original: 'Total time taken:',
-    value: 'Gesamtzeit:'
+    value: 'Gesamtzeit:',
   },
   'file-recorder-disabled-info': {
     hint: 'state information, that recording is disabled',
     original: 'Aufzeichnung deaktiviert',
-    value: 'Aufzeichnung ausgeschaltet'
+    value: 'Aufzeichnung ausgeschaltet',
   },
   'file-replay-timelapse': {
     hint: 'verb',
     original: 'Zeitraffer abspielen',
-    value: 'Zeitraffer abspielen'
+    value: 'Zeitraffer abspielen',
   },
-  "file-replay-clear": {
+  'file-replay-clear': {
     hint: 'verb',
-    value: 'Zeitraffer-Aufnahme leeren'
+    value: 'Zeitraffer-Aufnahme leeren',
   },
-  "file-replay-clear-confirm": {
+  'file-replay-clear-confirm': {
     hint: 'confirm',
-    value: 'Bist du sicher, dass du die Zeitraffer-Aufnahme löschen möchtest? Dies kann nicht rückgängig gemacht werden.'
+    value: 'Bist du sicher, dass du die Zeitraffer-Aufnahme löschen möchtest? Dies kann nicht rückgängig gemacht werden.',
   },
   'tab-recovery-recover-tabs': {
     hint: 'allows user to recover browser tabs (including the drawing) of this app.',
     original: 'Recover closed tabs',
-    value: 'Tabs wiederherstellen'
+    value: 'Tabs wiederherstellen',
   },
   'tab-recovery-explanation': {
     original: 'Recovery data is only kept for a little while. Save to ensure your work is not lost.',
-    value: 'Wiederherstellungsdaten bleiben nur kurz erhalten. Speichere, um den Verlust deiner Arbeit zu vermeiden.'
+    value: 'Wiederherstellungsdaten bleiben nur kurz erhalten. Speichere, um den Verlust deiner Arbeit zu vermeiden.',
   },
   'tab-recovery-total-quota-label': {
     original: 'Total:',
-    value: 'Gesamt:'
+    value: 'Gesamt:',
   },
   'tab-recovery-empty': {
     original: 'Nothing to recover.',
-    value: 'Nichts zum Wiederherstellen.'
+    value: 'Nichts zum Wiederherstellen.',
   },
   'tab-recovery-recover': {
     original: 'Recover',
-    value: 'Wiederherstellen'
+    value: 'Wiederherstellen',
   },
   'tab-recovery-delete': {
     original: 'Delete',
-    value: 'Löschen'
+    value: 'Löschen',
   },
   'tab-recovery-delete-confirmation': {
     original: 'Delete this recovery? Deletion can not be undone.',
-    value: 'Diese Wiederherstellung löschen? Das Löschen kann nicht rückgängig gemacht werden.'
+    value: 'Diese Wiederherstellung löschen? Das Löschen kann nicht rückgängig gemacht werden.',
   },
   'tab-recovery-failed-to-recover': {
     original: 'Failed to recover tab.',
-    value: 'Tab konnte nicht wiederhergestellt werden.'
+    value: 'Tab konnte nicht wiederhergestellt werden.',
   },
   'tab-recovery-recovered': {
     original: 'Tab recovered.',
-    value: 'Tab wiederhergestellt.'
+    value: 'Tab wiederhergestellt.',
   },
   'cleared-layer': {
     hint: 'the layer has been cleared. It is now empty',
     original: 'Cleared layer',
-    value: 'Ebene geleert'
+    value: 'Ebene geleert',
   },
   'cleared-selected-area': {
     original: 'Cleared selected area',
-    value: 'Ausgewählte Fläche geleert'
+    value: 'Ausgewählte Fläche geleert',
   },
   filled: {
     hint: 'layer got filled with a color',
     original: 'Filled',
-    value: 'Ebene gefüllt'
+    value: 'Ebene gefüllt',
   },
   'filled-selected-area': {
     original: 'Filled selection',
-    value: 'Auswahl gefüllt'
+    value: 'Auswahl gefüllt',
   },
   'new-title': {
     original: 'New Image',
-    value: 'Neues Bild'
+    value: 'Neues Bild',
   },
   'new-current': {
     hint: 'as in "reuse the current image resolution"',
     original: 'Current',
-    value: 'Aktuell'
+    value: 'Aktuell',
   },
   'new-fit': {
     hint: 'make dimensions of image fit your window size',
     original: 'Fit',
-    value: 'Passen'
+    value: 'Passen',
   },
   'new-oversize': {
     hint: 'like oversized clothes.',
     original: 'Oversize',
-    value: 'Übergroß'
+    value: 'Übergroß',
   },
   'new-square': {
     hint: 'square image format',
     original: 'Square',
-    value: 'Quadrat'
+    value: 'Quadrat',
   },
   'new-landscape': {
     hint: 'https://en.wikipedia.org/wiki/Page_orientation',
     original: 'Landscape',
-    value: 'Querformat'
+    value: 'Querformat',
   },
   'new-portrait': {
     original: 'Portrait',
-    value: 'Hochformat'
+    value: 'Hochformat',
   },
   'new-screen': {
     hint: 'resolution of computer screen',
     original: 'Screen',
-    value: 'Bildschirm'
+    value: 'Bildschirm',
   },
   'new-video': {
     hint: 'dimensions of a video (usually 16:9)',
     original: 'Video',
-    value: 'Video'
+    value: 'Video',
   },
   'new-din-paper': {
     hint: 'https://en.wikipedia.org/wiki/Paper_size',
     original: 'DIN Paper',
-    value: 'DIN Papier'
+    value: 'DIN Papier',
   },
   'new-px': {
     hint: 'abbreviation of pixel',
     original: 'px',
-    value: 'Px'
+    value: 'Px',
   },
   'new-ratio': {
     hint: 'aspect ratio',
     original: 'Ratio',
-    value: 'Verhältnis'
+    value: 'Verhältnis',
   },
   'upload-title': {
     hint: '"Imgur" is a website name.',
     original: 'Upload to Imgur',
-    value: 'Hochladen auf Imgur'
+    value: 'Hochladen auf Imgur',
   },
   'upload-link-notice': {
     hint: 'Explaining to user even though their upload is unlisted, they should be careful who they share the link with. No password protection.',
     original: 'Anyone with the link to your uploaded image will be able to view it.',
-    value: 'Jeder, der den Link zu Deinem hochgeladenen Bild hat, kann es sehen.'
+    value: 'Jeder, der den Link zu Deinem hochgeladenen Bild hat, kann es sehen.',
   },
   'upload-name': {
     hint: 'noun',
     original: 'Title',
-    value: 'Titel'
+    value: 'Titel',
   },
   'upload-title-untitled': {
     original: 'Untitled',
-    value: 'Ohne Titel'
+    value: 'Ohne Titel',
   },
   'upload-caption': {
     hint: 'as in image caption / description',
     original: 'Caption',
-    value: 'Beschreibung'
+    value: 'Beschreibung',
   },
   'upload-submit': {
     hint: 'verb',
     original: 'Upload',
-    value: 'Hochladen'
+    value: 'Hochladen',
   },
   'upload-uploading': {
     hint: 'in the process of uploading',
     original: 'Uploading...',
-    value: 'Läd hoch...'
+    value: 'Läd hoch...',
   },
   'upload-success': {
     original: 'Upload Successful',
-    value: 'Erfolgreich Hochgeladen'
+    value: 'Erfolgreich Hochgeladen',
   },
   'upload-failed': {
     original: 'Upload failed.',
-    value: 'Hochladen fehlgeschlagen.'
+    value: 'Hochladen fehlgeschlagen.',
   },
   'upload-delete': {
     original: 'To delete your image from Imgur visit:',
-    value: 'Um dein Bild zu löschen öffne folgenden Link:'
+    value: 'Um dein Bild zu löschen öffne folgenden Link:',
   },
   'cropcopy-title-copy': {
     original: 'Copy To Clipboard',
-    value: 'Kopieren in Zwischenablage'
+    value: 'Kopieren in Zwischenablage',
   },
   'cropcopy-title-crop': {
     hint: 'Cropping is a common feature in image editing.',
     original: 'Crop',
-    value: 'zuschneiden'
+    value: 'zuschneiden',
   },
   'cropcopy-mask': {
     original: 'Mask unselected',
-    value: 'Maskiere außerhalb der Auswahl'
+    value: 'Maskiere außerhalb der Auswahl',
   },
   'cropcopy-click-hold': {
     original: 'Right-click or press hold to copy.',
-    value: 'Rechtsklick oder gedrückt halten für kopieren.'
+    value: 'Rechtsklick oder gedrückt halten für kopieren.',
   },
   'cropcopy-btn-copy': {
     hint: 'confirmation button. Should be short.',
     original: 'To Clipboard',
-    value: 'In Zwischenablage'
+    value: 'In Zwischenablage',
   },
   'cropcopy-copied': {
     original: 'Copied.',
-    value: 'Kopiert.'
+    value: 'Kopiert.',
   },
   'cropcopy-btn-crop': {
     hint: 'confirmation button. Should be short.',
     original: 'Apply Crop',
-    value: 'Zuschneiden'
+    value: 'Zuschneiden',
   },
   'crop-drag-to-crop': {
     hint: 'drag the mouse to adjust cropping',
     original: 'Drag to crop',
-    value: 'Ziehen um zuzuschneiden'
+    value: 'Ziehen um zuzuschneiden',
   },
   'filter-crop-extend': {
     original: 'Crop/Extend',
-    value: 'Arbeitsfläche'
+    value: 'Arbeitsfläche',
   },
   'filter-flip': {
     original: 'Flip',
-    value: 'Spiegeln'
+    value: 'Spiegeln',
   },
   'filter-perspective': {
     hint: 'perspective transformation',
     original: 'Perspective',
-    value: 'Perspektive'
+    value: 'Perspektive',
   },
   'filter-resize': {
     original: 'Resize',
-    value: 'Skalieren'
+    value: 'Skalieren',
   },
   'filter-rotate': {
     original: 'Rotate',
-    value: 'Drehen'
+    value: 'Drehen',
   },
   'filter-transform': {
     hint: 'more generic transformation. Commonly known as "free transform"',
     original: 'Transform',
-    value: 'Transformier.'
+    value: 'Transformier.',
   },
   'filter-bright-contrast': {
     hint: 'brightness contrast',
     original: 'Bright/Contrast',
-    value: 'Hell/Kontrast'
+    value: 'Hell/Kontrast',
   },
   'filter-curves': {
     hint: 'color curves',
     original: 'Curves',
-    value: 'Kurven'
+    value: 'Kurven',
   },
   'filter-hue-sat': {
     original: 'Hue/Saturation',
-    value: 'Farbe/Sättig'
+    value: 'Farbe/Sättig',
   },
   'filter-invert': {
     hint: 'invert the colors',
     original: 'Invert',
-    value: 'Umkehren'
+    value: 'Umkehren',
   },
   'filter-tilt-shift': {
     hint: 'or just depth-of-field. https://en.wikipedia.org/wiki/Tilt%E2%80%93shift_photography',
     original: 'Tilt Shift',
-    value: 'Tilt Shift'
+    value: 'Tilt Shift',
   },
   'filter-to-alpha': {
     hint: 'feature that can isolate line drawings if it is a black and white image.',
     original: 'To Alpha',
-    value: 'Zu Alpha'
+    value: 'Zu Alpha',
   },
   'filter-triangle-blur': {
     hint: 'or just blur',
     original: 'Triangle Blur',
-    value: 'Weichzeichnen'
+    value: 'Weichzeichnen',
   },
   'filter-unsharp-mask': {
     hint: 'or just sharpen, https://en.wikipedia.org/wiki/Unsharp_masking',
     original: 'Unsharp Mask',
-    value: 'Unscharf mask'
+    value: 'Unscharf mask',
   },
   'filter-crop-title': {
     hint: 'same as the button, but can be longer',
     original: 'Crop / Extend',
-    value: 'Arbeitsfläche'
+    value: 'Arbeitsfläche',
   },
   'filter-crop-description': {
     hint: 'descriptions explain the "filter" a tiny bit. Most importantly it says if it’s applied to a single layer, or the entire image (all layer)',
     original: 'Crop or extend the image.',
-    value: 'Schneidet das Bild zu oder erweitert es.'
+    value: 'Schneidet das Bild zu oder erweitert es.',
   },
   'filter-crop-left': {
     original: 'Left',
-    value: 'Links'
+    value: 'Links',
   },
   'filter-crop-right': {
     original: 'Right',
-    value: 'Rechts'
+    value: 'Rechts',
   },
   'filter-crop-top': {
     original: 'Top',
-    value: 'Oben'
+    value: 'Oben',
   },
   'filter-crop-bottom': {
     original: 'Bottom',
-    value: 'Unten'
+    value: 'Unten',
   },
   'filter-crop-rule-thirds': {
     hint: 'https://en.wikipedia.org/wiki/Rule_of_thirds',
     original: 'Rule of Thirds',
-    value: 'Drittel-Regel'
+    value: 'Drittel-Regel',
   },
   'filter-crop-fill': {
     hint: 'If image gets extended, what color to fill that new area with',
     original: 'Fill',
-    value: 'Füllung'
+    value: 'Füllung',
   },
   'filter-flip-title': {
     hint: 'same as the button, but can be longer',
     original: 'Flip',
-    value: 'Spiegeln'
+    value: 'Spiegeln',
   },
   'filter-flip-description': {
     original: 'Flips layer or whole image.',
-    value: 'Spiegelt Ebene oder gesamtes Bild.'
+    value: 'Spiegelt Ebene oder gesamtes Bild.',
   },
   'filter-flip-horizontal': {
     original: 'Horizontal',
-    value: 'Horizontal'
+    value: 'Horizontal',
   },
   'filter-flip-vertical': {
     original: 'Vertical',
-    value: 'Vertikal'
+    value: 'Vertikal',
   },
   'filter-flip-image': {
     original: 'Flip Image',
-    value: 'Bild'
+    value: 'Bild',
   },
   'filter-flip-layer': {
     original: 'Flip Layer',
-    value: 'Ebene'
+    value: 'Ebene',
   },
   'filter-perspective-title': {
     hint: 'same as the button, but can be longer',
     original: 'Perspective',
-    value: 'Perspektive'
+    value: 'Perspektive',
   },
   'filter-perspective-description': {
     original: 'Transforms the selected layer.',
-    value: 'Transformiert die gewählte Ebene.'
+    value: 'Transformiert die gewählte Ebene.',
   },
   'filter-resize-title': {
     hint: 'same as the button, but can be longer',
     original: 'Resize',
-    value: 'Skalieren'
+    value: 'Skalieren',
   },
   'filter-resize-description': {
     original: 'Resizes the image.',
-    value: 'Ändert die Größe des Bildes.'
+    value: 'Ändert die Größe des Bildes.',
   },
   'filter-rotate-title': {
     hint: 'same as the button, but can be longer',
     original: 'Rotate',
-    value: 'Drehen'
+    value: 'Drehen',
   },
   'filter-rotate-description': {
     original: 'Rotates the image.',
-    value: 'Dreht das Bild.'
+    value: 'Dreht das Bild.',
   },
   'filter-transform-empty': {
     hint: 'nothing on the layer, just transparency',
     original: 'Layer is empty.',
-    value: 'Ebene ist leer.'
+    value: 'Ebene ist leer.',
   },
   'filter-transform-empty-selection': {
     hint: 'nothing on the layer, in selected area (via select tool), just transparency',
     original: 'Layer is empty in selected area.',
-    value: ''
+    value: '',
   },
   'filter-transform-title': {
     hint: 'same as the button, but can be longer',
     original: 'Transform',
-    value: 'Transformieren'
+    value: 'Transformieren',
   },
   'filter-transform-description': {
     hint: 'as in the Shift key.',
     original: 'Transforms selected layer. Hold Shift for additional behavior.',
-    value: 'Transformiert die gewählte Ebene. Halte Shift für erweiterte Funktionalität.'
+    value: 'Transformiert die gewählte Ebene. Halte Shift für erweiterte Funktionalität.',
   },
   'filter-transform-rotation': {
     hint: 'or Angle',
     original: 'Rotation',
-    value: 'Rotation'
+    value: 'Rotation',
   },
   'filter-transform-flip': {
     original: 'Flip',
-    value: 'Spiegel'
+    value: 'Spiegel',
   },
   'filter-transform-center': {
     hint: 'verb or noun',
     original: 'Center',
-    value: 'Zentrieren'
+    value: 'Zentrieren',
   },
   'filter-transform-constrain': {
     hint: 'short version of "constrain proportions" – feature that locks the aspect ratio',
     original: 'Constrain',
-    value: 'Fest'
+    value: 'Fest',
   },
   'filter-transform-snap': {
     hint: 'or snapping. Common feature in graphics software. Makes stuff snap into place so it’s easier to align elements in an image',
     original: 'Snap',
-    value: 'Einrasten'
+    value: 'Einrasten',
   },
   'filter-transform-snap-title': {
     hint: 'same as above, but as a tooltip',
     original: 'Snap Rotation And Position',
-    value: 'Rotation und Position einrasten'
+    value: 'Rotation und Position einrasten',
   },
   'filter-bright-contrast-title': {
     hint: 'same as the button, but can be longer',
     original: 'Brightness / Contrast',
-    value: 'Helligkeit / Kontrast'
+    value: 'Helligkeit / Kontrast',
   },
   'filter-bright-contrast-description': {
     original: 'Change brightness and contrast for the selected layer.',
-    value: 'Ändert Helligkeit und Kontrast der gewählten Ebene.'
+    value: 'Ändert Helligkeit und Kontrast der gewählten Ebene.',
   },
   'filter-bright-contrast-brightness': {
     original: 'Brightness',
-    value: 'Helligkeit'
+    value: 'Helligkeit',
   },
   'filter-bright-contrast-contrast': {
     original: 'Contrast',
-    value: 'Kontrast'
+    value: 'Kontrast',
   },
   'filter-curves-title': {
     hint: 'same as the button, but can be longer',
     original: 'Curves',
-    value: 'Kurven'
+    value: 'Kurven',
   },
   'filter-curves-description': {
     original: 'Apply curves on the selected layer.',
-    value: 'Wendet Kurven auf gewählte Ebene an.'
+    value: 'Wendet Kurven auf gewählte Ebene an.',
   },
   'filter-curves-all': {
     original: 'All',
-    value: 'Alle'
+    value: 'Alle',
   },
   'filter-hue-sat-title': {
     hint: 'same as the button, but can be longer',
     original: 'Hue / Saturation',
-    value: 'Farbton / Sättigung'
+    value: 'Farbton / Sättigung',
   },
   'filter-hue-sat-description': {
     original: 'Change hue and saturation for the selected layer.',
-    value: 'Ändert Farbton und Sättigung der gewählten Ebene.'
+    value: 'Ändert Farbton und Sättigung der gewählten Ebene.',
   },
   'filter-hue-sat-hue': {
     original: 'Hue',
-    value: 'Farbton'
+    value: 'Farbton',
   },
   'filter-hue-sat-saturation': {
     original: 'Saturation',
-    value: 'Sättigung'
+    value: 'Sättigung',
   },
   'filter-applied': {
     hint: 'used like this: „Invert“ applied. Informs that a filter was applied',
     original: 'applied',
-    value: 'angewendet'
+    value: 'angewendet',
   },
   'filter-tilt-shift-title': {
     hint: 'same as the button, but can be longer',
     original: 'Tilt Shift',
-    value: 'Tilt Shift'
+    value: 'Tilt Shift',
   },
   'filter-tilt-shift-description': {
     original: 'Applies tilt shift on the selected layer.',
-    value: 'Wendet Tilt Shift auf gewählte Ebene an.'
+    value: 'Wendet Tilt Shift auf gewählte Ebene an.',
   },
   'filter-tilt-shift-blur': {
     hint: 'words can be individually translated',
     original: 'Blur Radius',
-    value: 'Unschärferadius'
+    value: 'Unschärferadius',
   },
   'filter-tilt-shift-gradient': {
     hint: 'words can be individually translated',
     original: 'Gradient Radius',
-    value: 'Verlaufsradius'
+    value: 'Verlaufsradius',
   },
   'filter-to-alpha-title': {
     hint: 'same as the button, but can be longer',
     original: 'To Alpha',
-    value: 'Zu Alpha'
+    value: 'Zu Alpha',
   },
   'filter-to-alpha-description': {
     hint: 'after ":" follow two options',
     original: 'Generates alpha channel for selected layer from:',
-    value: 'Erzeugt Alphakanal für gewählte Ebene aus:'
+    value: 'Erzeugt Alphakanal für gewählte Ebene aus:',
   },
   'filter-to-alpha-inverted-lum': {
     hint: 'luminance is same as the layer blend mode "luminosity"',
     original: 'Inverted Luminance',
-    value: 'Umgekehrte Luminanz'
+    value: 'Umgekehrte Luminanz',
   },
   'filter-to-alpha-lum': {
     original: 'Luminance',
-    value: 'Luminanz'
+    value: 'Luminanz',
   },
   'filter-to-alpha-replace': {
     hint: 'What color to replace the rgb channels with',
     original: 'Replace RGB',
-    value: 'Ersetze RGB'
+    value: 'Ersetze RGB',
   },
   'filter-triangle-blur-title': {
     hint: 'same as the button, but can be longer',
     original: 'Triangle Blur',
-    value: 'Dreiecksunschärfe'
+    value: 'Dreiecksunschärfe',
   },
   'filter-triangle-blur-description': {
     original: 'Applies triangle blur on the selected layer.',
-    value: 'Wendet Dreiecksunschärfe auf gewählte Ebene an.'
+    value: 'Wendet Dreiecksunschärfe auf gewählte Ebene an.',
   },
   'filter-unsharp-mask-title': {
     hint: 'same as the button, but can be longer',
     original: 'Unsharp Mask',
-    value: 'Unscharf maskieren'
+    value: 'Unscharf maskieren',
   },
   'filter-unsharp-mask-description': {
     original: 'Sharpens the selected layer by scaling pixels away from the average of their neighbors.',
-    value: 'Schärft die ausgewählte Ebene durch Skalierung der Pixel weg vom Durchschnitt ihrer Nachbarn.'
+    value: 'Schärft die ausgewählte Ebene durch Skalierung der Pixel weg vom Durchschnitt ihrer Nachbarn.',
   },
   'filter-unsharp-mask-strength': {
     original: 'Strength',
-    value: 'Stärke'
+    value: 'Stärke',
   },
   'filter-grid': {
     original: 'Grid',
-    value: 'Gitter'
+    value: 'Gitter',
   },
   'filter-grid-description': {
     original: 'Draws grid on selected layer.',
-    value: 'Zeichnet Gitter auf gewählte Ebene.'
+    value: 'Zeichnet Gitter auf gewählte Ebene.',
   },
   'filter-noise': {
     original: 'Noise',
-    value: 'Rauschen'
+    value: 'Rauschen',
   },
   'filter-noise-description': {
     original: 'Adds noise to selected layer.',
-    value: 'Zeichnet Rauschen auf gewählte Ebene.'
+    value: 'Zeichnet Rauschen auf gewählte Ebene.',
   },
   'filter-noise-scale': {
     original: 'Scale',
-    value: 'Größe'
+    value: 'Größe',
   },
   'filter-noise-alpha': {
     original: 'Alpha',
-    value: 'Alpha'
+    value: 'Alpha',
   },
   'filter-pattern': {
     original: 'Pattern',
-    value: 'Muster'
+    value: 'Muster',
   },
   'filter-pattern-description': {
     original: 'Generates pattern on selected layer. Drag the preview for further controls.',
-    value: 'Erzeugt Muster auf aktiver Ebene. Ziehe in der Vorschau um weitere Parameter zu steuern.'
+    value: 'Erzeugt Muster auf aktiver Ebene. Ziehe in der Vorschau um weitere Parameter zu steuern.',
   },
   'filter-distort': {
     original: 'Distort',
-    value: 'Verzerren'
+    value: 'Verzerren',
   },
   'filter-distort-description': {
     original: 'Distorts the selected layer.',
-    value: 'Verzerrt aktive Ebene.'
+    value: 'Verzerrt aktive Ebene.',
   },
   'filter-distort-phase': {
     original: 'Phase',
-    value: 'Phase'
+    value: 'Phase',
   },
   'filter-distort-stepsize': {
     original: 'Step Size',
-    value: 'Schrittgröße'
+    value: 'Schrittgröße',
   },
   'filter-distort-sync-xy': {
     original: 'Sync XY',
-    value: 'XY koppeln'
+    value: 'XY koppeln',
   },
   'filter-vanish-point': {
     original: 'Vanish Point',
-    value: 'Fluchtpunkt'
+    value: 'Fluchtpunkt',
   },
   'filter-vanish-point-title': {
     original: 'Vanishing Point',
-    value: 'Fluchtpunkt'
+    value: 'Fluchtpunkt',
   },
   'filter-vanish-point-description': {
     original: 'Adds vanishing point to selected layer. Drag preview to move.',
-    value: 'Zeichnet Fluchtpunkt auf aktive Ebene. Ziehe Vorschau zum Verschieben.'
+    value: 'Zeichnet Fluchtpunkt auf aktive Ebene. Ziehe Vorschau zum Verschieben.',
   },
   'filter-vanish-point-lines': {
     hint: 'As in: the number of lines',
     original: 'Lines',
-    value: 'Linien'
+    value: 'Linien',
   },
   'dropper-drop': {
     hint: 'as in, drag and drop a file',
     original: 'Drop to import',
-    value: 'Datei öffnen'
+    value: 'Datei öffnen',
   },
   'dropper-as-image': {
     original: 'As New Image',
-    value: 'als neues Bild'
+    value: 'als neues Bild',
   },
   'dropper-as-layer': {
     original: 'As Layer',
-    value: 'als Ebene'
+    value: 'als Ebene',
   },
   'import-opening': {
     hint: 'in the process of opening a large file',
     original: 'Opening file...',
-    value: 'Öffne Datei...'
+    value: 'Öffne Datei...',
   },
   'import-title': {
     original: 'Import Image',
-    value: 'Datei öffnen'
+    value: 'Datei öffnen',
   },
   'import-too-large': {
     original: 'Image too large, will be downscaled.',
-    value: 'Bild zu groß, es wird verkleinert.'
+    value: 'Bild zu groß, es wird verkleinert.',
   },
   'import-btn-as-layer': {
     hint: 'import as layer. Button label, should be short',
     original: 'As Layer',
-    value: 'Als Ebene'
+    value: 'Als Ebene',
   },
   'import-btn-as-image': {
     hint: 'import as image. Button label, should be short',
     original: 'As Image',
-    value: 'Als Bild'
+    value: 'Als Bild',
   },
   'import-as-layer-title': {
     original: 'Import Image as New Layer',
-    value: 'Öffne Bild als neue Ebene'
+    value: 'Öffne Bild als neue Ebene',
   },
   'import-as-layer-description': {
     original: 'Adjust the position of the imported image.',
-    value: 'Passe die Position des importierten Bildes an.'
+    value: 'Passe die Position des importierten Bildes an.',
   },
   'import-as-layer-limit-reached': {
     hint: 'Kleki allows only a certain number of layers',
     original: 'Layer limit reached. Image will be placed on existing layer.',
-    value: 'Maximale Ebenen erreicht, es wird auf vorhandene Ebene platziert.'
+    value: 'Maximale Ebenen erreicht, es wird auf vorhandene Ebene platziert.',
   },
   'import-as-layer-fit': {
     hint: 'verb. imported image made to fit inside canvas.',
     original: 'Fit',
-    value: 'Passen'
+    value: 'Passen',
   },
   'import-flatten': {
     hint: 'Turn image that has multiple layers into an image that has only one layer.',
     original: 'Flatten image',
-    value: 'Reduzieren'
+    value: 'Reduzieren',
   },
   'import-unsupported-file': {
     hint: 'e.g. user tried to open a WAV',
     original: 'Unsupported file type. See Help for supported types.',
-    value: 'Nicht unterstützter Dateityp. Siehe Hilfe für unterstützte Typen.'
+    value: 'Nicht unterstützter Dateityp. Siehe Hilfe für unterstützte Typen.',
   },
   'import-broken-file': {
     hint: 'if an image file is broken',
     original: "Couldn't load image. File might be corrupted.",
-    value: 'Bild konnte nicht geladen werden. Datei könnte beschädigt sein.'
+    value: 'Bild konnte nicht geladen werden. Datei könnte beschädigt sein.',
   },
   'import-psd-unsupported': {
     hint: 'PSD is photoshop file format. flatten as in „flatten image“ in photoshop. Merged all layers',
     original: 'Unsupported features. PSD had to be flattened.',
-    value: 'Nicht unterstützte Funktionen. PSD musste auf eine Ebene reduziert werden.'
+    value: 'Nicht unterstützte Funktionen. PSD musste auf eine Ebene reduziert werden.',
   },
   'import-psd-limited-support': {
     hint: 'PSD has lots of fancy features that Kleki doesn\'t have, so when importing a PSD it often has to simplify things. So it might look different compared to when opening in Photoshop. We’re informing the user if they "flatten" the image it will be accurate despite losing layers. The user has to weigh, do they care about having layers, or do they care about it looking right.',
     original: 'PSD support is limited. Flattened will more likely look correct.',
-    value: 'Begrenzte Unterstützung für PSD. Reduziertes Bild sieht vermutlich korrekter aus.'
+    value: 'Begrenzte Unterstützung für PSD. Reduziertes Bild sieht vermutlich korrekter aus.',
   },
   'import-psd-too-large': {
     original: 'Image exceeds maximum dimensions of {x} x {x} pixels. Unable to import.',
-    value: 'Bild überschreitet Maximum von {x} x {x} Pixel, kann nicht geöffnet werden.'
+    value: 'Bild überschreitet Maximum von {x} x {x} Pixel, kann nicht geöffnet werden.',
   },
   'import-psd-size': {
     original: 'Image size',
-    value: 'Bildgröße'
+    value: 'Bildgröße',
   },
   'clipboard-read-fail': {
     original: 'Failed to read from clipboard.',
-    value: 'Zwischenablage lesen fehlgeschlagen.'
+    value: 'Zwischenablage lesen fehlgeschlagen.',
   },
   'clipboard-no-image': {
     original: 'No image found in clipboard.',
-    value: 'Kein Bild in der Zwischenablage gefunden.'
+    value: 'Kein Bild in der Zwischenablage gefunden.',
   },
   'hand-reset': {
     hint: 'resets zoom (to 100%) and rotation (to 0°)',
     original: 'Reset',
-    value: 'Zurücksetzen'
+    value: 'Zurücksetzen',
   },
   'hand-fit': {
     hint: 'makes canvas cover whole working area',
     original: 'Fit',
-    value: 'Passen'
+    value: 'Passen',
   },
   'hand-inertia-scrolling': {
     hint: 'Canvas will continue to move even after releasing pointer.',
     original: 'Inertia Scrolling',
-    value: 'Trägheits-Scrollen'
+    value: 'Trägheits-Scrollen',
   },
   'bucket-tolerance': {
     hint: 'a common feature for paint bucket',
     original: 'Tolerance',
-    value: 'Toleranz'
+    value: 'Toleranz',
   },
   'bucket-sample': {
     hint: 'like "taking a sample"',
     original: 'Sample',
-    value: 'Quelle'
+    value: 'Quelle',
   },
   'bucket-sample-title': {
     original: 'Which layers to sample color from',
-    value: 'Von welchen Ebenen wird Farbe gelesen'
+    value: 'Von welchen Ebenen wird Farbe gelesen',
   },
   'bucket-sample-all': {
     hint: 'all layers',
     original: 'All',
-    value: 'Alle'
+    value: 'Alle',
   },
   'bucket-sample-active': {
     hint: 'currently active layer',
     original: 'Active',
-    value: 'Aktiv'
+    value: 'Aktiv',
   },
   'bucket-sample-above': {
     hint: 'layer above active layer',
     original: 'Above',
-    value: 'Über'
+    value: 'Über',
   },
   'bucket-grow': {
     hint: 'verb. Or expand.',
     original: 'Grow',
-    value: 'Wachsen'
+    value: 'Wachsen',
   },
   'bucket-grow-title': {
     original: 'Grow filled area (in pixels)',
-    value: 'Erweitere gefüllten Bereich (in Pixel)'
+    value: 'Erweitere gefüllten Bereich (in Pixel)',
   },
   'bucket-contiguous': {
     hint: 'common setting for paint bucket in image editing software',
     original: 'Contiguous',
-    value: 'Benachbart'
+    value: 'Benachbart',
   },
   'bucket-contiguous-title': {
     hint: 'tooltip explaining Contiguous',
     original: 'Only fill connected areas',
-    value: 'Fülle nur miteinander verbundene Bereiche'
+    value: 'Fülle nur miteinander verbundene Bereiche',
   },
   'gradient-linear': {
     original: 'Linear',
-    value: 'Linear'
+    value: 'Linear',
   },
   'gradient-linear-mirror': {
     original: 'Linear-Mirror',
-    value: 'Linear Gespiegelt'
+    value: 'Linear Gespiegelt',
   },
   'gradient-radial': {
     original: 'Radial',
-    value: 'Radial'
+    value: 'Radial',
   },
   'shape-stroke': {
     original: 'Stroke',
-    value: 'Linie'
+    value: 'Linie',
   },
   'shape-fill': {
     original: 'Fill',
-    value: 'Füllen'
+    value: 'Füllen',
   },
   'shape-rect': {
     hint: 'rectangle shape',
     original: 'Rectangle',
-    value: 'Rechteck'
+    value: 'Rechteck',
   },
   'shape-ellipse': {
     hint: 'ellipse shape',
     original: 'Ellipse',
-    value: 'Ellipse'
+    value: 'Ellipse',
   },
   'shape-line': {
     original: 'Line',
-    value: 'Linie'
+    value: 'Linie',
   },
   'shape-line-width': {
     original: 'Line Width',
-    value: 'Linienbreite'
+    value: 'Linienbreite',
   },
   'shape-outwards': {
     hint: 'grows shape from the center outwards',
     original: 'Outwards',
-    value: 'Nach Außen'
+    value: 'Nach Außen',
   },
   'shape-fixed': {
     hint: 'fixed ratio of 1:1',
     original: 'Fixed 1:1',
-    value: 'Fest 1:1'
+    value: 'Fest 1:1',
   },
   'shape-auto-pan': {
     original: 'Auto-pan',
-    value: 'Auto-scroll'
+    value: 'Auto-scroll',
   },
   'shape-auto-pan-title': {
     original: 'Automatically moves as you draw',
-    value: 'Bewegt die Ansicht automatisch'
+    value: 'Bewegt die Ansicht automatisch',
   },
   'text-instruction': {
     original: 'Click canvas to place text',
-    value: 'Klicken um Text zu platzieren'
+    value: 'Klicken um Text zu platzieren',
   },
   'text-title': {
     original: 'Add Text',
-    value: 'Text Hinzufügen'
+    value: 'Text Hinzufügen',
   },
   'text-text': {
     original: 'Text',
-    value: 'Text'
+    value: 'Text',
   },
   'text-font': {
     original: 'Font',
-    value: 'Schrift'
+    value: 'Schrift',
   },
   'text-placeholder': {
     hint: 'placeholder in text input.',
     original: 'Your text',
-    value: 'Dein Text'
+    value: 'Dein Text',
   },
   'text-color': {
     original: 'Color',
-    value: 'Farbe'
+    value: 'Farbe',
   },
   'text-size': {
     original: 'Size',
-    value: 'Größe'
+    value: 'Größe',
   },
   'text-line-height': {
     original: 'Line Height',
-    value: 'Zeilenhöhe'
+    value: 'Zeilenhöhe',
   },
   'text-letter-spacing': {
     original: 'Letter Spacing',
-    value: 'Zeichenabstand'
+    value: 'Zeichenabstand',
   },
   'text-left': {
     hint: 'left, center, right text formatting like in Word',
     original: 'Left',
-    value: 'Linksbündig'
+    value: 'Linksbündig',
   },
   'text-center': {
     original: 'Center',
-    value: 'Zentriert'
+    value: 'Zentriert',
   },
   'text-right': {
     original: 'Right',
-    value: 'Rechtsbündig'
+    value: 'Rechtsbündig',
   },
   'text-italic': {
     original: 'Italic',
-    value: 'Kursiv'
+    value: 'Kursiv',
   },
   'text-bold': {
     original: 'Bold',
-    value: 'Fett'
+    value: 'Fett',
   },
   'text-failed-import': {
     original: 'Failed to import the following files:',
-    value: 'Folgende Dateien konnten nicht geladen werden:'
+    value: 'Folgende Dateien konnten nicht geladen werden:',
   },
   'text-supported-formats': {
     original: 'Supported formats:',
-    value: 'Unterstützte Formate:'
+    value: 'Unterstützte Formate:',
   },
   'select-select': {
     original: 'Select',
-    value: 'Auswahl'
+    value: 'Auswahl',
   },
   'select-transform': {
     original: 'Transform',
-    value: 'Transformier.'
+    value: 'Transformier.',
   },
   'select-lasso': {
     original: 'Lasso',
-    value: 'Lasso'
+    value: 'Lasso',
   },
   'select-polygon': {
     original: 'Polygon',
-    value: 'Polygon'
+    value: 'Polygon',
   },
   'select-boolean-replace': {
     original: 'Replace',
-    value: 'Ersetzen'
+    value: 'Ersetzen',
   },
   'select-boolean-add': {
     original: 'Add',
-    value: 'Hinzufügen'
+    value: 'Hinzufügen',
   },
   'select-boolean-subtract': {
     original: 'Subtract',
-    value: 'Abziehen'
+    value: 'Abziehen',
   },
   'select-all': {
     original: 'All',
-    value: 'Alles'
+    value: 'Alles',
   },
   'select-invert': {
     original: 'Invert',
-    value: 'Umkehren'
+    value: 'Umkehren',
   },
   'select-reset': {
     original: 'Reset',
-    value: 'Zurücksetzen'
+    value: 'Zurücksetzen',
   },
   'select-fill': {
     original: 'Fill',
-    value: 'Füllen'
+    value: 'Füllen',
   },
   'select-erase': {
     original: 'Erase',
-    value: 'Leeren'
+    value: 'Leeren',
   },
   'select-transform-clone': {
     original: 'Clone',
-    value: 'Klonen'
+    value: 'Klonen',
   },
   'select-transform-clone-applied': {
     original: 'Cloned',
-    value: 'Geklont'
+    value: 'Geklont',
   },
   'select-transform-move-to-layer': {
     original: 'Move to layer:',
-    value: 'Auf Ebene verschieben:'
+    value: 'Auf Ebene verschieben:',
   },
   'select-transform-applied': {
     original: 'Transformation applied',
-    value: 'Transformation angewendet'
+    value: 'Transformation angewendet',
   },
   'select-transform-empty': {
     original: 'Selected area on active layer is empty.',
-    value: 'Die ausgewählte Fläche der Ebene ist leer.'
+    value: 'Die ausgewählte Fläche der Ebene ist leer.',
   },
   'save-reminder-title': {
     hint: 'Save Reminder is a popup that shows up after 20 minutes of not saving. Allows user to save on the spot.',
     original: 'Unsaved Work',
-    value: 'Ungespeicherter Fortschritt'
+    value: 'Ungespeicherter Fortschritt',
   },
   'save-reminder-text': {
     hint: 'turns into: "...saved in <strong>12 minutes</strong>. Save..."',
     original: 'Image was not saved in {a} minutes{b}. Save now to prevent eventual loss.',
-    value: 'Dein Bild wurde seit {a} Minuten{b} nicht gespeichert. Speichere jetzt um Datenverlust zu vermeiden.'
+    value: 'Dein Bild wurde seit {a} Minuten{b} nicht gespeichert. Speichere jetzt um Datenverlust zu vermeiden.',
   },
   'save-reminder-save-psd': {
     original: 'Save As PSD',
-    value: 'Speichere als PSD'
+    value: 'Speichere als PSD',
   },
   'save-reminder-psd-layers': {
     original: 'PSD will remember all layers.',
-    value: 'PSD merkt sich alle Ebenen.'
+    value: 'PSD merkt sich alle Ebenen.',
   },
   'backup-drawing': {
     hint: '(Embed) If the upload failed, the user can backup/download their drawing.',
     original: 'You can backup your drawing.',
-    value: 'Du kannst dein Bild lokal sichern.'
+    value: 'Du kannst dein Bild lokal sichern.',
   },
   submit: {
     original: 'Submit',
-    value: 'Senden'
+    value: 'Senden',
   },
   'submit-title': {
     hint: 'tooltip when hovering "Submit" button',
     original: 'Submit Drawing',
-    value: 'Bild senden'
+    value: 'Bild senden',
   },
   'submit-prompt': {
     hint: 'Dialog asking for confirmation',
     original: 'Submit drawing?',
-    value: 'Bild senden?'
+    value: 'Bild senden?',
   },
   'submit-submitting': {
     hint: 'in the process of uploading',
     original: 'Submitting',
-    value: 'Läd hoch'
+    value: 'Läd hoch',
   },
   'embed-init-loading': {
     hint: 'when opening the app',
     original: 'Loading app',
-    value: 'Lade App'
+    value: 'Lade App',
   },
   'embed-init-waiting': {
     hint: 'The app is loaded, but it’s still waiting for image',
     original: 'Waiting for image',
-    value: 'Warten auf Bild'
+    value: 'Warten auf Bild',
   },
   help: {
     hint: 'or user manual',
     original: 'Help',
-    value: 'Hilfe'
+    value: 'Hilfe',
   },
   'tab-settings': {
     original: 'Settings',
-    value: 'Einstellungen'
+    value: 'Einstellungen',
   },
   'settings-language': {
     original: 'Language',
-    value: 'Sprache'
+    value: 'Sprache',
   },
   'settings-language-reload': {
     hint: 'changes will be visible after reloading the page',
     original: 'Will update after reloading.',
-    value: 'Aktualisiert mit Neuladen.'
+    value: 'Aktualisiert mit Neuladen.',
   },
   'settings-theme': {
     original: 'Theme',
-    value: 'Farbe'
+    value: 'Farbe',
   },
   'settings-save-reminder-label': {
     original: 'Save Reminder',
-    value: 'Speicher-Erinnerung'
+    value: 'Speicher-Erinnerung',
   },
   'settings-save-reminder-disabled': {
     original: 'disabled',
-    value: 'deaktiviert'
+    value: 'deaktiviert',
   },
   'settings-save-reminder-confirm-title': {
     original: 'Turn off Save Reminder?',
-    value: 'Speicher-Erinnerung deaktivieren?'
+    value: 'Speicher-Erinnerung deaktivieren?',
   },
   'settings-save-reminder-confirm-a': {
     original: "There is no autosave and browser tabs don't last forever. If you don't periodically save you will likely lose work.",
-    value: 'Es gibt kein Autosave und Browser Tabs existieren nicht für ewig. Wenn du nicht regelmäßig speicherst, verlierst du wahrscheinlich deinen Fortschritt.'
+    value: 'Es gibt kein Autosave und Browser Tabs existieren nicht für ewig. Wenn du nicht regelmäßig speicherst, verlierst du wahrscheinlich deinen Fortschritt.',
   },
   'settings-save-reminder-confirm-b': {
     original: 'Disable at your own risk?',
-    value: 'Auf eigene Gefahr ausschalten?'
+    value: 'Auf eigene Gefahr ausschalten?',
   },
   'settings-save-reminder-confirm-disable': {
     original: 'Disable',
-    value: 'Deaktivieren'
+    value: 'Deaktivieren',
   },
   'theme-dark': {
     original: 'Dark',
-    value: 'Dunkel'
+    value: 'Dunkel',
   },
   'theme-light': {
     original: 'Light',
-    value: 'Hell'
+    value: 'Hell',
   },
   'terms-of-service': {
     original: 'Terms of Service',
-    value: 'Nutzungsbedingungen'
+    value: 'Nutzungsbedingungen',
   },
   licenses: {
     hint: 'as in software licenses',
     original: 'Licenses',
-    value: 'Lizenzen'
+    value: 'Lizenzen',
   },
   'source-code': {
     original: 'Source Code',
-    value: 'Quellcode'
+    value: 'Quellcode',
   },
   auto: {
     hint: 'automatically decided',
     original: 'auto',
-    value: 'Automatisch'
+    value: 'Automatisch',
   },
   'zoom-in': {
     original: 'Zoom In',
-    value: 'Vergrößern'
+    value: 'Vergrößern',
   },
   'zoom-out': {
     original: 'Zoom Out',
-    value: 'Verkleinern'
+    value: 'Verkleinern',
   },
   radius: {
     original: 'Radius',
-    value: 'Radius'
+    value: 'Radius',
   },
   'constrain-proportions': {
     original: 'Constrain Proportions',
-    value: 'Festes Seitenverhältnis'
+    value: 'Festes Seitenverhältnis',
   },
   width: {
     original: 'Width',
-    value: 'Breite'
+    value: 'Breite',
   },
   height: {
     original: 'Height',
-    value: 'Höhe'
+    value: 'Höhe',
   },
   opacity: {
     hint: 'for layer opacity, brush opacity, text opacity, ...',
     original: 'Opacity',
-    value: 'Deckkraft'
+    value: 'Deckkraft',
   },
   scatter: {
     hint: 'for brush scatter',
     original: 'Scatter',
-    value: 'Streuen'
+    value: 'Streuen',
   },
   red: {
     original: 'Red',
-    value: 'Rot'
+    value: 'Rot',
   },
   green: {
     original: 'Green',
-    value: 'Grün'
+    value: 'Grün',
   },
   blue: {
     original: 'Blue',
-    value: 'Blau'
+    value: 'Blau',
   },
   eraser: {
     hint: 'noun. As short as possible',
     original: 'Eraser',
-    value: 'Radierer'
+    value: 'Radierer',
   },
   center: {
     hint: 'verb',
     original: 'Center',
-    value: 'Zentrieren'
+    value: 'Zentrieren',
   },
   layers: {
     hint: 'layers in the context of image editing software',
     original: 'Layers',
-    value: 'Ebenen'
+    value: 'Ebenen',
   },
   background: {
     hint: 'as in background layer',
     original: 'Background',
-    value: 'Hintergrund'
+    value: 'Hintergrund',
   },
   'scaling-algorithm': {
     hint: 'Label for dropdown where user chooses which computer graphics algorithm should be used to scale the image',
     original: 'Scaling Algorithm',
-    value: 'Skalierungsalgorithmus'
+    value: 'Skalierungsalgorithmus',
   },
   'algorithm-smooth': {
     original: 'Smooth',
-    value: 'Glatt'
+    value: 'Glatt',
   },
   'algorithm-pixelated': {
     original: 'Pixelated',
-    value: 'Pixelig'
+    value: 'Pixelig',
   },
   preview: {
     hint: 'subject. When applying a filter user sees a preview of what the result would look like.',
     original: 'Preview',
-    value: 'Vorschau'
+    value: 'Vorschau',
   },
   'angle-snap': {
     hint: 'Snapping. Like when transforming an image and it snaps to the side of the frame.',
     original: 'Snap',
-    value: 'Einrasten'
+    value: 'Einrasten',
   },
   'angle-snap-title': {
     original: '45° Angle Snapping',
-    value: '45° einrasten'
+    value: '45° einrasten',
   },
   'lock-alpha': {
     hint: 'Short. Freezes the alpha channel of image. Images consist of 4 channels (red, green, blue, alpha). Alpha lock also found in Procreate and photoshop',
     original: 'Lock Alpha',
-    value: 'Fixieren'
+    value: 'Fixieren',
   },
   'lock-alpha-title': {
     hint: "same as 'lock-alpha' but longer version. Shows up as a tooltip when hovering",
     original: "Locks layer's alpha channel",
-    value: 'Fixiert Alpha-Kanal der Ebene'
+    value: 'Fixiert Alpha-Kanal der Ebene',
   },
   reverse: {
     hint: 'Reversing the direction of a color gradient',
     original: 'Reverse',
-    value: 'Umkehren'
+    value: 'Umkehren',
   },
   'compare-before': {
     original: 'Before',
-    value: 'Vorher'
+    value: 'Vorher',
   },
   'compare-after': {
     original: 'After',
-    value: 'Danach'
+    value: 'Danach',
   },
   loading: {
     original: 'Loading',
-    value: 'Läd'
+    value: 'Läd',
   },
   more: {
     original: 'More',
-    value: 'Mehr'
+    value: 'Mehr',
   },
   'x-minutes': {
     original: '{x}min',
-    value: '{x} Min'
+    value: '{x} Min',
   },
   wip: {
     original: 'Work in progress',
-    value: 'In Arbeit'
+    value: 'In Arbeit',
   },
   'browser-zoom-help': {
     original: 'Double-tap or pinch-out to reset browser zoom.',
-    value: 'Doppeltippen oder Finger auseinanderziehen, um den Browser-Zoom zurückzusetzen.'
+    value: 'Doppeltippen oder Finger auseinanderziehen, um den Browser-Zoom zurückzusetzen.',
   },
   dismiss: {
     original: 'Dismiss',
-    value: 'Schließen'
-  }
+    value: 'Schließen',
+  },
 }

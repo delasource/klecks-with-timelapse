@@ -11,227 +11,215 @@ import { getPreviewHeight, getPreviewWidth } from '../ui/utils/preview-size';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 
 export type TFilterGridInput = {
-    x: number;
-    y: number;
-    thickness: number;
-    color: string;
-    opacity: number;
+  x: number;
+  y: number;
+  thickness: number;
+  color: string;
+  opacity: number;
 };
 
 export const filterGrid = {
-    getDialog(params: TFilterGetDialogParam) {
-        const context = params.context;
-        const klCanvas = params.klCanvas;
-        if (!context || !klCanvas) {
-            return false;
-        }
+  getDialog(params: TFilterGetDialogParam) {
+    const context = params.context;
+    const klCanvas = params.klCanvas;
+    if (!context || !klCanvas) {
+      return false;
+    }
 
-        const layers = klCanvas.getLayers();
-        const selectedLayerIndex = throwIfNull(klCanvas.getLayerIndex(context.canvas));
+    const layers = klCanvas.getLayers();
+    const selectedLayerIndex = throwIfNull(klCanvas.getLayerIndex(context.canvas));
 
-        const rootEl = BB.el();
-        const result: TFilterGetDialogResult<TFilterGridInput> = {
-            element: rootEl,
-        };
-        const isSmall = testIsSmall();
-        if (!isSmall) {
-            result.width = getPreviewWidth(isSmall);
-        }
+    const rootEl = BB.el();
+    const result: TFilterGetDialogResult<TFilterGridInput> = {
+      element: rootEl,
+    };
+    const isSmall = testIsSmall();
+    if (!isSmall) {
+      result.width = getPreviewWidth(isSmall);
+    }
 
-        const settingsObj: TFilterGridInput = {
-            x: 2,
-            y: 2,
-            thickness: 8,
-            color: '#000',
-            opacity: 1,
-        };
+    const settingsObj: TFilterGridInput = {
+      x: 2,
+      y: 2,
+      thickness: 8,
+      color: '#000',
+      opacity: 1,
+    };
 
-        const line1 = BB.el({
-            parent: rootEl,
-            css: {
-                display: 'flex',
-                alignItems: 'center',
-            },
-        });
-        const line2 = BB.el({
-            parent: rootEl,
-            css: {
-                display: 'flex',
-                alignItems: 'center',
-                marginTop: '10px',
-                marginBottom: '10px',
-            },
-        });
-        const xInput = input({
-            init: 2,
-            type: 'number',
-            min: 1,
-            css: { width: '75px', marginRight: '20px' },
-            callback: function (v) {
-                settingsObj.x = parseFloat(v);
-                updatePreview();
-            },
-        });
-        const yInput = input({
-            init: 2,
-            type: 'number',
-            min: 1,
-            css: { width: '75px', marginRight: '20px' },
-            callback: function (v) {
-                settingsObj.y = parseFloat(v);
-                updatePreview();
-            },
-        });
-        const thicknessInput = input({
-            init: settingsObj.thickness,
-            type: 'number',
-            min: 1,
-            css: { width: '75px', marginRight: '20px' },
-            callback: function (v) {
-                settingsObj.thickness = parseFloat(v);
-                updatePreview();
-            },
-        });
-
-        let selectedRgbaObj = { r: 0, g: 0, b: 0, a: 1 };
-        const colorOptionsArr = [
-            { r: 0, g: 0, b: 0, a: 1 },
-            { r: 255, g: 255, b: 255, a: 1 },
-        ];
-        colorOptionsArr.push({
-            r: params.currentColorRgb.r,
-            g: params.currentColorRgb.g,
-            b: params.currentColorRgb.b,
-            a: 1,
-        });
-        colorOptionsArr.push({
-            r: params.secondaryColorRgb.r,
-            g: params.secondaryColorRgb.g,
-            b: params.secondaryColorRgb.b,
-            a: 1,
-        });
-        settingsObj.color = BB.ColorConverter.toRgbStr(selectedRgbaObj);
-
-        const colorOptions = new ColorOptions({
-            label: LANG('shape-stroke'),
-            colorArr: colorOptionsArr,
-            onChange: function (rgbaObj) {
-                selectedRgbaObj = rgbaObj!;
-                settingsObj.color = BB.ColorConverter.toRgbStr(selectedRgbaObj);
-                updatePreview();
-            },
-        });
-
-        const labelStyle = {
-            display: 'inline-block',
-            marginRight: '5px',
-        };
-        line1.append(
-            BB.el({ content: 'X:', css: labelStyle }),
-            xInput,
-            BB.el({ content: 'Y:', css: labelStyle }),
-            yInput,
-        );
-        line2.append(
-            BB.el({ content: LANG('shape-line-width') + ':', css: labelStyle }),
-            thicknessInput,
-            BB.el({ css: { flexGrow: '1' } }),
-            colorOptions.getElement(),
-        );
-
-        const previewCanvas = BB.canvas(context.canvas.width, context.canvas.height);
-        const previewCtx = BB.ctx(previewCanvas);
-        const previewLayerArr = layers.map((item, i) => {
-            return {
-                image: i === selectedLayerIndex ? previewCanvas : item.context.canvas,
-                isVisible: item.isVisible,
-                opacity: item.opacity,
-                mixModeStr: item.mixModeStr,
-                hasClipping: false,
-            };
-        });
-
-        const preview = new Preview({
-            width: getPreviewWidth(isSmall),
-            height: getPreviewHeight(isSmall),
-            project: {
-                width: context.canvas.width,
-                height: context.canvas.height,
-                layers: previewLayerArr,
-            },
-        });
-        css(preview.getElement(), {
-            marginLeft: '-20px',
-            marginRight: '-20px',
-        });
-        rootEl.append(preview.getElement());
-
-        function updatePreview(): void {
-            const ctx = previewCtx;
-            ctx.save();
-            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            ctx.drawImage(context.canvas, 0, 0);
-            drawGrid(
-                ctx,
-                settingsObj.x,
-                settingsObj.y,
-                Math.max(settingsObj.thickness, 1),
-                settingsObj.color,
-                settingsObj.opacity,
-            );
-            ctx.restore();
-            preview.render();
-        }
+    const line1 = BB.el({
+      parent: rootEl,
+      css: {
+        display: 'flex',
+        alignItems: 'center',
+      },
+    });
+    const line2 = BB.el({
+      parent: rootEl,
+      css: {
+        display: 'flex',
+        alignItems: 'center',
+        marginTop: '10px',
+        marginBottom: '10px',
+      },
+    });
+    const xInput = input({
+      init: 2,
+      type: 'number',
+      min: 1,
+      css: { width: '75px', marginRight: '20px' },
+      callback: function (v) {
+        settingsObj.x = parseFloat(v);
         updatePreview();
-        preview.render();
+      },
+    });
+    const yInput = input({
+      init: 2,
+      type: 'number',
+      min: 1,
+      css: { width: '75px', marginRight: '20px' },
+      callback: function (v) {
+        settingsObj.y = parseFloat(v);
+        updatePreview();
+      },
+    });
+    const thicknessInput = input({
+      init: settingsObj.thickness,
+      type: 'number',
+      min: 1,
+      css: { width: '75px', marginRight: '20px' },
+      callback: function (v) {
+        settingsObj.thickness = parseFloat(v);
+        updatePreview();
+      },
+    });
 
-        result.destroy = (): void => {
-            preview.destroy();
-            BB.freeCanvas(previewCanvas);
-            colorOptions.destroy();
-        };
-        result.getInput = function (): TFilterGridInput {
-            result.destroy!();
-            return BB.copyObj(settingsObj);
-        };
-        return result;
-    },
+    let selectedRgbaObj = { r: 0, g: 0, b: 0, a: 1 };
+    const colorOptionsArr = [
+      { r: 0, g: 0, b: 0, a: 1 },
+      { r: 255, g: 255, b: 255, a: 1 },
+    ];
+    colorOptionsArr.push({
+      r: params.currentColorRgb.r,
+      g: params.currentColorRgb.g,
+      b: params.currentColorRgb.b,
+      a: 1,
+    });
+    colorOptionsArr.push({
+      r: params.secondaryColorRgb.r,
+      g: params.secondaryColorRgb.g,
+      b: params.secondaryColorRgb.b,
+      a: 1,
+    });
+    settingsObj.color = BB.ColorConverter.toRgbStr(selectedRgbaObj);
 
-    apply(params: TFilterApply<TFilterGridInput>): boolean {
-        const context = params.layer.context;
-        const klCanvas = params.klCanvas;
-        const klHistory = params.klHistory;
-        if (!context || !klCanvas) {
-            return false;
-        }
+    const colorOptions = new ColorOptions({
+      label: LANG('shape-stroke'),
+      colorArr: colorOptionsArr,
+      onChange: function (rgbaObj) {
+        selectedRgbaObj = rgbaObj!;
+        settingsObj.color = BB.ColorConverter.toRgbStr(selectedRgbaObj);
+        updatePreview();
+      },
+    });
 
-        drawGrid(
-            context,
-            params.input.x,
-            params.input.y,
-            params.input.thickness,
-            params.input.color,
-            params.input.opacity,
-        );
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
+    const labelStyle = {
+      display: 'inline-block',
+      marginRight: '5px',
+    };
+    line1.append(BB.el({ content: 'X:', css: labelStyle }), xInput, BB.el({ content: 'Y:', css: labelStyle }), yInput);
+    line2.append(
+      BB.el({ content: LANG('shape-line-width') + ':', css: labelStyle }),
+      thicknessInput,
+      BB.el({ css: { flexGrow: '1' } }),
+      colorOptions.getElement()
+    );
 
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
-        }
-        return true;
-    },
+    const previewCanvas = BB.canvas(context.canvas.width, context.canvas.height);
+    const previewCtx = BB.ctx(previewCanvas);
+    const previewLayerArr = layers.map((item, i) => {
+      return {
+        image: i === selectedLayerIndex ? previewCanvas : item.context.canvas,
+        isVisible: item.isVisible,
+        opacity: item.opacity,
+        mixModeStr: item.mixModeStr,
+        hasClipping: false,
+      };
+    });
+
+    const preview = new Preview({
+      width: getPreviewWidth(isSmall),
+      height: getPreviewHeight(isSmall),
+      project: {
+        width: context.canvas.width,
+        height: context.canvas.height,
+        layers: previewLayerArr,
+      },
+    });
+    css(preview.getElement(), {
+      marginLeft: '-20px',
+      marginRight: '-20px',
+    });
+    rootEl.append(preview.getElement());
+
+    function updatePreview(): void {
+      const ctx = previewCtx;
+      ctx.save();
+      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      ctx.drawImage(context.canvas, 0, 0);
+      drawGrid(
+        ctx,
+        settingsObj.x,
+        settingsObj.y,
+        Math.max(settingsObj.thickness, 1),
+        settingsObj.color,
+        settingsObj.opacity
+      );
+      ctx.restore();
+      preview.render();
+    }
+    updatePreview();
+    preview.render();
+
+    result.destroy = (): void => {
+      preview.destroy();
+      BB.freeCanvas(previewCanvas);
+      colorOptions.destroy();
+    };
+    result.getInput = function (): TFilterGridInput {
+      result.destroy!();
+      return BB.copyObj(settingsObj);
+    };
+    return result;
+  },
+
+  apply(params: TFilterApply<TFilterGridInput>): boolean {
+    const context = params.layer.context;
+    const klCanvas = params.klCanvas;
+    const klHistory = params.klHistory;
+    if (!context || !klCanvas) {
+      return false;
+    }
+
+    drawGrid(context, params.input.x, params.input.y, params.input.thickness, params.input.color, params.input.opacity);
+    {
+      const layerMap = Object.fromEntries(
+        params.klCanvas.getLayers().map(layerItem => {
+          if (layerItem.id === params.layer.id) {
+            return [
+              layerItem.id,
+              {
+                tiles: canvasToLayerTiles(params.layer.canvas),
+              },
+            ];
+          }
+
+          return [layerItem.id, {}];
+        })
+      );
+      klHistory.push({
+        layerMap,
+      });
+    }
+    return true;
+  },
 };

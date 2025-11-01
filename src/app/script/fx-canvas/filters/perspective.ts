@@ -2,14 +2,14 @@ import { getInverse, getSquareToQuad, multiply } from '../math/matrix';
 import { TFxCanvas } from '../fx-canvas-types';
 
 export type TRectanglePoints = [
-    number,
-    number, // point a
-    number,
-    number, // point b
-    number,
-    number, // point c
-    number,
-    number, // point d
+  number,
+  number, // point a
+  number,
+  number, // point b
+  number,
+  number, // point c
+  number,
+  number, // point d
 ];
 
 /**
@@ -23,15 +23,11 @@ export type TRectanglePoints = [
  * @param after  The x and y coordinates of four points after the transform in a flat list, just
  *               like the other argument.
  */
-export type TFilterPerspective = (
-    this: TFxCanvas,
-    before: TRectanglePoints,
-    after: TRectanglePoints,
-) => TFxCanvas;
+export type TFilterPerspective = (this: TFxCanvas, before: TRectanglePoints, after: TRectanglePoints) => TFxCanvas;
 
 export const perspective: TFilterPerspective = function (before, after) {
-    const a = getSquareToQuad(...after);
-    const b = getSquareToQuad(...before);
-    const c = multiply(getInverse(a), b);
-    return this.matrixWarp(c);
+  const a = getSquareToQuad(...after);
+  const b = getSquareToQuad(...before);
+  const c = multiply(getInverse(a), b);
+  return this.matrixWarp(c);
 };

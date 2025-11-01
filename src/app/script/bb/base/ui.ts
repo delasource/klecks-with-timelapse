@@ -1,10 +1,10 @@
 import { append, css } from './base';
 
 export function appendTextDiv(target: HTMLElement, text: string): HTMLDivElement {
-    const div = document.createElement('div');
-    div.innerHTML = text;
-    target.append(div);
-    return div;
+  const div = document.createElement('div');
+  div.innerHTML = text;
+  target.append(div);
+  return div;
 }
 
 /**
@@ -14,19 +14,18 @@ export function appendTextDiv(target: HTMLElement, text: string): HTMLDivElement
  * @param getAll - check all, even those with "data-ignore-focus" = "true"
  */
 export function isInputFocused(getAll: boolean = false): boolean {
-    const result: boolean =
-        !!document.activeElement &&
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-    if (getAll) {
-        return result;
-    } else {
-        return result && !document.activeElement?.getAttribute('data-ignore-focus');
-    }
+  const result: boolean =
+    !!document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+  if (getAll) {
+    return result;
+  } else {
+    return result && !document.activeElement?.getAttribute('data-ignore-focus');
+  }
 }
 
 export function unfocusAnyInput(): void {
-    if (isInputFocused(true)) {
-        /*
+  if (isInputFocused(true)) {
+    /*
             Unfocus anything that is focused.
 
             If an Input is focused in Firefox, and it gets detached from the DOM via a Node
@@ -35,37 +34,37 @@ export function unfocusAnyInput(): void {
 
             Workaround: Temporarily create an input, focus it, detach it.
              */
-        const focusEl = el({
-            parent: document.body,
-            tagName: 'input',
-            css: {
-                opacity: '0',
-                width: '0',
-                height: '0',
-            },
-        });
-        setTimeout(() => {
-            focusEl.select();
-            focusEl.focus();
-            focusEl.remove();
-        }, 10);
-    }
+    const focusEl = el({
+      parent: document.body,
+      tagName: 'input',
+      css: {
+        opacity: '0',
+        width: '0',
+        height: '0',
+      },
+    });
+    setTimeout(() => {
+      focusEl.select();
+      focusEl.focus();
+      focusEl.remove();
+    }, 10);
+  }
 }
 
 /**
  * clears text selection in window
  */
 export function clearSelection(): void {
-    if (window.getSelection) {
-        const sel = window.getSelection();
-        if (sel) {
-            if (sel.empty) {
-                sel.empty();
-            } else if (sel.removeAllRanges) {
-                sel.removeAllRanges();
-            }
-        }
+  if (window.getSelection) {
+    const sel = window.getSelection();
+    if (sel) {
+      if (sel.empty) {
+        sel.empty();
+      } else if (sel.removeAllRanges) {
+        sel.removeAllRanges();
+      }
     }
+  }
 }
 
 /**
@@ -75,31 +74,31 @@ export function clearSelection(): void {
  * @param el - dom element
  */
 export const makeUnfocusable = (function (): (el: HTMLElement) => void {
-    function preventFocus(event: FocusEvent): void {
-        event.preventDefault();
-        let didFocusRelated = false;
-        if (event.relatedTarget) {
-            try {
-                (event.relatedTarget as HTMLElement).focus();
-                didFocusRelated = true;
-            } catch (e) {
-                console.error('failed to focus');
-            }
-        }
-        if (!didFocusRelated) {
-            (event.currentTarget as HTMLElement).blur();
-        }
+  function preventFocus(event: FocusEvent): void {
+    event.preventDefault();
+    let didFocusRelated = false;
+    if (event.relatedTarget) {
+      try {
+        (event.relatedTarget as HTMLElement).focus();
+        didFocusRelated = true;
+      } catch (e) {
+        console.error('failed to focus');
+      }
     }
+    if (!didFocusRelated) {
+      (event.currentTarget as HTMLElement).blur();
+    }
+  }
 
-    return function (el) {
-        el.setAttribute('tabindex', '-1');
-        el.addEventListener('focus', preventFocus);
-    };
+  return function (el) {
+    el.setAttribute('tabindex', '-1');
+    el.addEventListener('focus', preventFocus);
+  };
 })();
 
 const els: {
-    el: HTMLElement;
-    listeners: [keyof HTMLElementEventMap, EventListener][];
+  el: HTMLElement;
+  listeners: [keyof HTMLElementEventMap, EventListener][];
 }[] = [];
 // window['els'] = els;
 
@@ -123,73 +122,73 @@ const els: {
  * @param params
  */
 export function el<GTag extends keyof HTMLElementTagNameMap = 'div'>(params?: {
-    parent?: HTMLElement;
-    css?: Partial<CSSStyleDeclaration>;
-    custom?: { [key: string]: string };
-    content?: string | (HTMLElement | string | undefined)[] | Element;
-    textContent?: string;
-    className?: string;
-    title?: string;
-    id?: string;
-    tagName?: GTag;
-    onClick?: (e: Event) => void;
-    onChange?: (e: Event) => void;
-    noRef?: boolean; // don't keep references of listeners
+  parent?: HTMLElement;
+  css?: Partial<CSSStyleDeclaration>;
+  custom?: { [key: string]: string };
+  content?: string | (HTMLElement | string | undefined)[] | Element;
+  textContent?: string;
+  className?: string;
+  title?: string;
+  id?: string;
+  tagName?: GTag;
+  onClick?: (e: Event) => void;
+  onChange?: (e: Event) => void;
+  noRef?: boolean; // don't keep references of listeners
 }) {
-    if (!params) {
-        return document.createElement('div') as HTMLElementTagNameMap[GTag];
-    }
-    const result = document.createElement(params.tagName ? params.tagName : 'div');
-    params.css && css(result, params.css);
+  if (!params) {
+    return document.createElement('div') as HTMLElementTagNameMap[GTag];
+  }
+  const result = document.createElement(params.tagName ? params.tagName : 'div');
+  params.css && css(result, params.css);
 
-    if (params.content) {
-        if (typeof params.content === typeof 'aa') {
-            result.innerHTML = params.content as string;
-        } else if (Array.isArray(params.content)) {
-            append(result, params.content);
-        } else {
-            result.append(params.content as HTMLElement);
-        }
+  if (params.content) {
+    if (typeof params.content === typeof 'aa') {
+      result.innerHTML = params.content as string;
+    } else if (Array.isArray(params.content)) {
+      append(result, params.content);
+    } else {
+      result.append(params.content as HTMLElement);
     }
-    if (params.textContent) {
-        result.textContent = params.textContent;
-    }
-    if (params.className) {
-        result.className = params.className;
-    }
-    if (params.id) {
-        result.id = params.id;
-    }
-    if (params.parent) {
-        params.parent.append(result);
-    }
-    if ('title' in params && params.title !== undefined) {
-        result.title = params.title;
-    }
-    const listeners: [keyof HTMLElementEventMap, EventListener][] = [];
-    if (params.onClick !== undefined) {
-        result.addEventListener('click', params.onClick);
-        !params.noRef && listeners.push(['click', params.onClick as EventListener]);
-    }
-    if (params.onChange !== undefined) {
-        result.addEventListener('change', params.onChange);
-        !params.noRef && listeners.push(['change', params.onChange]);
-    }
-    if (listeners.length > 0) {
-        els.push({
-            el: result,
-            listeners,
-        });
-        /*div.style.backgroundColor = '#ff0';
+  }
+  if (params.textContent) {
+    result.textContent = params.textContent;
+  }
+  if (params.className) {
+    result.className = params.className;
+  }
+  if (params.id) {
+    result.id = params.id;
+  }
+  if (params.parent) {
+    params.parent.append(result);
+  }
+  if ('title' in params && params.title !== undefined) {
+    result.title = params.title;
+  }
+  const listeners: [keyof HTMLElementEventMap, EventListener][] = [];
+  if (params.onClick !== undefined) {
+    result.addEventListener('click', params.onClick);
+    !params.noRef && listeners.push(['click', params.onClick as EventListener]);
+  }
+  if (params.onChange !== undefined) {
+    result.addEventListener('change', params.onChange);
+    !params.noRef && listeners.push(['change', params.onChange]);
+  }
+  if (listeners.length > 0) {
+    els.push({
+      el: result,
+      listeners,
+    });
+    /*div.style.backgroundColor = '#ff0';
         div.style.border = '1px solid #ff0';*/
+  }
+  if ('custom' in params && params.custom) {
+    const customKeyArr = Object.keys(params.custom);
+    for (let i = 0; i < customKeyArr.length; i++) {
+      result.setAttribute(customKeyArr[i], params.custom[customKeyArr[i]]);
     }
-    if ('custom' in params && params.custom) {
-        const customKeyArr = Object.keys(params.custom);
-        for (let i = 0; i < customKeyArr.length; i++) {
-            result.setAttribute(customKeyArr[i], params.custom[customKeyArr[i]]);
-        }
-    }
-    return result as HTMLElementTagNameMap[GTag];
+  }
+  return result as HTMLElementTagNameMap[GTag];
 }
 
 /**
@@ -197,47 +196,47 @@ export function el<GTag extends keyof HTMLElementTagNameMap = 'div'>(params?: {
  * @param el
  */
 export function destroyEl(el?: HTMLElement): void {
-    if (!el) {
-        return;
-    }
-    for (let i = 0; i < els.length; i++) {
-        const item = els[i];
-        if (item.el === el) {
-            item.listeners.forEach((item) => {
-                el.removeEventListener(item[0], item[1]);
-            });
-            els.splice(i, 1);
-            return;
-        }
-    }
-    // not found
+  if (!el) {
     return;
+  }
+  for (let i = 0; i < els.length; i++) {
+    const item = els[i];
+    if (item.el === el) {
+      item.listeners.forEach(item => {
+        el.removeEventListener(item[0], item[1]);
+      });
+      els.splice(i, 1);
+      return;
+    }
+  }
+  // not found
+  return;
 }
 
 export function createImage(p: {
-    src?: string;
-    alt?: string;
-    width?: number;
-    height?: number;
-    className?: string;
-    css?: Partial<CSSStyleDeclaration>;
+  src?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  className?: string;
+  css?: Partial<CSSStyleDeclaration>;
 }): HTMLImageElement {
-    const result = new Image();
-    if (p.src !== undefined) {
-        result.src = p.src;
-    }
-    if (p.alt !== undefined) {
-        result.alt = p.alt;
-    }
-    if (p.width !== undefined) {
-        result.width = p.width;
-    }
-    if (p.height !== undefined) {
-        result.height = p.height;
-    }
-    if (p.className !== undefined) {
-        result.className = p.className;
-    }
-    p.css && css(result, p.css);
-    return result;
+  const result = new Image();
+  if (p.src !== undefined) {
+    result.src = p.src;
+  }
+  if (p.alt !== undefined) {
+    result.alt = p.alt;
+  }
+  if (p.width !== undefined) {
+    result.width = p.width;
+  }
+  if (p.height !== undefined) {
+    result.height = p.height;
+  }
+  if (p.className !== undefined) {
+    result.className = p.className;
+  }
+  p.css && css(result, p.css);
+  return result;
 }

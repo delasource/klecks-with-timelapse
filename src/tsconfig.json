@@ -10,8 +10,5 @@
   },
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Recommended",
-  "exclude": [
-    "app/script/fx-canvas/filters/unused",
-    "languages",
-  ]
+  "exclude": ["app/script/fx-canvas/filters/unused", "languages"]
 }

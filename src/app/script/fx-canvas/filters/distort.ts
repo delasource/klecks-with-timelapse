@@ -4,12 +4,12 @@ import { simpleShader } from '../core/simple-shader';
 import { TFxCanvas } from '../fx-canvas-types';
 
 export type TFilterDistortSettings = {
-    stepSize: number; // [1, inf]
-    distortType: 0 | 1 | 2;
-    scale: { x: number; y: number };
-    strength: { x: number; y: number };
-    phase: { x: number; y: number };
-    offset: { x: number; y: number };
+  stepSize: number; // [1, inf]
+  distortType: 0 | 1 | 2;
+  scale: { x: number; y: number };
+  strength: { x: number; y: number };
+  phase: { x: number; y: number };
+  offset: { x: number; y: number };
 };
 
 /**
@@ -24,10 +24,10 @@ export type TFilterDistort = (this: TFxCanvas, settings: TFilterDistortSettings)
  *                Note: Requires alpha to be premultiplied.
  */
 export const distort: TFilterDistort = function (settings) {
-    gl.distort =
-        gl.distort ||
-        warpShader(
-            `
+  gl.distort =
+    gl.distort ||
+    warpShader(
+      `
     uniform float stepSize;
     uniform vec2 scale;
     uniform vec2 strength;
@@ -35,7 +35,7 @@ export const distort: TFilterDistort = function (settings) {
     uniform float type;
     uniform vec2 offset;
 `,
-            `
+      `
     const float PI = 3.14159265;
     float x = coord.x + offset.x;
     float y = coord.y + offset.y;
@@ -60,18 +60,18 @@ export const distort: TFilterDistort = function (settings) {
     }
     coord.x = mod(coord.x, texSize.x);
     coord.y = mod(coord.y, texSize.y);
-`,
-        );
+`
+    );
 
-    simpleShader.call(this, gl.distort, {
-        stepSize: settings.stepSize,
-        type: settings.distortType,
-        scale: [settings.scale.x, settings.scale.y],
-        strength: [settings.strength.x, settings.strength.y],
-        phase: [settings.phase.x, settings.phase.y],
-        offset: [settings.offset.x, settings.offset.y],
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.distort, {
+    stepSize: settings.stepSize,
+    type: settings.distortType,
+    scale: [settings.scale.x, settings.scale.y],
+    strength: [settings.strength.x, settings.strength.y],
+    phase: [settings.phase.x, settings.phase.y],
+    offset: [settings.offset.x, settings.offset.y],
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 };

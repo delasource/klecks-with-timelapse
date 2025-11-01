@@ -1,3 +1,3 @@
-window.onscroll = (e) => {
-    e.preventDefault();
+window.onscroll = e => {
+  e.preventDefault();
 };

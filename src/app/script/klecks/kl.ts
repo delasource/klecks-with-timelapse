@@ -66,89 +66,89 @@ import { drawGradient, GradientTool } from './image-operations/gradient-tool';
  * paint tool functionality
  */
 export const KL = {
-    // --- brushes ---
-    BRUSHES,
-    BRUSHES_UI,
-    BrushSettingService,
+  // --- brushes ---
+  BRUSHES,
+  BRUSHES_UI,
+  BrushSettingService,
 
-    // --- canvas ---
-    KlCanvas,
+  // --- canvas ---
+  KlCanvas,
 
-    // --- canvas ui ---
-    KlCanvasPreview,
+  // --- canvas ui ---
+  KlCanvasPreview,
 
-    // --- filters ---
-    FILTER_LIB_STATUS,
-    FILTER_LIB,
+  // --- filters ---
+  FILTER_LIB_STATUS,
+  FILTER_LIB,
 
-    // --- image operations ---
-    ShapeTool,
-    drawShape,
-    GradientTool,
-    drawGradient,
+  // --- image operations ---
+  ShapeTool,
+  drawShape,
+  GradientTool,
+  drawGradient,
 
-    // --- storage ---
-    PSD,
-    ProjectStore,
-    loadAgPsd,
-    SaveToComputer,
+  // --- storage ---
+  PSD,
+  ProjectStore,
+  loadAgPsd,
+  SaveToComputer,
 
-    // --- ui - components ---
-    Checkbox,
-    input,
-    Select,
-    ImageToggle,
-    ImageRadioList,
-    RadioList,
-    createPenPressureToggle,
-    KlSlider,
-    HexColorDialog,
-    KlColorSlider,
-    KlColorSliderSmall,
-    PointSlider,
-    ColorOptions,
-    Options,
-    BoxToggle,
-    StatusOverlay,
-    CropCopy,
-    FreeTransform,
-    FreeTransformCanvas,
-    Cropper,
-    LayerPreview,
-    KlImageDropper,
-    OverlayToolspace,
-    ToolspaceTopRow,
-    ToolDropdown,
-    ToolspaceToolRow,
-    ToolspaceStabilizerRow,
-    TabRow,
-    ToolspaceCollapser,
-    BrowserStorageUi,
-    SaveReminder,
-    ToolspaceScroller,
+  // --- ui - components ---
+  Checkbox,
+  input,
+  Select,
+  ImageToggle,
+  ImageRadioList,
+  RadioList,
+  createPenPressureToggle,
+  KlSlider,
+  HexColorDialog,
+  KlColorSlider,
+  KlColorSliderSmall,
+  PointSlider,
+  ColorOptions,
+  Options,
+  BoxToggle,
+  StatusOverlay,
+  CropCopy,
+  FreeTransform,
+  FreeTransformCanvas,
+  Cropper,
+  LayerPreview,
+  KlImageDropper,
+  OverlayToolspace,
+  ToolspaceTopRow,
+  ToolDropdown,
+  ToolspaceToolRow,
+  ToolspaceStabilizerRow,
+  TabRow,
+  ToolspaceCollapser,
+  BrowserStorageUi,
+  SaveReminder,
+  ToolspaceScroller,
 
-    // --- ui - modals ---
-    DIALOG_COUNTER,
-    popup: showModal,
-    Popup: DynamicModal,
-    clipboardDialog,
-    showImportAsLayerDialog,
-    newImageDialog,
-    textToolDialog,
-    showImportImageDialog,
-    showIframePopup: showIframeModal,
-    imgurUpload,
+  // --- ui - modals ---
+  DIALOG_COUNTER,
+  popup: showModal,
+  Popup: DynamicModal,
+  clipboardDialog,
+  showImportAsLayerDialog,
+  newImageDialog,
+  textToolDialog,
+  showImportImageDialog,
+  showIframePopup: showIframeModal,
+  imgurUpload,
 
-    // --- ui - tool tabs ---
-    HandUi,
-    FillUi,
-    GradientUi,
-    TextUi,
-    ShapeUi,
-    FileUi,
-    EditUi,
-    SettingsUi,
-    LayersUi,
+  // --- ui - tool tabs ---
+  HandUi,
+  FillUi,
+  GradientUi,
+  TextUi,
+  ShapeUi,
+  FileUi,
+  EditUi,
+  SettingsUi,
+  LayersUi,
 };
 
 Object.keys(KL); // without this, parcel build may break this object

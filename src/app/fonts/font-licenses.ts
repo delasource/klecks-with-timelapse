@@ -1,11 +1,11 @@
 /* eslint max-lines: 0 */
 export const FONT_LICENSES: {
-    title: string;
-    full: string;
+  title: string;
+  full: string;
 }[] = [
-    {
-        title: 'Caveat by Pablo Impallari',
-        full: `Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)
+  {
+    title: 'Caveat by Pablo Impallari',
+    full: `Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -98,10 +98,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Climate Crisis by Eino Korkala & Daniel Coull',
-        full: `Copyright 2020 The Climate Crisis Project Authors (https://github.com/dancoull/ClimateCrisis)
+  },
+  {
+    title: 'Climate Crisis by Eino Korkala & Daniel Coull',
+    full: `Copyright 2020 The Climate Crisis Project Authors (https://github.com/dancoull/ClimateCrisis)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -194,10 +194,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Correction Brush by GGBotNet',
-        full: `Copyright © 2023 GGBotNet (https://ggbot.net/fonts), with Reserved Font Name "Correction Brush".
+  },
+  {
+    title: 'Correction Brush by GGBotNet',
+    full: `Copyright © 2023 GGBotNet (https://ggbot.net/fonts), with Reserved Font Name "Correction Brush".
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -289,10 +289,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Dancing Script by Pablo Impallari',
-        full: `Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name 'Dancing Script'.
+  },
+  {
+    title: 'Dancing Script by Pablo Impallari',
+    full: `Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name 'Dancing Script'.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -385,10 +385,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Diabolik by Camille Wisniewski',
-        full: `Diabolik
+  },
+  {
+    title: 'Diabolik by Camille Wisniewski',
+    full: `Diabolik
 by Camille Wisniewski
 https://camillewisniewski.fr/site-diabolik/index.html
 https://github.com/CamilleWisniewski/Diabolik
@@ -496,10 +496,10 @@ not met.
     DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
     OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Freckle Face by Astigmatic',
-        full: `Copyright (c) 2012, Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved Font Name 'Freckle Face'
+  },
+  {
+    title: 'Freckle Face by Astigmatic',
+    full: `Copyright (c) 2012, Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved Font Name 'Freckle Face'
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -592,10 +592,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Gloock by Duarte Pinto',
-        full: `Copyright 2022 The Gloock Project Authors (https://github.com/duartp/gloock)
+  },
+  {
+    title: 'Gloock by Duarte Pinto',
+    full: `Copyright 2022 The Gloock Project Authors (https://github.com/duartp/gloock)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -688,10 +688,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Gochi Hand by Juan Pablo del Peral',
-        full: `Copyright (c) 2011, Juan Pablo del Peral (juan@huertatipografica.com.ar), 
+  },
+  {
+    title: 'Gochi Hand by Juan Pablo del Peral',
+    full: `Copyright (c) 2011, Juan Pablo del Peral (juan@huertatipografica.com.ar), 
 with Reserved Font Names "Gochi" and "Gochi Hand"
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
@@ -785,10 +785,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Pacha by Sumotype Foundry',
-        full: `Copyright (c) <2016-2019>, Sumotype Foundry (sumotype@gmail.com),
+  },
+  {
+    title: 'Pacha by Sumotype Foundry',
+    full: `Copyright (c) <2016-2019>, Sumotype Foundry (sumotype@gmail.com),
 with Reserved Font Name Pacha.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
@@ -882,10 +882,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Passion One by Fontstage',
-        full: `Copyright (c) 2011 Fontstage (info@fontstage.com), with Reserved Font Names, 'Passion'
+  },
+  {
+    title: 'Passion One by Fontstage',
+    full: `Copyright (c) 2011 Fontstage (info@fontstage.com), with Reserved Font Names, 'Passion'
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -978,10 +978,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Pixeloid Sans by GGBot',
-        full: `Copyright © 2020-2021 GGBot, with Reserved Font Name "Pixeloid".
+  },
+  {
+    title: 'Pixeloid Sans by GGBot',
+    full: `Copyright © 2020-2021 GGBot, with Reserved Font Name "Pixeloid".
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -1073,10 +1073,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Playpen Sans by Veronika Burian, Laura Meseguer, José Scaglione',
-        full: `Copyright 2023 The Playpen Sans Project Authors (https://github.com/TypeTogether/Playpen-Sans)
+  },
+  {
+    title: 'Playpen Sans by Veronika Burian, Laura Meseguer, José Scaglione',
+    full: `Copyright 2023 The Playpen Sans Project Authors (https://github.com/TypeTogether/Playpen-Sans)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -1169,10 +1169,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Quicksand by Andrew Paglinawan',
-        full: `Copyright 2011 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily), with Reserved Font Name “Quicksand”.
+  },
+  {
+    title: 'Quicksand by Andrew Paglinawan',
+    full: `Copyright 2011 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily), with Reserved Font Name “Quicksand”.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -1265,10 +1265,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Silkscreen by Jason Kottke',
-        full: `Copyright 2001 The Silkscreen Project Authors (https://github.com/googlefonts/silkscreen)
+  },
+  {
+    title: 'Silkscreen by Jason Kottke',
+    full: `Copyright 2001 The Silkscreen Project Authors (https://github.com/googlefonts/silkscreen)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -1361,10 +1361,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'Tehroc by Camille Wisniewski',
-        full: `This Font Software is licensed under the SIL Open Font License, Version 1.1.
+  },
+  {
+    title: 'Tehroc by Camille Wisniewski',
+    full: `This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL
 
@@ -1467,10 +1467,10 @@ not met.
     DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
     OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
-    {
-        title: 'YUNGA by Artem Voroshnin',
-        full: `Copyright (c) 2023, Artem Voroshnin voroshnin.ar@gmail.com
+  },
+  {
+    title: 'YUNGA by Artem Voroshnin',
+    full: `Copyright (c) 2023, Artem Voroshnin voroshnin.ar@gmail.com
 with Reserved Font Name Yunga
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
@@ -1576,5 +1576,5 @@ not met.
     DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
     OTHER DEALINGS IN THE FONT SOFTWARE.`,
-    },
+  },
 ];

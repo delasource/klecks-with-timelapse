@@ -7,30 +7,29 @@ import { SmudgeBrush, TSmudgeBrushConfig } from './smudge-brush';
 import { EraserBrush, TEraserBrushConfig } from './eraser-brush';
 
 export const BRUSHES = {
-    PenBrush,
-    SketchyBrush,
-    PixelBrush,
-    ChemyBrush,
-    BlendBrush,
-    SmudgeBrush,
-    EraserBrush,
+  PenBrush,
+  SketchyBrush,
+  PixelBrush,
+  ChemyBrush,
+  BlendBrush,
+  SmudgeBrush,
+  EraserBrush,
 };
 
 export type TBrushClassTypes =
-    PenBrush
-    | BlendBrush
-    | SketchyBrush
-    | PixelBrush
-    | ChemyBrush
-    | SmudgeBrush
-    | EraserBrush;
-
+  | PenBrush
+  | BlendBrush
+  | SketchyBrush
+  | PixelBrush
+  | ChemyBrush
+  | SmudgeBrush
+  | EraserBrush;
 
 export type TBrushConfigTypes =
-    TPenBrushConfig
-    | TBlendBrushConfig
-    | TSketchyBrushConfig
-    | TPixelBrushConfig
-    | TChemyBrushConfig
-    | TSmudgeBrushConfig
-    | TEraserBrushConfig;
+  | TPenBrushConfig
+  | TBlendBrushConfig
+  | TSketchyBrushConfig
+  | TPixelBrushConfig
+  | TChemyBrushConfig
+  | TSmudgeBrushConfig
+  | TEraserBrushConfig;

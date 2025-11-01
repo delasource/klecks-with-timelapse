@@ -12,11 +12,11 @@ import { BB } from '../../bb/bb';
  * @param amount   0 to 1 (0 for no effect, 1 for maximum lens darkening)
  */
 export function vignette(size, amount) {
-    gl.vignette =
-        gl.vignette ||
-        new Shader(
-            null,
-            '\
+  gl.vignette =
+    gl.vignette ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform float size;\
         uniform float amount;\
@@ -30,13 +30,13 @@ export function vignette(size, amount) {
             gl_FragColor = color;\
         }\
     ',
-            'vignette',
-        );
+      'vignette'
+    );
 
-    simpleShader.call(this, gl.vignette, {
-        size: BB.clamp(size, 0, 1),
-        amount: BB.clamp(amount, 0, 1),
-    });
+  simpleShader.call(this, gl.vignette, {
+    size: BB.clamp(size, 0, 1),
+    amount: BB.clamp(amount, 0, 1),
+  });
 
-    return this;
+  return this;
 }

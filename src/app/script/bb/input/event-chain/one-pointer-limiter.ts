@@ -8,44 +8,44 @@ import { TPointerEvent } from '../event.types';
  * out IPointerEvent
  */
 export class OnePointerLimiter {
-    private chainOut: TChainOutFunc | undefined;
-    private downPointerId: number | null = null;
-    private readonly ignorePointerIdArr: number[] = [];
+  private chainOut: TChainOutFunc | undefined;
+  private downPointerId: number | null = null;
+  private readonly ignorePointerIdArr: number[] = [];
 
-    // ----------------------------------- public -----------------------------------
-    chainIn(event: TPointerEvent): TPointerEvent | null {
-        if (this.ignorePointerIdArr.includes(event.pointerId)) {
-            if (event.type === 'pointerup') {
-                for (let i = 0; i < this.ignorePointerIdArr.length; i++) {
-                    if (this.ignorePointerIdArr[i] === event.pointerId) {
-                        this.ignorePointerIdArr.splice(i, 1);
-                        break;
-                    }
-                }
-            }
-            return null;
+  // ----------------------------------- public -----------------------------------
+  chainIn(event: TPointerEvent): TPointerEvent | null {
+    if (this.ignorePointerIdArr.includes(event.pointerId)) {
+      if (event.type === 'pointerup') {
+        for (let i = 0; i < this.ignorePointerIdArr.length; i++) {
+          if (this.ignorePointerIdArr[i] === event.pointerId) {
+            this.ignorePointerIdArr.splice(i, 1);
+            break;
+          }
         }
-
-        if (this.downPointerId === null) {
-            if (event.type === 'pointerdown') {
-                this.downPointerId = event.pointerId;
-            }
-            return event;
-        } else {
-            if (event.pointerId !== this.downPointerId) {
-                if (event.type === 'pointerdown') {
-                    this.ignorePointerIdArr.push(event.pointerId);
-                }
-                return null;
-            }
-            if (event.type === 'pointerup') {
-                this.downPointerId = null;
-            }
-            return event;
-        }
+      }
+      return null;
     }
 
-    setChainOut(func: TChainOutFunc): void {
-        this.chainOut = func;
+    if (this.downPointerId === null) {
+      if (event.type === 'pointerdown') {
+        this.downPointerId = event.pointerId;
+      }
+      return event;
+    } else {
+      if (event.pointerId !== this.downPointerId) {
+        if (event.type === 'pointerdown') {
+          this.ignorePointerIdArr.push(event.pointerId);
+        }
+        return null;
+      }
+      if (event.type === 'pointerup') {
+        this.downPointerId = null;
+      }
+      return event;
     }
+  }
+
+  setChainOut(func: TChainOutFunc): void {
+    this.chainOut = func;
+  }
 }

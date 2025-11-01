@@ -25,16 +25,16 @@ import { projectToComposed } from '../klecks/history/push-helpers/project-to-com
 import { drawGradient, GradientTool } from '../klecks/image-operations/gradient-tool';
 import { drawShape, ShapeTool } from '../klecks/image-operations/shape-tool';
 import {
-    TDrawEvent,
-    TExportType,
-    TFillSampling,
-    TGradient,
-    TGradientType,
-    TKlProject,
-    TMixMode,
-    TRgb,
-    TShapeToolMode,
-    TShapeToolType
+  TDrawEvent,
+  TExportType,
+  TFillSampling,
+  TGradient,
+  TGradientType,
+  TKlProject,
+  TMixMode,
+  TRgb,
+  TShapeToolMode,
+  TShapeToolType,
 } from '../klecks/kl-types';
 import { klCanvasToPsdBlob } from '../klecks/storage/kl-canvas-to-psd-blob';
 import { SaveToComputer } from '../klecks/storage/save-to-computer';
@@ -78,1662 +78,1601 @@ import { getDefaultProjectOptions } from './default-project';
  */
 
 export type TKlToolId =
-    | 'hand'
-    | 'brush'
-    | 'select'
-    | 'eyedropper'
-    | 'paintBucket'
-    | 'gradient'
-    | 'text'
-    | 'shape'
-    | 'rotate'
-    | 'zoom';
+  | 'hand'
+  | 'brush'
+  | 'select'
+  | 'eyedropper'
+  | 'paintBucket'
+  | 'gradient'
+  | 'text'
+  | 'shape'
+  | 'rotate'
+  | 'zoom';
 
 export type TKlBrushId = keyof typeof BRUSHES;
 
 export type TKlHeadlessUiState = {
-    isColorPickerEnabled: boolean;
-    canUndo: boolean;
-    canRedo: boolean;
-    primaryColorRgb: RGB;
-    primaryColorHsv: HSV;
-    secondaryColorRgb: RGB;
-    secondaryColorHsv: HSV;
-    brushConfig: { [key: string]: TBrushConfigTypes; }
-    currentBrushId: TKlBrushId;
-    tool: TKlToolId;
-    shape: {
-        shape: TShapeToolType;
-        mode: TShapeToolMode;
-        isEraser: boolean;
-        opacity: number;
-        lineWidth: number;
-        isOutwards: boolean;
-        isFixed: boolean;
-        isSnap: boolean;
-        isLockAlpha: boolean;
-        isPanning: boolean;
-    };
-    gradient: {
-        type: TGradientType;
-        opacity: number;
-        doLockAlpha: boolean;
-        doSnap: boolean;
-        isReversed: boolean;
-        isEraser: boolean;
-    };
-    fill: {
-        opacity: number;
-        tolerance: number;
-        mode: TFillSampling
-        grow: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-        isEraser: boolean;
-        isContiguous: boolean;
-    }
-}
+  isColorPickerEnabled: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  primaryColorRgb: RGB;
+  primaryColorHsv: HSV;
+  secondaryColorRgb: RGB;
+  secondaryColorHsv: HSV;
+  brushConfig: { [key: string]: TBrushConfigTypes };
+  currentBrushId: TKlBrushId;
+  tool: TKlToolId;
+  shape: {
+    shape: TShapeToolType;
+    mode: TShapeToolMode;
+    isEraser: boolean;
+    opacity: number;
+    lineWidth: number;
+    isOutwards: boolean;
+    isFixed: boolean;
+    isSnap: boolean;
+    isLockAlpha: boolean;
+    isPanning: boolean;
+  };
+  gradient: {
+    type: TGradientType;
+    opacity: number;
+    doLockAlpha: boolean;
+    doSnap: boolean;
+    isReversed: boolean;
+    isEraser: boolean;
+  };
+  fill: {
+    opacity: number;
+    tolerance: number;
+    mode: TFillSampling;
+    grow: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    isEraser: boolean;
+    isContiguous: boolean;
+  };
+};
 
 const DEFAULT_UI_STATE: TKlHeadlessUiState = {
-    isColorPickerEnabled: false,
-    canRedo: false,
-    canUndo: false,
-    primaryColorRgb: { r: 0, g: 0, b: 0 },
-    primaryColorHsv: { h: 0, s: 0, v: 0 },
-    secondaryColorRgb: { r: ERASE_COLOR, g: ERASE_COLOR, b: ERASE_COLOR },
-    secondaryColorHsv: { h: 0, s: 0, v: 100 },
-    brushConfig: {},
-    currentBrushId: 'PenBrush',
-    tool: 'brush',
-    shape: {
-        shape: 'rect',
-        mode: 'stroke',
-        opacity: 1,
-        lineWidth: 4,
-        isOutwards: false,
-        isFixed: false,
-        isSnap: false,
-        isEraser: false,
-        isLockAlpha: false,
-        isPanning: false
-    },
-    gradient: {
-        opacity: 1,
-        type: 'linear',
-        doLockAlpha: false,
-        doSnap: false,
-        isReversed: false,
-        isEraser: false,
-    },
-    fill: {
-        tolerance: 0.2,
-        opacity: 1,
-        mode: 'all',
-        grow: 0,
-        isEraser: false,
-        isContiguous: true,
-    }
+  isColorPickerEnabled: false,
+  canRedo: false,
+  canUndo: false,
+  primaryColorRgb: { r: 0, g: 0, b: 0 },
+  primaryColorHsv: { h: 0, s: 0, v: 0 },
+  secondaryColorRgb: { r: ERASE_COLOR, g: ERASE_COLOR, b: ERASE_COLOR },
+  secondaryColorHsv: { h: 0, s: 0, v: 100 },
+  brushConfig: {},
+  currentBrushId: 'PenBrush',
+  tool: 'brush',
+  shape: {
+    shape: 'rect',
+    mode: 'stroke',
+    opacity: 1,
+    lineWidth: 4,
+    isOutwards: false,
+    isFixed: false,
+    isSnap: false,
+    isEraser: false,
+    isLockAlpha: false,
+    isPanning: false,
+  },
+  gradient: {
+    opacity: 1,
+    type: 'linear',
+    doLockAlpha: false,
+    doSnap: false,
+    isReversed: false,
+    isEraser: false,
+  },
+  fill: {
+    tolerance: 0.2,
+    opacity: 1,
+    mode: 'all',
+    grow: 0,
+    isEraser: false,
+    isContiguous: true,
+  },
 };
 
 export type TKlFeatureConfiguration = {
-    // TODO limit available tools and features
-    maxNumberOfLayers?: number;
-}
+  // TODO limit available tools and features
+  maxNumberOfLayers?: number;
+};
 
 export type TKlHeadlessAppParams = {
-    project?: TKlProject | string | undefined;
-    eventStorageProvider?: IEventStorageProvider;
-    saveReminderEnabled?: boolean;
-    showStatusMessageCallback: (message: string) => void;
-    initialViewport?: {
-        canvasWidth?: number;
-    };
+  project?: TKlProject | string | undefined;
+  eventStorageProvider?: IEventStorageProvider;
+  saveReminderEnabled?: boolean;
+  showStatusMessageCallback: (message: string) => void;
+  initialViewport?: {
     canvasWidth?: number;
-    canvasHeight?: number;
-    featureConfiguration?: TKlFeatureConfiguration;
-    initialLayerConfiguration?: { name: string | undefined; }[]
-    onReady?: () => void;
-}
+  };
+  canvasWidth?: number;
+  canvasHeight?: number;
+  featureConfiguration?: TKlFeatureConfiguration;
+  initialLayerConfiguration?: { name: string | undefined }[];
+  onReady?: () => void;
+};
 
 const exportType: TExportType = 'png';
 
 export type TUiEventType =
-    'isDrawing'
-    | 'uiStateChanged'
-    | 'transformChanged'
-    | 'statusMessage'
-    | 'colorPicked'
-    | 'layersChanged'
-    | 'isReplaying';
+  | 'isDrawing'
+  | 'uiStateChanged'
+  | 'transformChanged'
+  | 'statusMessage'
+  | 'colorPicked'
+  | 'layersChanged'
+  | 'isReplaying';
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
-    private readonly rootEl: HTMLElement;
-    private readonly klCanvas: KlCanvas;
-    private readonly easel: Easel<TKlToolId>;
-    private readonly easelProjectUpdater: EaselProjectUpdater<TKlToolId>;
-    private readonly easelBrush: EaselBrush;
-    private readonly klHistory: KlHistory;
-    private readonly tempHistory = new KlTempHistory();
-    private readonly klHistoryExecutor: KlHistoryExecutor;
-    private readonly klRecorder: KlEventRecorder | undefined;
-    private readonly chainRecorder: KlChainRecorder | undefined;
-    private readonly unloadWarningTrigger: UnloadWarningTrigger | undefined;
-    private readonly saveReminder: SaveReminder | undefined;
-    private readonly lineSanitizer: LineSanitizer;
-    private readonly saveToComputer: SaveToComputer;
-    private readonly klAppSelect: KlHeadlessSelect;
-    private readonly layerController: LayerHeadlessController;
-    private readonly featureConfiguration: TKlFeatureConfiguration = {};
+  private readonly rootEl: HTMLElement;
+  private readonly klCanvas: KlCanvas;
+  private readonly easel: Easel<TKlToolId>;
+  private readonly easelProjectUpdater: EaselProjectUpdater<TKlToolId>;
+  private readonly easelBrush: EaselBrush;
+  private readonly klHistory: KlHistory;
+  private readonly tempHistory = new KlTempHistory();
+  private readonly klHistoryExecutor: KlHistoryExecutor;
+  private readonly klRecorder: KlEventRecorder | undefined;
+  private readonly chainRecorder: KlChainRecorder | undefined;
+  private readonly unloadWarningTrigger: UnloadWarningTrigger | undefined;
+  private readonly saveReminder: SaveReminder | undefined;
+  private readonly lineSanitizer: LineSanitizer;
+  private readonly saveToComputer: SaveToComputer;
+  private readonly klAppSelect: KlHeadlessSelect;
+  private readonly layerController: LayerHeadlessController;
+  private readonly featureConfiguration: TKlFeatureConfiguration = {};
+  private readonly keyListener: KeyListener;
 
-    private lastSavedHistoryIndex: number = 0;
-    private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
-    private uiWidth: number; // called "ui" for compat but means "root" or "canvas" dimensions
-    private uiHeight: number;
-    private currentLayer: TKlCanvasLayer;
-    private brushes: { [key: string]: TBrushClassTypes } = {};
-    private lastNonEraserBrushId: TKlBrushId = 'PenBrush';
+  private lastSavedHistoryIndex: number = 0;
+  private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
+  private uiWidth: number; // called "ui" for compat but means "root" or "canvas" dimensions
+  private uiHeight: number;
+  private currentLayer: TKlCanvasLayer;
+  private brushes: { [key: string]: TBrushClassTypes } = {};
+  private lastNonEraserBrushId: TKlBrushId = 'PenBrush';
 
-    private uiUpdateListeners: Map<TUiEventType, TUiEventHandler[]> = new Map();
+  private uiUpdateListeners: Map<TUiEventType, TUiEventHandler[]> = new Map();
 
+  // ----- private ------
 
-    // ----- private ------
+  private updateLastSaved(): void {
+    this.lastSavedHistoryIndex = this.klHistory.getTotalIndex();
+    this.saveReminder?.reset();
+    this.unloadWarningTrigger?.update();
+  }
 
-    private updateLastSaved(): void {
-        this.lastSavedHistoryIndex = this.klHistory.getTotalIndex();
-        this.saveReminder?.reset();
-        this.unloadWarningTrigger?.update();
-    }
-
-    private notifyUi(eventType: TUiEventType, state: any) {
-        const listeners = this.uiUpdateListeners.get(eventType);
-        if (listeners) {
-            listeners.forEach((callback) => {
-                try {
-                    callback(state);
-                } catch (e) {
-                    console.error('Error in UI event listener for event', eventType, e);
-                }
-            });
+  private notifyUi(eventType: TUiEventType, state: any) {
+    const listeners = this.uiUpdateListeners.get(eventType);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(state);
+        } catch (e) {
+          console.error('Error in UI event listener for event', eventType, e);
         }
+      });
     }
+  }
 
-    private updateUi() {
-        this.notifyUi('uiStateChanged', { ...this.uiState });
-    }
+  private updateUi() {
+    this.notifyUi('uiStateChanged', { ...this.uiState });
+  }
 
-    private showStatusMessageCallback = (message: string) => {
-        this.notifyUi('statusMessage', message);
-    };
+  private showStatusMessageCallback = (message: string) => {
+    this.notifyUi('statusMessage', message);
+  };
 
-    private setCurrentLayer(layer: TKlCanvasLayer) {
-        this.currentLayer = layer;
+  private setCurrentLayer(layer: TKlCanvasLayer) {
+    this.currentLayer = layer;
 
-        // set layer context in brush
-        const brushLogic = this.brushes[this.uiState.currentBrushId];
-        if ('setLayer' in brushLogic)
-            brushLogic.setLayer(this.currentLayer);
-        else if ('setContext' in brushLogic)
-            brushLogic.setContext(this.currentLayer.context);
-    };
+    // set layer context in brush
+    const brushLogic = this.brushes[this.uiState.currentBrushId];
+    if ('setLayer' in brushLogic) brushLogic.setLayer(this.currentLayer);
+    else if ('setContext' in brushLogic) brushLogic.setContext(this.currentLayer.context);
+  }
 
-    private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
-        clipboardDialog(
-            this.rootEl,
-            (maskSelection) => {
-                return this.klCanvas.getCompleteCanvas(1, maskSelection);
-            },
-            (inputObj) => {
-                if (
-                    inputObj.left === 0 &&
-                    inputObj.right === 0 &&
-                    inputObj.top === 0 &&
-                    inputObj.bottom === 0
-                ) {
-                    return;
-                }
-                //do a crop
-                FILTER_LIB.cropExtend.apply!({
-                    layer: this.currentLayer,
-                    klCanvas: this.klCanvas,
-                    input: inputObj,
-                    klHistory: this.klHistory,
-                });
-                // this.layersUi.update();
-                this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-            },
-            { out: this.showStatusMessageCallback } as StatusOverlay,
-            showCrop || false,
-            closeOnBlur,
-            this.klCanvas.getSelection(),
-        );
-    };
-
-    /**
-     * Uncommited action is something like select tool > transform which puts the canvas and UI into
-     * a temporary state. Changes need to be committed or discarded *before* doing something else.
-     *
-     * returns true if something was applied
-     */
-    private applyUncommitted(): boolean {
-        let didApply = false;
-        if (this.easel.getTool() === 'select') {
-            didApply = this.klAppSelect.commitTransform();
+  private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
+    clipboardDialog(
+      this.rootEl,
+      maskSelection => {
+        return this.klCanvas.getCompleteCanvas(1, maskSelection);
+      },
+      inputObj => {
+        if (inputObj.left === 0 && inputObj.right === 0 && inputObj.top === 0 && inputObj.bottom === 0) {
+          return;
         }
-        return didApply;
-    };
-
-    /** see applyUncommitted **/
-    private discardUncommitted(): boolean {
-        if (this.easel.getTool() === 'select') {
-            return this.klAppSelect.discardTransform();
-        }
-        return false;
-    };
-
-    private getCurrentBrush() {
-        return this.brushes[this.uiState.currentBrushId];
-    }
-
-    private clearLayer(showStatus?: boolean, ignoreSelection?: boolean) {
-        this.applyUncommitted();
-        const layerIndex = this.currentLayer.index;
-        // Decide if we use the default color or alpha transparency
-        this.klCanvas.eraseLayer({
-            layerIndex,
-            useAlphaLock: layerIndex === 0 && !(this.brushes['EraserBrush'] as EraserBrush).getTransparentBG(),
-            useSelection: !ignoreSelection,
+        //do a crop
+        FILTER_LIB.cropExtend.apply!({
+          layer: this.currentLayer,
+          klCanvas: this.klCanvas,
+          input: inputObj,
+          klHistory: this.klHistory,
         });
-
-        if (showStatus)
-            this.showStatusMessageCallback(
-                this.klCanvas.getSelection()
-                    ? LANG('cleared-selected-area')
-                    : LANG('cleared-layer')
-            );
-        this.notifyUi('layersChanged', this.layerController.getState());
+        // this.layersUi.update();
         this.easelProjectUpdater.update();
-    };
+        this.easel.resetOrFitTransform(true);
+      },
+      { out: this.showStatusMessageCallback } as StatusOverlay,
+      showCrop || false,
+      closeOnBlur,
+      this.klCanvas.getSelection()
+    );
+  }
 
-    // when cycling through brushes you need to know the next non-eraser brush
-    private getNextBrushId(): TKlBrushId {
-        if (this.uiState.currentBrushId === 'EraserBrush') {
-            return this.lastNonEraserBrushId;
+  /**
+   * Uncommited action is something like select tool > transform which puts the canvas and UI into
+   * a temporary state. Changes need to be committed or discarded *before* doing something else.
+   *
+   * returns true if something was applied
+   */
+  private applyUncommitted(): boolean {
+    let didApply = false;
+    if (this.easel.getTool() === 'select') {
+      didApply = this.klAppSelect.commitTransform();
+    }
+    return didApply;
+  }
+
+  /** see applyUncommitted **/
+  private discardUncommitted(): boolean {
+    if (this.easel.getTool() === 'select') {
+      return this.klAppSelect.discardTransform();
+    }
+    return false;
+  }
+
+  private getCurrentBrush() {
+    return this.brushes[this.uiState.currentBrushId];
+  }
+
+  private clearLayer(showStatus?: boolean, ignoreSelection?: boolean) {
+    this.applyUncommitted();
+    const layerIndex = this.currentLayer.index;
+    // Decide if we use the default color or alpha transparency
+    this.klCanvas.eraseLayer({
+      layerIndex,
+      useAlphaLock: layerIndex === 0 && !(this.brushes['EraserBrush'] as EraserBrush).getTransparentBG(),
+      useSelection: !ignoreSelection,
+    });
+
+    if (showStatus)
+      this.showStatusMessageCallback(
+        this.klCanvas.getSelection() ? LANG('cleared-selected-area') : LANG('cleared-layer')
+      );
+    this.notifyUi('layersChanged', this.layerController.getState());
+    this.easelProjectUpdater.update();
+  }
+
+  // when cycling through brushes you need to know the next non-eraser brush
+  private getNextBrushId(): TKlBrushId {
+    if (this.uiState.currentBrushId === 'EraserBrush') {
+      return this.lastNonEraserBrushId;
+    }
+    const keyArr = Object.keys(this.brushes).filter(item => item !== 'EraserBrush') as TKlBrushId[];
+    const i = keyArr.findIndex(item => item === this.uiState.currentBrushId);
+    return keyArr[(i + 1) % keyArr.length];
+  }
+
+  private propagateUndoRedoChanges(type: THistoryExecutionType, composedBefore: THistoryEntryDataComposed) {
+    if (['undo', 'redo'].includes(type)) {
+      const composedAfter = this.klHistory.getComposed();
+
+      this.klCanvas.updateViaComposed(composedBefore!, composedAfter);
+
+      this.setCurrentLayer(this.klCanvas.getLayer(composedAfter.layerMap[composedAfter.activeLayerId].index));
+      this.easelProjectUpdater.update(); // triggers render
+
+      const dimensionChanged =
+        composedBefore.size.width !== composedAfter.size.width ||
+        composedBefore.size.height !== composedAfter.size.height;
+      if (dimensionChanged) {
+        this.easel.resetOrFitTransform(true);
+      }
+      this.easelBrush.setLastDrawEvent();
+      this.updateUi();
+      this.notifyUi('layersChanged', this.layerController.getState());
+    }
+
+    // This may also happen on a "tempUndo"
+    this.klAppSelect.onHistory(type);
+  }
+
+  public undo(showMessage?: boolean) {
+    if (!this.tempHistory.canDecreaseIndex()) {
+      this.discardUncommitted();
+    }
+    const composedBefore = this.klHistory.getComposed();
+    const result = this.klHistoryExecutor.undo();
+    if (!result) {
+      // didn't do anything
+      return;
+    }
+    this.klRecorder?.record('undo', []);
+    this.propagateUndoRedoChanges(result.type, composedBefore);
+    if (showMessage) {
+      this.showStatusMessageCallback(LANG('undo'));
+    }
+    this.updateUi();
+  }
+
+  public redo(showMessage?: boolean) {
+    const composedBefore = this.klHistory.getComposed();
+    const result = this.klHistoryExecutor.redo();
+    if (!result) {
+      // didn't do anything
+      return;
+    }
+    this.klRecorder?.record('redo', []);
+    this.propagateUndoRedoChanges(result.type, composedBefore);
+    if (showMessage) {
+      this.showStatusMessageCallback(LANG('redo'));
+    }
+    this.updateUi();
+  }
+
+  constructor(p: TKlHeadlessAppParams) {
+    this.featureConfiguration = { ...p.featureConfiguration };
+
+    // Register parameter
+    this.on('statusMessage', p.showStatusMessageCallback);
+
+    // UI is full browser size
+    this.uiWidth = Math.max(0, window.innerWidth);
+    this.uiHeight = Math.max(0, window.innerHeight);
+    this.rootEl = el({
+      className: 'g-root',
+      css: {
+        display: 'absolute',
+        left: '0',
+        top: '0',
+        right: '0',
+        bottom: '0',
+      },
+    });
+
+    // default 2048, unless your screen is bigger than that (that computer then probably has the horsepower for that)
+    // but not larger than 4096 - a fairly arbitrary decision
+    const maxCanvasSize = Math.min(4096, Math.max(2048, Math.max(window.screen.width, window.screen.height)));
+    const desiredWidth = p.canvasWidth ?? this.uiWidth;
+    const desiredHeight = p.canvasHeight ?? this.uiHeight;
+    const initialWidth = Math.max(10, Math.min(maxCanvasSize, desiredWidth));
+    const initialHeight = Math.max(10, Math.min(maxCanvasSize, desiredHeight));
+
+    const oldestComposed = projectToComposed(
+      typeof p.project === 'string'
+        ? getDefaultProjectOptions(p.project, initialWidth, initialHeight)
+        : (p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight))
+    );
+
+    this.klHistory = new KlHistory({
+      oldest: oldestComposed,
+    });
+
+    if (p.project && typeof p.project !== 'string') {
+      // attempt at freeing memory
+      p.project.layers.forEach(layer => {
+        if (layer.image instanceof HTMLCanvasElement) {
+          freeCanvas(layer.image);
         }
-        const keyArr = Object.keys(this.brushes).filter((item) => item !== 'EraserBrush') as TKlBrushId[];
-        const i = keyArr.findIndex((item) => item === this.uiState.currentBrushId);
-        return keyArr[(i + 1) % keyArr.length];
-    };
+        layer.image = null as any;
+      });
+    }
 
-    private propagateUndoRedoChanges(
-        type: THistoryExecutionType,
-        composedBefore: THistoryEntryDataComposed,
-    ) {
-        if (['undo', 'redo'].includes(type)) {
-            const composedAfter = this.klHistory.getComposed();
+    // Initialize Recorder if configuration is provided
+    if (p.eventStorageProvider) {
+      const projectId = oldestComposed.projectId.value;
+      this.klRecorder = new KlEventRecorder(projectId, undefined, p.eventStorageProvider);
+    }
 
-            this.klCanvas.updateViaComposed(composedBefore!, composedAfter);
+    this.klCanvas = new KlCanvas(this.klHistory, /* -1 ? */ 1, this.klRecorder);
 
-            this.setCurrentLayer(
-                this.klCanvas.getLayer(
-                    composedAfter.layerMap[composedAfter.activeLayerId].index,
-                ),
-            );
-            this.easelProjectUpdater.update(); // triggers render
+    this.currentLayer = this.klCanvas.getLayer(this.klCanvas.getLayerCount() - 1);
 
-            const dimensionChanged =
-                composedBefore.size.width !== composedAfter.size.width ||
-                composedBefore.size.height !== composedAfter.size.height;
-            if (dimensionChanged) {
-                this.easel.resetOrFitTransform(true);
-            }
-            this.easelBrush.setLastDrawEvent();
-            this.updateUi();
-            this.notifyUi('layersChanged', this.layerController.getState());
-        }
+    // create brushes
+    Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
+      const brush = new brushType();
+      this.brushes[brushId] = brush;
+      this.uiState.brushConfig[brushId] = brush.getBrushConfig();
+      if ('spacing' in this.uiState.brushConfig[brushId]) {
+        // Fix: We do not start with a spacing variable set
+        (this.uiState.brushConfig[brushId] as any).spacing = undefined;
+      }
+      brush.setHistory(this.klHistory);
+      // this.setBrushConfig(brush.getBrushConfig());
+    });
 
-        // This may also happen on a "tempUndo"
-        this.klAppSelect.onHistory(type);
-    };
+    // Draw Event Chain 1:
+    this.chainRecorder = this.klRecorder?.createChainRecorder(() => {
+      return {
+        id: this.uiState.currentBrushId,
+        cfg: this.getCurrentBrushConfig(),
+      };
+    });
 
-    public undo(showMessage?: boolean) {
-        if (!this.tempHistory.canDecreaseIndex()) {
-            this.discardUncommitted();
-        }
-        const composedBefore = this.klHistory.getComposed();
-        const result = this.klHistoryExecutor.undo();
-        if (!result) {
-            // didn't do anything
-            return;
-        }
-        this.klRecorder?.record('undo', []);
-        this.propagateUndoRedoChanges(result.type, composedBefore);
-        if (showMessage) {
-            this.showStatusMessageCallback(LANG('undo'));
-        }
+    // Event Chain 2:
+    this.lineSanitizer = new LineSanitizer();
+
+    // Event Chain 3:
+    const lineSmoothing = new LineSmoothing({
+      smoothing: translateSmoothing(1),
+    });
+
+    const drawEventChain = new EventChain({
+      // TODO replace any with proper type/interface. EventChain needs to get a change here.
+      chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c),
+    });
+
+    drawEventChain.setChainOut(((event: TDrawEvent) => {
+      if (event.type === 'down') {
+        this.notifyUi('isDrawing', true);
+        this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
+        this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
+        this.easel.requestRender();
+      }
+      if (event.type === 'move') {
+        this.getCurrentBrush().goLine(event.x, event.y, event.pressure, undefined);
+        this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
+        this.easel.requestRender();
+      }
+      if (event.type === 'up') {
+        this.notifyUi('isDrawing', false);
+        this.getCurrentBrush().endLine();
+        this.easel.requestRender();
+      }
+      if (event.type === 'line' && event.x0 && event.y0) {
+        this.getCurrentBrush().drawLineSegment(event.x0, event.y0, event.x1, event.y1);
+        this.easelBrush.setLastDrawEvent({ x: event.x1, y: event.y1 });
+        this.easel.requestRender();
+      }
+    }) as any);
+
+    // Selection
+    this.klAppSelect = new KlHeadlessSelect({
+      klCanvas: this.klCanvas,
+      getCurrentLayerCtx: () => this.currentLayer.context,
+      onUpdateProject: () => {
+        this.easelProjectUpdater.update();
         this.updateUi();
-    };
-
-    public redo(showMessage?: boolean) {
-        const composedBefore = this.klHistory.getComposed();
-        const result = this.klHistoryExecutor.redo();
-        if (!result) {
-            // didn't do anything
-            return;
-        }
-        this.klRecorder?.record('redo', []);
-        this.propagateUndoRedoChanges(result.type, composedBefore);
-        if (showMessage) {
-            this.showStatusMessageCallback(LANG('redo'));
-        }
+      },
+      klHistory: this.klHistory,
+      tempHistory: this.tempHistory,
+      statusOverlay: { out: this.showStatusMessageCallback } as StatusOverlay,
+      onFill: () => {
+        // CLMR: No button for this
+        this.klCanvas.layerFill(this.currentLayer.index, this.uiState.primaryColorRgb, undefined, true);
+        this.showStatusMessageCallback(this.klCanvas.getSelection() ? LANG('filled-selected-area') : LANG('filled'));
+      },
+      onErase: () => {
+        // CLMR: No button for this
+        const layerIndex = this.currentLayer.index;
+        this.klCanvas.eraseLayer({
+          layerIndex,
+          useAlphaLock: layerIndex === 0 && !(this.brushes.eraserBrush as EraserBrush).getTransparentBG(),
+          useSelection: true,
+        });
+        this.showStatusMessageCallback(
+          this.klCanvas.getSelection() ? LANG('cleared-selected-area') : LANG('cleared-layer')
+        );
+      },
+      onUiChange: uiState => {
+        // console.log('SELECTION UI State:', uiState, (new Error()).stack);
         this.updateUi();
-    };
+      },
+      onError: message => {
+        console.error('Selection error:', message);
+        this.updateUi();
+      },
+    });
 
-
-    constructor(p: TKlHeadlessAppParams) {
-        this.featureConfiguration = { ...p.featureConfiguration };
-
-        // Register parameter
-        this.on('statusMessage', p.showStatusMessageCallback);
-
-        // UI is full browser size
-        this.uiWidth = Math.max(0, window.innerWidth);
-        this.uiHeight = Math.max(0, window.innerHeight);
-        this.rootEl = el({
-            className: 'g-root',
-            css: {
-                display: 'absolute',
-                left: '0',
-                top: '0',
-                right: '0',
-                bottom: '0',
-            },
-        });
-
-        // default 2048, unless your screen is bigger than that (that computer then probably has the horsepower for that)
-        // but not larger than 4096 - a fairly arbitrary decision
-        const maxCanvasSize = Math.min(
-            4096,
-            Math.max(2048, Math.max(window.screen.width, window.screen.height)),
-        );
-        const desiredWidth = p.canvasWidth ?? this.uiWidth;
-        const desiredHeight = p.canvasHeight ?? this.uiHeight;
-        const initialWidth = Math.max(10, Math.min(maxCanvasSize, desiredWidth));
-        const initialHeight = Math.max(10, Math.min(maxCanvasSize, desiredHeight));
-
-
-        const oldestComposed = projectToComposed(
-            typeof p.project === 'string'
-                ? getDefaultProjectOptions(p.project, initialWidth, initialHeight)
-                : p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight),
-        );
-
-        this.klHistory = new KlHistory({
-            oldest: oldestComposed
-        });
-
-        if (p.project && typeof p.project !== 'string') {
-            // attempt at freeing memory
-            p.project.layers.forEach((layer) => {
-                if (layer.image instanceof HTMLCanvasElement) {
-                    freeCanvas(layer.image);
-                }
-                layer.image = null as any;
-            });
+    let isEraserPen: boolean = false;
+    this.easelBrush = new EaselBrush({
+      radius: 5,
+      onLineStart: e => {
+        // expects TDrawEvent
+        isEraserPen = e.isEraserPen || false;
+        if (isEraserPen) {
+          // Temporary switch to eraser
+          this.applyUncommitted();
+          this.setCurrentBrush('EraserBrush');
+          this.updateUi();
         }
 
-        // Initialize Recorder if configuration is provided
-        if (p.eventStorageProvider) {
-            const projectId = oldestComposed.projectId.value;
-            this.klRecorder = new KlEventRecorder(projectId, undefined, p.eventStorageProvider);
+        drawEventChain.chainIn({
+          type: 'down',
+          scale: this.easel.getTransform().scale,
+          shiftIsPressed: this.keyListener.isPressed('shift'),
+          pressure: e.pressure,
+          isCoalesced: e.isCoalesced,
+          x: e.x,
+          y: e.y,
+        } as TDrawEvent as any);
+      },
+      onLineGo: e => {
+        // expects TDrawEvent
+        drawEventChain.chainIn({
+          type: 'move',
+          scale: this.easel.getTransform().scale,
+          shiftIsPressed: this.keyListener.isPressed('shift'),
+          pressure: e.pressure,
+          isCoalesced: e.isCoalesced,
+          x: e.x,
+          y: e.y,
+        } as TDrawEvent as any);
+      },
+      onLineEnd: () => {
+        // expects TDrawEvent
+        drawEventChain.chainIn({
+          type: 'up',
+          scale: this.easel.getTransform().scale,
+          shiftIsPressed: this.keyListener.isPressed('shift'),
+          isCoalesced: false,
+        } as TDrawEvent as any);
+        if (isEraserPen) {
+          isEraserPen = false;
+          // Return to brush
+          this.applyUncommitted();
+          this.setCurrentBrush(this.lastNonEraserBrushId);
+          this.updateUi();
         }
-
-        this.klCanvas = new KlCanvas(this.klHistory, /* -1 ? */ 1, this.klRecorder);
-
-        this.currentLayer = this.klCanvas.getLayer(
-            this.klCanvas.getLayerCount() - 1,
-        );
-
-        // create brushes
-        Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
-            const brush = new brushType();
-            this.brushes[brushId] = brush;
-            this.uiState.brushConfig[brushId] = brush.getBrushConfig();
-            if ('spacing' in this.uiState.brushConfig[brushId]) {
-                // Fix: We do not start with a spacing variable set
-                (this.uiState.brushConfig[brushId] as any).spacing = undefined;
-            }
-            brush.setHistory(this.klHistory);
-            // this.setBrushConfig(brush.getBrushConfig());
-        });
-
-        // Draw Event Chain 1:
-        this.chainRecorder = this.klRecorder?.createChainRecorder(() => {
-            return {
-                id: this.uiState.currentBrushId,
-                cfg: this.getCurrentBrushConfig()
-            };
-        });
-
-        // Event Chain 2:
-        this.lineSanitizer = new LineSanitizer();
-
-        // Event Chain 3:
-        const lineSmoothing = new LineSmoothing({
-            smoothing: translateSmoothing(1),
-        });
-
-        const drawEventChain = new EventChain({
-            // TODO replace any with proper type/interface. EventChain needs to get a change here.
-            chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c),
-        });
-
-        drawEventChain.setChainOut(((event: TDrawEvent) => {
-            if (event.type === 'down') {
-                this.notifyUi('isDrawing', true);
-                this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
-                this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
-                this.easel.requestRender();
-            }
-            if (event.type === 'move') {
-                this.getCurrentBrush().goLine(event.x, event.y, event.pressure, undefined);
-                this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
-                this.easel.requestRender();
-            }
-            if (event.type === 'up') {
-                this.notifyUi('isDrawing', false);
-                this.getCurrentBrush().endLine();
-                this.easel.requestRender();
-            }
-            if (event.type === 'line' && event.x0 && event.y0) {
-                this.getCurrentBrush().drawLineSegment(event.x0, event.y0, event.x1, event.y1);
-                this.easelBrush.setLastDrawEvent({ x: event.x1, y: event.y1 });
-                this.easel.requestRender();
-            }
-        }) as any);
-
-        // Selection
-        this.klAppSelect = new KlHeadlessSelect({
-            klCanvas: this.klCanvas,
-            getCurrentLayerCtx: () => this.currentLayer.context,
-            onUpdateProject: () => {
-                this.easelProjectUpdater.update();
-                this.updateUi();
-            },
-            klHistory: this.klHistory,
-            tempHistory: this.tempHistory,
-            statusOverlay: { out: this.showStatusMessageCallback } as StatusOverlay,
-            onFill: () => {
-                // CLMR: No button for this
-                this.klCanvas.layerFill(
-                    this.currentLayer.index,
-                    this.uiState.primaryColorRgb,
-                    undefined,
-                    true,
-                );
-                this.showStatusMessageCallback(
-                    this.klCanvas.getSelection() ? LANG('filled-selected-area') : LANG('filled')
-                );
-            },
-            onErase: () => {
-                // CLMR: No button for this
-                const layerIndex = this.currentLayer.index;
-                this.klCanvas.eraseLayer({
-                    layerIndex,
-                    useAlphaLock: layerIndex === 0 && !(this.brushes.eraserBrush as EraserBrush).getTransparentBG(),
-                    useSelection: true,
-                });
-                this.showStatusMessageCallback(
-                    this.klCanvas.getSelection()
-                        ? LANG('cleared-selected-area')
-                        : LANG('cleared-layer')
-                );
-            },
-            onUiChange: (uiState) => {
-                // console.log('SELECTION UI State:', uiState, (new Error()).stack);
-                this.updateUi();
-            },
-            onError: (message) => {
-                console.error('Selection error:', message);
-                this.updateUi();
-            }
-        });
-
-
-        let isEraserPen: boolean = false;
-        this.easelBrush = new EaselBrush({
-            radius: 5,
-            onLineStart: (e) => {
-                // expects TDrawEvent
-                isEraserPen = e.isEraserPen || false;
-                if (isEraserPen) {
-                    // Temporary switch to eraser
-                    this.applyUncommitted();
-                    this.setCurrentBrush('EraserBrush');
-                    this.updateUi();
-                }
-
-                drawEventChain.chainIn({
-                    type: 'down',
-                    scale: this.easel.getTransform().scale,
-                    shiftIsPressed: keyListener.isPressed('shift'),
-                    pressure: e.pressure,
-                    isCoalesced: e.isCoalesced,
-                    x: e.x,
-                    y: e.y,
-                } as TDrawEvent as any);
-            },
-            onLineGo: (e) => {
-                // expects TDrawEvent
-                drawEventChain.chainIn({
-                    type: 'move',
-                    scale: this.easel.getTransform().scale,
-                    shiftIsPressed: keyListener.isPressed('shift'),
-                    pressure: e.pressure,
-                    isCoalesced: e.isCoalesced,
-                    x: e.x,
-                    y: e.y,
-                } as TDrawEvent as any);
-            },
-            onLineEnd: () => {
-                // expects TDrawEvent
-                drawEventChain.chainIn({
-                    type: 'up',
-                    scale: this.easel.getTransform().scale,
-                    shiftIsPressed: keyListener.isPressed('shift'),
-                    isCoalesced: false,
-                } as TDrawEvent as any);
-                if (isEraserPen) {
-                    isEraserPen = false;
-                    // Return to brush
-                    this.applyUncommitted();
-                    this.setCurrentBrush(this.lastNonEraserBrushId);
-                    this.updateUi();
-                }
-            },
-            onLine: (p1, p2) => {
-                // expects TDrawEvent
-                drawEventChain.chainIn({
-                    type: 'line',
-                    x0: p1.x,
-                    y0: p1.y,
-                    x1: p2.x,
-                    y1: p2.y,
-                    pressure0: 1,
-                    pressure1: 1,
-                } as TDrawEvent as any);
-                if (isEraserPen) {
-                    isEraserPen = false;
-                    // Return to brush
-                    this.applyUncommitted();
-                    this.setCurrentBrush(this.lastNonEraserBrushId);
-                    this.updateUi();
-                }
-            },
-        });
-
-        const shapeTool = new ShapeTool({
-            onShape: (isDone, x1, y1, x2, y2, angleRad) => {
-                const layerIndex = this.currentLayer.index;
-
-                const shapeObj: any = {
-                    type: this.uiState.shape.shape,
-                    x1: x1,
-                    y1: y1,
-                    x2: x2,
-                    y2: y2,
-                    angleRad: angleRad,
-                    isOutwards: this.uiState.shape.isOutwards,
-                    opacity: this.uiState.shape.opacity,
-                    isEraser: this.uiState.shape.isEraser,
-                    doLockAlpha: this.uiState.shape.isLockAlpha,
-                };
-                if (this.uiState.shape.shape === 'line') {
-                    shapeObj.strokeRgb = this.uiState.primaryColorRgb;
-                    shapeObj.lineWidth = this.uiState.shape.lineWidth;
-                    shapeObj.isAngleSnap = this.uiState.shape.isSnap || keyListener.isPressed('shift');
-                } else {
-                    shapeObj.isFixedRatio = this.uiState.shape.isFixed || keyListener.isPressed('shift');
-                    if (this.uiState.shape.mode === 'stroke') {
-                        shapeObj.strokeRgb = this.uiState.primaryColorRgb;
-                        shapeObj.lineWidth = this.uiState.shape.lineWidth;
-                    } else {
-                        shapeObj.fillRgb = this.uiState.primaryColorRgb;
-                    }
-                }
-
-                if (isDone) {
-                    this.klCanvas.setComposite(layerIndex, undefined);
-                    this.klCanvas.drawShape(layerIndex, shapeObj);
-                } else {
-                    const selection = this.klCanvas.getSelection();
-                    const selectionPath = selection
-                        ? new Path2D(getSelectionPath2d(selection))
-                        : undefined;
-                    this.klCanvas.setComposite(layerIndex, {
-                        draw: (ctx) => {
-                            drawShape(ctx, shapeObj, selectionPath);
-                        },
-                    });
-                }
-
-                this.easelProjectUpdater.update();
-            },
-        });
-
-        const gradientTool = new GradientTool({
-            onGradient: (isDone, x1, y1, x2, y2, angleRad) => {
-                const layerIndex = this.currentLayer.index;
-                const gradientObj: TGradient = {
-                    type: this.uiState.gradient.type,
-                    color1: this.uiState.primaryColorRgb,
-                    isReversed: this.uiState.gradient.isReversed,
-                    opacity: this.uiState.gradient.opacity,
-                    doLockAlpha: this.uiState.gradient.doLockAlpha,
-                    isEraser: this.uiState.gradient.isEraser,
-                    doSnap: keyListener.isPressed('shift') || this.uiState.gradient.doSnap,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    angleRad,
-                };
-
-                if (isDone) {
-                    this.klCanvas.setComposite(layerIndex, undefined);
-                    this.klCanvas.drawGradient(layerIndex, gradientObj);
-                } else {
-                    const selection = this.klCanvas.getSelection();
-                    const selectionPath = selection
-                        ? new Path2D(getSelectionPath2d(selection))
-                        : undefined;
-                    this.klCanvas.setComposite(layerIndex, {
-                        draw: (ctx) => {
-                            drawGradient(ctx, gradientObj, selectionPath);
-                        },
-                    });
-                }
-
-                this.easelProjectUpdater.update();
-            },
-        });
-
-        const easelHand = new EaselHand({});
-
-        const easelShape = new EaselShape({
-            onDown: (p, angleRad) => {
-                shapeTool.onDown(p.x, p.y, angleRad);
-            },
-            onMove: (p) => {
-                shapeTool.onMove(p.x, p.y);
-            },
-            onUp: (p) => {
-                shapeTool.onUp(p.x, p.y);
-            },
-        });
-
-        // This is the canvas:
-        this.easel = new Easel({
-            width: Math.max(0, this.uiWidth),
-            height: this.uiHeight,
-            project: {
-                width: this.klCanvas.getWidth(),
-                height: this.klCanvas.getHeight(),
-                layers: [],
-            }, // temp
-            tools: {
-                brush: this.easelBrush,
-                hand: easelHand,
-                select: this.klAppSelect.getEaselSelect(),
-                eyedropper: new EaselEyedropper({
-                    onPick: (p) => {
-                        // -> pointer move event
-                        const color = this.klCanvas.getColorAt(p.x, p.y);
-                        this.setColors(color, undefined);
-                        return color;
-                    },
-                    onPickEnd: () => {
-                        // -> pointer up event
-                        // Toggle the "pick ui" off.
-                        this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
-                        this.updateUi();
-                    },
-                }),
-                paintBucket: new EaselPaintBucket({
-                    onFill: (p) => {
-                        this.klCanvas.floodFill(
-                            this.currentLayer.index,
-                            p.x,
-                            p.y,
-                            this.uiState.fill.isEraser ? null : this.uiState.primaryColorRgb,
-                            this.uiState.fill.opacity,
-                            this.uiState.fill.tolerance,
-                            this.uiState.fill.mode,
-                            this.uiState.fill.grow,
-                            this.uiState.fill.isContiguous,
-                        );
-                        this.easel.requestRender();
-                    },
-                }),
-                gradient: new EaselGradient({
-                    onDown: (p, angleRad) => {
-                        gradientTool.onDown(p.x, p.y, angleRad);
-                    },
-                    onMove: (p) => {
-                        gradientTool.onMove(p.x, p.y);
-                    },
-                    onUp: (p) => {
-                        gradientTool.onUp(p.x, p.y);
-                    },
-                }),
-                text: new EaselText({
-                    onDown: (p, angleRad) => {
-                        if (DIALOG_COUNTER.get() > 0) {
-                            return;
-                        }
-
-                        // TODO
-                        /*KL.textToolDialog({
-                            klCanvas: this.klCanvas,
-                            layerIndex: this.currentLayer.index,
-                            primaryColor: this.uiState.primaryColorRgb,
-                            secondaryColor: this.uiState.secondaryColorRgb,
-
-                            text: {
-                                ...textToolSettings,
-                                text: '',
-                                x: p.x,
-                                y: p.y,
-                                angleRad: angleRad,
-                                fill: textToolSettings.fill
-                                    ? {
-                                        color: {
-                                            ...this.uiState.primaryColorRgb,
-                                            a: textToolSettings.fill.color.a,
-                                        },
-                                    }
-                                    : undefined,
-                                stroke: textToolSettings.stroke
-                                    ? {
-                                        ...textToolSettings.stroke,
-                                        color: {
-                                            ...this.klColorSlider.getSecondaryRGB(),
-                                            a: textToolSettings.stroke.color.a,
-                                        },
-                                    }
-                                    : undefined,
-                            },
-
-                            onConfirm: (val) => {
-                                textToolSettings = {
-                                    ...val,
-                                    text: '',
-                                };
-                                this.klCanvas.text(this.currentLayer.index, val);
-                            },
-                        });*/
-                    },
-                }),
-                shape: easelShape,
-                rotate: new EaselRotate({}),
-                zoom: new EaselZoom({}),
-            },
-            tool: 'brush',
-            onChangeTool: (toolId) => {
-                this.updateUi();
-            },
-            onTransformChange: (transform, isScaleOrAngleChanged) => {
-                this.notifyUi('transformChanged', { transform, isScaleOrAngleChanged });
-            },
-            onUndo: () => {
-                this.undo(true);
-            },
-            onRedo: () => {
-                this.redo(true);
-            },
-        });
-
-        css(this.easel.getElement(), {
-            position: 'absolute',
-            left: '0',
-            top: '0',
-        });
-
-        append(this.rootEl, [this.easel.getElement()]);
-
-        this.easelProjectUpdater = new EaselProjectUpdater({
-            klCanvas: this.klCanvas,
-            easel: this.easel,
-        });
-
-        this.klHistory.addListener(() => {
-            this.easelProjectUpdater.update();
-        });
-
-        DIALOG_COUNTER.subscribe((count) => {
-            this.easel.setIsFrozen(count > 0);
-        });
-
-        const keyListener = new KeyListener({
-            onDown: (keyStr, event, comboStr) => {
-                if (DIALOG_COUNTER.get() > 0 || isInputFocused(true)) {
-                    return;
-                }
-
-                if (this.isDrawing()) {
-                    return;
-                }
-
-                if (comboStr === 'home') {
-                    this.easel.fitTransform();
-                }
-                if (comboStr === 'end') {
-                    this.easel.resetTransform();
-                }
-                if (['ctrl+z', 'cmd+z'].includes(comboStr)) {
-                    event.preventDefault();
-                    this.undo();
-                }
-                if (
-                    ['ctrl+y', 'cmd+y'].includes(comboStr) ||
-                    ((sameKeys('ctrl+shift+z', comboStr) ||
-                            sameKeys('cmd+shift+z', comboStr)) &&
-                        keyStr === 'z')
-                ) {
-                    event.preventDefault();
-                    this.redo();
-                }
-                if (['ctrl+s', 'cmd+s'].includes(comboStr)) {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.saveToComputer.save();
-                }
-                if (['ctrl+c', 'cmd+c'].includes(comboStr)) {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.copyToClipboard(true);
-                }
-
-                if (['ctrl+a', 'cmd+a'].includes(comboStr)) {
-                    event.preventDefault();
-                }
-
-                if (comboStr === 'sqbr_open') {
-                    if (!this.isDrawing()) {
-                        const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
-                        this.updateBrushConfig(old => ({ size: old.size - changeVal }));
-                    }
-                }
-                if (comboStr === 'sqbr_close') {
-                    if (!this.isDrawing()) {
-                        const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
-                        this.updateBrushConfig(old => ({ size: old.size + changeVal }));
-                    }
-                }
-                if (comboStr === 'enter') {
-                    if (!this.applyUncommitted()) {
-                        this.klCanvas.layerFill(
-                            this.currentLayer.index,
-                            this.uiState.primaryColorRgb,
-                            undefined,
-                            true,
-                        );
-                        this.showStatusMessageCallback(
-                            this.klCanvas.getSelection()
-                                ? LANG('filled-selected-area')
-                                : LANG('filled')
-                        );
-                    }
-                }
-                if (comboStr === 'esc') {
-                    if (this.discardUncommitted()) {
-                        event.preventDefault();
-                    }
-                }
-                if (['delete', 'backspace'].includes(comboStr)) {
-                    this.clearLayer(true);
-                }
-                if (comboStr === 'shift+e') {
-                    event.preventDefault();
-                    this.updateBrushConfig(old => {
-                        return 'isEraser' in old
-                            ? ({ isEraser: !old.isEraser })
-                            : null;
-                    });
-                } else if (comboStr === 'e') {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.easel.setTool('brush');
-                    this.uiState.tool = 'brush';
-                    this.setCurrentBrush('EraserBrush');
-                    this.updateUi();
-                }
-                if (['shift+b', 'b'].includes(comboStr)) {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    const prevMode = this.easel.getTool();
-                    this.easel.setTool('brush');
-                    this.uiState.tool = 'brush';
-                    if (prevMode === 'brush') {
-                        if (event.shiftKey) {
-                            // Only toggle between Pen and Blend
-                            if (this.uiState.currentBrushId == 'PenBrush')
-                                this.setCurrentBrush('BlendBrush');
-                            else
-                                this.setCurrentBrush('PenBrush');
-                        } else {
-                            // Switch through
-                            this.setCurrentBrush(this.getNextBrushId());
-                        }
-                    }
-                }
-                if (comboStr === 'g') {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    const newMode =
-                        this.easel.getTool() === 'paintBucket' ? 'gradient' : 'paintBucket';
-                    this.easel.setTool(newMode);
-                    this.uiState.tool = newMode;
-                    this.updateUi();
-                }
-                /*if (comboStr === 't') {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.easel.setTool('text');
-                    this.uiState.tool = 'text';
-                    this.updateUi();
-                }*/
-                if (comboStr === 'u') {
-                    event.preventDefault();
-                    this.applyUncommitted();
-                    this.easel.setTool('shape');
-                    this.uiState.tool = 'shape';
-                    this.updateUi();
-                }
-                if (comboStr === 'l') {
-                    if (this.uiState.tool == 'select') {
-                        // Toggle between select and transform
-                        event.preventDefault();
-                        if (this.klAppSelect.getCurrentMode() == 'select' && this.klAppSelect.getState().hasSelection) {
-                            this.klAppSelect.setTransformMode();
-                        } else {
-                            this.klAppSelect.setSelectMode();
-                        }
-                    } else {
-                        event.preventDefault();
-                        this.applyUncommitted();
-                        this.easel.setTool('select');
-                        this.uiState.tool = 'select';
-                        this.klAppSelect.setSelectMode();
-                        this.updateUi();
-                    }
-                }
-                if (comboStr === 'x') {
-                    event.preventDefault();
-                    // Swap primary and secondary color
-                    this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
-                }
-            },
-            onUp: (keyStr, event) => {
-            },
-        });
-
-        // Register replay handlers if recorder is enabled
-        if (this.klRecorder) {
-            const replayer = this.klRecorder.getReplayer();
-            replayer.addReplayHandler('draw', event => {
-                // Replay drawing events
-                const drawEvents = event.data.events as string[];
-                const brushData = event.data.brush; // {id, cfg}
-
-                if (!drawEvents || drawEvents.length == 0)
-                    return;
-
-                // Set the brush configuration
-                if (brushData && this.brushes[brushData.id]) {
-                    this.setCurrentBrush(brushData.id);
-                    if (brushData.cfg) {
-                        this.brushes[brushData.id].setBrushConfig(brushData.cfg);
-                    }
-                } else {
-                    console.log('Unknown brush during replay:', brushData);
-                }
-
-                this.chainRecorder?.emitReplayedEvent(drawEvents);
-            });
-
-            replayer.addReplayHandler('undo', event => {
-                this.undo(false); // Don't show message during replay
-            });
-
-            replayer.addReplayHandler('redo', event => {
-                this.redo(false); // Don't show message during replay
-            });
-
-            replayer.addReplayHandler('l-select', (event) => {
-                const layer = this.klCanvas.getLayer((event.data as number[])[0]);
-                if (layer) {
-                    this.setCurrentLayer(layer);
-                    this.klHistory.push({
-                        activeLayerId: layer.id,
-                    }, false);
-                    this.layerController.setActiveLayerInternal(layer.index);
-                }
-            });
-
-            replayer.addReplayHandler('reset', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.reset>;
-                const layerIndex = this.klCanvas.reset(...data);
-                this.setCurrentLayer(this.klCanvas.getLayer(layerIndex));
-                this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-                this.updateUi();
-                this.notifyUi('layersChanged', this.layerController.getState());
-            });
-
-            replayer.addReplayHandler('resize', (event) => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.resize>;
-                this.klCanvas.resize(...data);
-                this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-            });
-
-            replayer.addReplayHandler('resize-c', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.resizeCanvas>;
-                this.klCanvas.resizeCanvas(...data);
-                this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-            });
-
-            replayer.addReplayHandler('l-add', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.addLayer>;
-                this.klCanvas.addLayer(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-dupl', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.duplicateLayer>;
-                this.klCanvas.duplicateLayer(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-rm', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.removeLayer>;
-                this.klCanvas.removeLayer(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-ren', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.renameLayer>;
-                this.klCanvas.renameLayer(...data);
-            });
-
-            replayer.addReplayHandler('l-opac', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.setOpacity>;
-                this.klCanvas.setOpacity(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-vis', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.setLayerIsVisible>;
-                this.klCanvas.setLayerIsVisible(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-move', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.moveLayer>;
-                this.klCanvas.moveLayer(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-merge', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.mergeLayers>;
-                this.klCanvas.mergeLayers(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-merge-all', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.mergeAll>;
-                this.klCanvas.mergeAll(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('rotate', (event) => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.rotate>;
-                this.klCanvas.rotate(...data);
-                this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-            });
-
-            replayer.addReplayHandler('l-flip', (event) => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.flip>;
-                this.klCanvas.flip(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-fill', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.layerFill>;
-                this.klCanvas.layerFill(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('flood-fill', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.floodFill>;
-                this.klCanvas.floodFill(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('shape', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.drawShape>;
-                this.klCanvas.drawShape(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('grad', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.drawGradient>;
-                this.klCanvas.drawGradient(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('text', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.text>;
-                this.klCanvas.text(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('l-erase', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.eraseLayer>;
-                this.klCanvas.eraseLayer(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('set-mixmode', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.setMixMode>;
-                this.klCanvas.setMixMode(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('selection', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.setSelection>;
-                this.klCanvas.setSelection(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('selection-transform', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.transformViaSelection>;
-                this.klCanvas.transformViaSelection(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('selection-transform-clone', event => {
-                const data = event.data as Parameters<typeof KlCanvas.prototype.transformCloneViaSelection>;
-                this.klCanvas.transformCloneViaSelection(...data);
-                this.easelProjectUpdater.update();
-            });
-
-            replayer.addReplayHandler('filter', event => {
-                const filterKey = event.data.filterKey as string;
-                const filterInput = event.data.input as any;
-                const filterResult = FILTER_LIB[filterKey].apply!({
-                    layer: this.currentLayer,
-                    klCanvas: this.klCanvas,
-                    klHistory: this.klHistory,
-                    input: filterInput
-                });
-                if (!filterResult) {
-                    console.log('Failed to apply filter during replay:', filterKey);
-                    return;
-                }
-                FILTER_LIB[filterKey].updatePos && this.easelProjectUpdater.update();
-                this.easel.resetOrFitTransform(true);
-            });
+      },
+      onLine: (p1, p2) => {
+        // expects TDrawEvent
+        drawEventChain.chainIn({
+          type: 'line',
+          x0: p1.x,
+          y0: p1.y,
+          x1: p2.x,
+          y1: p2.y,
+          pressure0: 1,
+          pressure1: 1,
+        } as TDrawEvent as any);
+        if (isEraserPen) {
+          isEraserPen = false;
+          // Return to brush
+          this.applyUncommitted();
+          this.setCurrentBrush(this.lastNonEraserBrushId);
+          this.updateUi();
         }
+      },
+    });
 
-        this.klHistoryExecutor = new KlHistoryExecutor({
-            klHistory: this.klHistory,
-            tempHistory: this.tempHistory,
-            onCanUndoRedoChange: (canUndo, canRedo) => {
-                this.uiState.canUndo = canUndo;
-                this.uiState.canRedo = canRedo;
-                this.updateUi();
-            },
-        });
+    const shapeTool = new ShapeTool({
+      onShape: (isDone, x1, y1, x2, y2, angleRad) => {
+        const layerIndex = this.currentLayer.index;
 
-        // Viewport initialization
-        this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
-        this.resize(this.uiWidth, this.uiHeight);
-
-        // Update initial brush
-        this.setBrushConfig({
-            ...this.uiState.brushConfig[this.uiState.currentBrushId],
-            size: 4,
-            color: this.uiState.primaryColorRgb
-        });
-
-        if (p.initialViewport?.canvasWidth && p.canvasWidth) {
-            // apply scale
-            const scale = (p.initialViewport.canvasWidth ?? 0) / (p.canvasWidth ?? 1);
-            this.easel.scale(scale);
-            // this.resetView()
-        }
-
-
-        this.saveToComputer = new SaveToComputer(
-            () => exportType,
-            this.klCanvas,
-            () => {
-                this.updateLastSaved();
-            },
-        );
-
-        // Initialize layer controller
-        this.layerController = new LayerHeadlessController({
-            klCanvas: this.klCanvas,
-            klHistory: this.klHistory,
-            maxNumLayers: this.featureConfiguration.maxNumberOfLayers,
-            applyUncommitted: () => this.applyUncommitted(),
-            onUpdateProject: () => this.easelProjectUpdater.update(),
-            onClearLayer: () => this.clearLayer(true),
-            onSelect: (layerIndex: number) => {
-                const layer = this.klCanvas.getLayer(layerIndex);
-                if (!layer) return;
-
-                this.setCurrentLayer(layer);
-                if (this.layerController) this.notifyUi('layersChanged', this.layerController?.getState());
-
-                // Fix the history, if there were two active layer changes in a row, replace the top one.
-                const topEntry = this.klHistory.getEntries().at(-1)!.data;
-                const replaceTop = isHistoryEntryActiveLayerChange(topEntry);
-
-                this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
-                this.klRecorder?.record('l-select', [layerIndex]);
-            },
-            onLayersChange: (state) => {
-                this.notifyUi('layersChanged', state);
-            }
-        });
-
-
-        // TODO enable if you like
-        /*this.unloadWarningTrigger = new UnloadWarningTrigger({
-            klHistory: this.klHistory,
-            getLastSavedHistoryIndex: () => this.lastSavedHistoryIndex,
-        });*/
-
-        {
-            window.addEventListener('resize', () => {
-                this.resize(window.innerWidth, window.innerHeight);
-            });
-            window.addEventListener('orientationchange', () => {
-                this.resize(window.innerWidth, window.innerHeight);
-            });
-            // 2024-08: window.resize doesn't fire on iPad Safari when:
-            // pinch zoomed page, then reload, and un-pinch-zoom page
-            // therefor also listen to visualViewport.
-            if ('visualViewport' in window && visualViewport !== null) {
-                visualViewport.addEventListener('resize', () => {
-                    this.resize(window.innerWidth, window.innerHeight);
-                });
-            }
-
-            // iPad doesn't trigger 'resize' event when using text zoom, although it's resizing the window.
-            // Workaround: place a div in the body that fills the window, and use a ResizeObserver
-            const windowResizeWatcher = el({
-                parent: document.body,
-                css: {
-                    position: 'fixed',
-                    left: '0',
-                    top: '0',
-                    right: '0',
-                    bottom: '0',
-                    pointerEvents: 'none',
-                    zIndex: '-1',
-                    userSelect: 'none',
-                },
-            });
-            try {
-                // Not all browsers support ResizeObserver. Not critical though.
-                const observer = new ResizeObserver(() => {
-                        this.resize(window.innerWidth, window.innerHeight);
-                    },
-                );
-                observer.observe(windowResizeWatcher);
-            } catch (e) {
-                windowResizeWatcher.remove();
-            }
-
-            // prevent ctrl scroll -> zooming page
-            this.rootEl.addEventListener(
-                'wheel',
-                (event) => {
-                    if (keyListener.isPressed('ctrl')) {
-                        event.preventDefault();
-                    }
-                },
-                { passive: false },
-            );
-            //maybe prevent zooming on safari mac os - todo still needed?
-            const prevent = (e: Event) => {
-                e.preventDefault();
-            };
-            window.addEventListener('gesturestart', prevent, { passive: false });
-            window.addEventListener('gesturechange', prevent, { passive: false });
-            window.addEventListener('gestureend', prevent, { passive: false });
-
-            const pinchZoomWatcher = new PinchZoomWatcher();
-        }
-
-        /*setTimeout(() => {
-            runBrowserStorageBanner({
-                projectStore,
-                klRecoveryManager,
-                onOpenBrowserStorage,
-                klHistory: this.klHistory,
-            });
-        });*/
-        this.saveReminder?.init();
-
-        const seedLayerConfig = () => {
-            if (p.initialLayerConfiguration) {
-                // rename first layer
-                if (p.initialLayerConfiguration[0].name !== undefined)
-                    this.layerController.setLayerName(p.initialLayerConfiguration[0].name);
-                // Add and rename other layer
-                for (let i = 1 ; i < p.initialLayerConfiguration.length ; i++) {
-                    this.layerController.addLayer();
-                    if (p.initialLayerConfiguration[i].name !== undefined)
-                        this.layerController.setLayerName(p.initialLayerConfiguration[i].name!);
-                }
-
-            }
+        const shapeObj: any = {
+          type: this.uiState.shape.shape,
+          x1: x1,
+          y1: y1,
+          x2: x2,
+          y2: y2,
+          angleRad: angleRad,
+          isOutwards: this.uiState.shape.isOutwards,
+          opacity: this.uiState.shape.opacity,
+          isEraser: this.uiState.shape.isEraser,
+          doLockAlpha: this.uiState.shape.isLockAlpha,
         };
-
-        // Load the drawing from the storage provider, or start a new one.
-        if (!!this.klRecorder) {
-            this.klRecorder?.loadFromStorage()
-                .then(x => {
-                    if (x === 'empty-storage') {
-                        // Begin recording already
-                        this.klRecorder?.start();
-
-                        // Initial clear
-                        this.klRecorder?.record('reset', [{
-                            width: oldestComposed.size.width,
-                            height: oldestComposed.size.height,
-                            color: { r: 255, g: 255, b: 255 } as TRgb
-                        }]);
-
-                        // Start with layerconfiguration
-                        seedLayerConfig();
-                    }
-                    // Finalise
-                    this.klCanvas.fixHistoryState();
-
-                    // Select the 1st layer, instead of the 0th
-                    if (this.klCanvas.getLayerCount() >= 1)
-                        this.layerController.setActiveLayerInternal(1);
-
-                    // Propagate the state to the ui
-                    this.updateUi();
-                    this.notifyUi('layersChanged', this.layerController.getState());
-                    this.resetView();
-
-                    // We are ready to rock
-                    this.klRecorder?.start();
-                    p.onReady?.();
-                });
+        if (this.uiState.shape.shape === 'line') {
+          shapeObj.strokeRgb = this.uiState.primaryColorRgb;
+          shapeObj.lineWidth = this.uiState.shape.lineWidth;
+          shapeObj.isAngleSnap = this.uiState.shape.isSnap || this.keyListener.isPressed('shift');
         } else {
-            // Start without recorder
-            seedLayerConfig();
-            this.klCanvas.fixHistoryState();
-            p.onReady?.();
+          shapeObj.isFixedRatio = this.uiState.shape.isFixed || this.keyListener.isPressed('shift');
+          if (this.uiState.shape.mode === 'stroke') {
+            shapeObj.strokeRgb = this.uiState.primaryColorRgb;
+            shapeObj.lineWidth = this.uiState.shape.lineWidth;
+          } else {
+            shapeObj.fillRgb = this.uiState.primaryColorRgb;
+          }
         }
 
-
-    } // end of constructor
-
-
-    // -------- interface --------
-
-    getElement(): HTMLElement {
-        return this.rootEl;
-    }
-
-    resize(w: number, h: number): void {
-        // iPad scrolls down when increasing text zoom
-        if (window.scrollY > 0) {
-            window.scrollTo(0, 0);
+        if (isDone) {
+          this.klCanvas.setComposite(layerIndex, undefined);
+          this.klCanvas.drawShape(layerIndex, shapeObj);
+        } else {
+          const selection = this.klCanvas.getSelection();
+          const selectionPath = selection ? new Path2D(getSelectionPath2d(selection)) : undefined;
+          this.klCanvas.setComposite(layerIndex, {
+            draw: ctx => {
+              drawShape(ctx, shapeObj, selectionPath);
+            },
+          });
         }
 
-        if (this.uiWidth === Math.max(0, w) && this.uiHeight === Math.max(0, h)) {
-            return;
-        }
+        this.easelProjectUpdater.update();
+      },
+    });
 
-        this.uiWidth = Math.max(0, w);
-        this.uiHeight = Math.max(0, h);
-
-        // Propagate resize:
-        this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
-        this.updateUi();
-    }
-
-    out(msg: string): void {
-        this.showStatusMessageCallback(msg);
-    }
-
-    async getPNG(): Promise<Blob> {
-        return await canvasToBlob(this.klCanvas.getCompleteCanvas(1), 'image/png');
-    }
-
-    getPSD = async (): Promise<Blob> => {
-        return await klCanvasToPsdBlob(this.klCanvas);
-    };
-
-    getProject(): TKlProject {
-        return this.klCanvas.getProject();
-    }
-
-    saveAsPsd(): void {
-        this.saveToComputer.save('psd');
-    }
-
-    isDrawing(): boolean {
-        return this.lineSanitizer.getIsDrawing() || this.easel.getIsLocked();
-    }
-
-    setColors(color1: TRgb, color2: TRgb | undefined): void {
-        this.uiState.primaryColorRgb = color1;
-        this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color1);
-        if (color2) {
-            this.uiState.secondaryColorRgb = color2;
-            this.uiState.secondaryColorHsv = ColorConverter._RGBtoHSV(color2);
-        }
-        this.setBrushConfig({ color: color1 });
-        this.updateUi();
-    }
-
-    setCurrentBrush(brushId: TKlBrushId | -1) {
-        if (brushId == -1)
-            brushId = this.lastNonEraserBrushId;
-
-        if (brushId !== 'EraserBrush') {
-            this.lastNonEraserBrushId = brushId;
-        }
-
-        this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
-
-        this.uiState.currentBrushId = brushId;
-        this.setBrushConfig({
-            color: this.uiState.primaryColorRgb,
-        });
-        this.easelBrush.setBrush({
-            radius: this.uiState.brushConfig[this.uiState.currentBrushId].size,
-            type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
-        });
-        this.updateUi();
-    };
-
-    setBrushConfig(data: Partial<TBrushConfigTypes>) {
-        if (data == undefined)
-            return;
-
-        const brushLogic = this.brushes[this.uiState.currentBrushId];
-        brushLogic.setBrushConfig(data);
-
-        this.uiState.brushConfig[this.uiState.currentBrushId] = {
-            ...this.uiState.brushConfig[this.uiState.currentBrushId],
-            ...data,
+    const gradientTool = new GradientTool({
+      onGradient: (isDone, x1, y1, x2, y2, angleRad) => {
+        const layerIndex = this.currentLayer.index;
+        const gradientObj: TGradient = {
+          type: this.uiState.gradient.type,
+          color1: this.uiState.primaryColorRgb,
+          isReversed: this.uiState.gradient.isReversed,
+          opacity: this.uiState.gradient.opacity,
+          doLockAlpha: this.uiState.gradient.doLockAlpha,
+          isEraser: this.uiState.gradient.isEraser,
+          doSnap: this.keyListener.isPressed('shift') || this.uiState.gradient.doSnap,
+          x1,
+          y1,
+          x2,
+          y2,
+          angleRad,
         };
 
-        // console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
+        if (isDone) {
+          this.klCanvas.setComposite(layerIndex, undefined);
+          this.klCanvas.drawGradient(layerIndex, gradientObj);
+        } else {
+          const selection = this.klCanvas.getSelection();
+          const selectionPath = selection ? new Path2D(getSelectionPath2d(selection)) : undefined;
+          this.klCanvas.setComposite(layerIndex, {
+            draw: ctx => {
+              drawGradient(ctx, gradientObj, selectionPath);
+            },
+          });
+        }
 
-        // Update context (varies)
-        if ('setLayer' in brushLogic)
-            brushLogic.setLayer(this.currentLayer);
-        else if ('setContext' in brushLogic)
-            brushLogic.setContext(this.currentLayer.context);
+        this.easelProjectUpdater.update();
+      },
+    });
 
-        // if there is a "size" prop
-        if (data.size !== undefined) {
-            if (this.easelBrush) {
-                this.easelBrush.setBrush({ radius: data.size });
+    const easelHand = new EaselHand({});
+
+    const easelShape = new EaselShape({
+      onDown: (p, angleRad) => {
+        shapeTool.onDown(p.x, p.y, angleRad);
+      },
+      onMove: p => {
+        shapeTool.onMove(p.x, p.y);
+      },
+      onUp: p => {
+        shapeTool.onUp(p.x, p.y);
+      },
+    });
+
+    // This is the canvas:
+    this.easel = new Easel({
+      width: Math.max(0, this.uiWidth),
+      height: this.uiHeight,
+      project: {
+        width: this.klCanvas.getWidth(),
+        height: this.klCanvas.getHeight(),
+        layers: [],
+      }, // temp
+      tools: {
+        brush: this.easelBrush,
+        hand: easelHand,
+        select: this.klAppSelect.getEaselSelect(),
+        eyedropper: new EaselEyedropper({
+          onPick: p => {
+            // -> pointer move event
+            const color = this.klCanvas.getColorAt(p.x, p.y);
+            this.setColors(color, undefined);
+            return color;
+          },
+          onPickEnd: () => {
+            // -> pointer up event
+            // Toggle the "pick ui" off.
+            this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
+            this.updateUi();
+          },
+        }),
+        paintBucket: new EaselPaintBucket({
+          onFill: p => {
+            this.klCanvas.floodFill(
+              this.currentLayer.index,
+              p.x,
+              p.y,
+              this.uiState.fill.isEraser ? null : this.uiState.primaryColorRgb,
+              this.uiState.fill.opacity,
+              this.uiState.fill.tolerance,
+              this.uiState.fill.mode,
+              this.uiState.fill.grow,
+              this.uiState.fill.isContiguous
+            );
+            this.easel.requestRender();
+          },
+        }),
+        gradient: new EaselGradient({
+          onDown: (p, angleRad) => {
+            gradientTool.onDown(p.x, p.y, angleRad);
+          },
+          onMove: p => {
+            gradientTool.onMove(p.x, p.y);
+          },
+          onUp: p => {
+            gradientTool.onUp(p.x, p.y);
+          },
+        }),
+        text: new EaselText({
+          onDown: (p, angleRad) => {
+            if (DIALOG_COUNTER.get() > 0) {
+              return;
             }
+
+            // TODO
+            /*KL.textToolDialog({
+                klCanvas: this.klCanvas,
+                layerIndex: this.currentLayer.index,
+                primaryColor: this.uiState.primaryColorRgb,
+                secondaryColor: this.uiState.secondaryColorRgb,
+
+                text: {
+                    ...textToolSettings,
+                    text: '',
+                    x: p.x,
+                    y: p.y,
+                    angleRad: angleRad,
+                    fill: textToolSettings.fill
+                        ? {
+                            color: {
+                                ...this.uiState.primaryColorRgb,
+                                a: textToolSettings.fill.color.a,
+                            },
+                        }
+                        : undefined,
+                    stroke: textToolSettings.stroke
+                        ? {
+                            ...textToolSettings.stroke,
+                            color: {
+                                ...this.klColorSlider.getSecondaryRGB(),
+                                a: textToolSettings.stroke.color.a,
+                            },
+                        }
+                        : undefined,
+                },
+
+                onConfirm: (val) => {
+                    textToolSettings = {
+                        ...val,
+                        text: '',
+                    };
+                    this.klCanvas.text(this.currentLayer.index, val);
+                },
+            });*/
+          },
+        }),
+        shape: easelShape,
+        rotate: new EaselRotate({}),
+        zoom: new EaselZoom({}),
+      },
+      tool: 'brush',
+      onChangeTool: toolId => {
+        this.updateUi();
+      },
+      onTransformChange: (transform, isScaleOrAngleChanged) => {
+        this.notifyUi('transformChanged', { transform, isScaleOrAngleChanged });
+      },
+      onUndo: () => {
+        this.undo(true);
+      },
+      onRedo: () => {
+        this.redo(true);
+      },
+    });
+
+    css(this.easel.getElement(), {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+    });
+
+    append(this.rootEl, [this.easel.getElement()]);
+
+    this.easelProjectUpdater = new EaselProjectUpdater({
+      klCanvas: this.klCanvas,
+      easel: this.easel,
+    });
+
+    this.klHistory.addListener(() => {
+      this.easelProjectUpdater.update();
+    });
+
+    DIALOG_COUNTER.subscribe(count => {
+      this.easel.setIsFrozen(count > 0);
+    });
+
+    this.keyListener = new KeyListener({
+      onDown: (keyStr, event, comboStr) => {
+        if (DIALOG_COUNTER.get() > 0 || isInputFocused(true)) {
+          return;
         }
-        // if there is a "color" prop
-        if ((data as any).color !== undefined && !!(data as any).color.r) {
-            const color = copyObj<TRgb>((data as any).color as TRgb);
-            this.uiState.primaryColorRgb = color;
-            this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color);
+
+        if (this.isDrawing()) {
+          return;
         }
-        this.updateUi();
-    }
 
-    updateBrushConfig(f: (old: TBrushConfigTypes) => Partial<TBrushConfigTypes> | null) {
-        const oldConfig = this.uiState.brushConfig[this.uiState.currentBrushId];
-        const newConfig = f(oldConfig);
-        if (newConfig != null)
-            this.setBrushConfig(newConfig);
-    }
-
-    setTool(toolId: TKlToolId): void {
-        this.applyUncommitted();
-        this.easel.setTool(toolId);
-        this.uiState.tool = toolId;
-        this.updateUi();
-    }
-
-    setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
-        this.uiState.shape = {
-            ...this.uiState.shape,
-            ...config,
-        };
-        this.updateUi();
-    }
-
-    setGradientConfig(config: Partial<typeof this.uiState.gradient>): void {
-        this.uiState.gradient = {
-            ...this.uiState.gradient,
-            ...config,
-        };
-        this.updateUi();
-    }
-
-    setFillConfig(config: Partial<typeof this.uiState.fill>): void {
-        this.uiState.fill = {
-            ...this.uiState.fill,
-            ...config,
-        };
-        this.updateUi();
-    }
-
-    getCurrentBrushConfig() {
-        return this.uiState.brushConfig[this.uiState.currentBrushId];
-    }
-
-    getUiState(): TKlHeadlessUiState {
-        return { ...this.uiState };
-    }
-
-    getProjectId(): string {
-        return this.klHistory.getComposed().projectId?.value || '';
-    }
-
-    destroy(): void {
-        // Cleanup
-        this.layerController.destroy();
-        this.easel.destroy();
-        this.klCanvas.destroy();
-    }
-
-    on(eventType: TUiEventType, handler: TUiEventHandler): void {
-        if (!this.uiUpdateListeners.has(eventType)) {
-            this.uiUpdateListeners.set(eventType, []);
+        if (comboStr === 'home') {
+          this.easel.fitTransform();
         }
-        this.uiUpdateListeners.get(eventType)!.push(handler);
-    }
+        if (comboStr === 'end') {
+          this.easel.resetTransform();
+        }
+        if (['ctrl+z', 'cmd+z'].includes(comboStr)) {
+          event.preventDefault();
+          this.undo();
+        }
+        if (
+          ['ctrl+y', 'cmd+y'].includes(comboStr) ||
+          ((sameKeys('ctrl+shift+z', comboStr) || sameKeys('cmd+shift+z', comboStr)) && keyStr === 'z')
+        ) {
+          event.preventDefault();
+          this.redo();
+        }
+        if (['ctrl+s', 'cmd+s'].includes(comboStr)) {
+          event.preventDefault();
+          this.applyUncommitted();
+          this.saveToComputer.save();
+        }
+        if (['ctrl+c', 'cmd+c'].includes(comboStr)) {
+          event.preventDefault();
+          this.applyUncommitted();
+          this.copyToClipboard(true);
+        }
 
-    off(eventType: TUiEventType, handler: TUiEventHandler): void {
-        const handlers = this.uiUpdateListeners.get(eventType);
-        if (handlers) {
-            const index = handlers.indexOf(handler);
-            if (index > -1) {
-                handlers.splice(index, 1);
-                if (handlers.length === 0) {
-                    this.uiUpdateListeners.delete(eventType);
-                }
+        if (['ctrl+a', 'cmd+a'].includes(comboStr)) {
+          event.preventDefault();
+        }
+
+        if (comboStr === 'sqbr_open') {
+          if (!this.isDrawing()) {
+            const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
+            this.updateBrushConfig(old => ({ size: old.size - changeVal }));
+          }
+        }
+        if (comboStr === 'sqbr_close') {
+          if (!this.isDrawing()) {
+            const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
+            this.updateBrushConfig(old => ({ size: old.size + changeVal }));
+          }
+        }
+        if (comboStr === 'enter') {
+          if (!this.applyUncommitted()) {
+            this.klCanvas.layerFill(this.currentLayer.index, this.uiState.primaryColorRgb, undefined, true);
+            this.showStatusMessageCallback(
+              this.klCanvas.getSelection() ? LANG('filled-selected-area') : LANG('filled')
+            );
+          }
+        }
+        if (comboStr === 'esc') {
+          if (this.discardUncommitted()) {
+            event.preventDefault();
+          }
+        }
+        if (['delete', 'backspace'].includes(comboStr)) {
+          this.clearLayer(true);
+        }
+        if (comboStr === 'shift+e') {
+          event.preventDefault();
+          this.updateBrushConfig(old => {
+            return 'isEraser' in old ? { isEraser: !old.isEraser } : null;
+          });
+        } else if (comboStr === 'e') {
+          event.preventDefault();
+          this.applyUncommitted();
+          this.easel.setTool('brush');
+          this.uiState.tool = 'brush';
+          this.setCurrentBrush('EraserBrush');
+          this.updateUi();
+        }
+        if (['shift+b', 'b'].includes(comboStr)) {
+          event.preventDefault();
+          this.applyUncommitted();
+          const prevMode = this.easel.getTool();
+          this.easel.setTool('brush');
+          this.uiState.tool = 'brush';
+          if (prevMode === 'brush') {
+            if (event.shiftKey) {
+              // Only toggle between Pen and Blend
+              if (this.uiState.currentBrushId == 'PenBrush') this.setCurrentBrush('BlendBrush');
+              else this.setCurrentBrush('PenBrush');
+            } else {
+              // Switch through
+              this.setCurrentBrush(this.getNextBrushId());
             }
+          }
         }
-    }
+        if (comboStr === 'g') {
+          event.preventDefault();
+          this.applyUncommitted();
+          const newMode = this.easel.getTool() === 'paintBucket' ? 'gradient' : 'paintBucket';
+          this.easel.setTool(newMode);
+          this.uiState.tool = newMode;
+          this.updateUi();
+        }
+        /*if (comboStr === 't') {
+            event.preventDefault();
+            this.applyUncommitted();
+            this.easel.setTool('text');
+            this.uiState.tool = 'text';
+            this.updateUi();
+        }*/
+        if (comboStr === 'u') {
+          event.preventDefault();
+          this.applyUncommitted();
+          this.easel.setTool('shape');
+          this.uiState.tool = 'shape';
+          this.updateUi();
+        }
+        if (comboStr === 'l') {
+          if (this.uiState.tool == 'select') {
+            // Toggle between select and transform
+            event.preventDefault();
+            if (this.klAppSelect.getCurrentMode() == 'select' && this.klAppSelect.getState().hasSelection) {
+              this.klAppSelect.setTransformMode();
+            } else {
+              this.klAppSelect.setSelectMode();
+            }
+          } else {
+            event.preventDefault();
+            this.applyUncommitted();
+            this.easel.setTool('select');
+            this.uiState.tool = 'select';
+            this.klAppSelect.setSelectMode();
+            this.updateUi();
+          }
+        }
+        if (comboStr === 'x') {
+          event.preventDefault();
+          // Swap primary and secondary color
+          this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
+        }
+      },
+      onUp: (keyStr, event) => {},
+    });
 
-    resetView(): void {
-        this.easel.scaleToNormal(false);
-        this.notifyUi('transformChanged', {
-            transform: this.easel.getTransform(),
-            isScaleOrAngleChanged: true,
-        });
-    }
+    // Register replay handlers if recorder is enabled
+    if (this.klRecorder) {
+      const replayer = this.klRecorder.getReplayer();
+      replayer.addReplayHandler('draw', event => {
+        // Replay drawing events
+        const drawEvents = event.data.events as string[];
+        const brushData = event.data.brush; // {id, cfg}
 
-    getLayerController(): IHeadlessLayerControllerActions {
-        return this.layerController;
-    }
+        if (!drawEvents || drawEvents.length == 0) return;
 
-    getSelectionController(): IHeadlessSelectActions {
-        return this.klAppSelect;
-    }
-
-    getDimensions() {
-        return {
-            width: this.klCanvas.getWidth(),
-            height: this.klCanvas.getHeight(),
-        };
-    }
-
-    async replayAnimation(config?: TReplayConfig) {
-        if (!this.klRecorder) {
-            console.log('No recorder available for replay');
-            return 'recorder-is-disabled';
+        // Set the brush configuration
+        if (brushData && this.brushes[brushData.id]) {
+          this.setCurrentBrush(brushData.id);
+          if (brushData.cfg) {
+            this.brushes[brushData.id].setBrushConfig(brushData.cfg);
+          }
+        } else {
+          console.log('Unknown brush during replay:', brushData);
         }
 
-        // Prepare
-        this.klRecorder.pause();
-        this.resetView();
-        this.notifyUi('isReplaying', true);
+        this.chainRecorder?.emitReplayedEvent(drawEvents);
+      });
 
-        // Start
-        const events = await this.klRecorder.getEvents();
-        const result = await this.klRecorder.getReplayer().startReplay(events, config);
+      replayer.addReplayHandler('undo', event => {
+        this.undo(false); // Don't show message during replay
+      });
 
-        // Fix ui state
-        this.klCanvas.fixHistoryState();
-        this.layerController.setActiveLayerInternal(0);
-        this.setBrushConfig(this.getCurrentBrushConfig());
+      replayer.addReplayHandler('redo', event => {
+        this.redo(false); // Don't show message during replay
+      });
 
+      replayer.addReplayHandler('l-select', event => {
+        const layer = this.klCanvas.getLayer((event.data as number[])[0]);
+        if (layer) {
+          this.setCurrentLayer(layer);
+          this.klHistory.push(
+            {
+              activeLayerId: layer.id,
+            },
+            false
+          );
+          this.layerController.setActiveLayerInternal(layer.index);
+        }
+      });
+
+      replayer.addReplayHandler('reset', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.reset>;
+        const layerIndex = this.klCanvas.reset(...data);
+        this.setCurrentLayer(this.klCanvas.getLayer(layerIndex));
+        this.easelProjectUpdater.update();
+        this.easel.resetOrFitTransform(true);
+        this.updateUi();
         this.notifyUi('layersChanged', this.layerController.getState());
+      });
+
+      replayer.addReplayHandler('resize', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.resize>;
+        this.klCanvas.resize(...data);
+        this.easelProjectUpdater.update();
+        this.easel.resetOrFitTransform(true);
+      });
+
+      replayer.addReplayHandler('resize-c', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.resizeCanvas>;
+        this.klCanvas.resizeCanvas(...data);
+        this.easelProjectUpdater.update();
+        this.easel.resetOrFitTransform(true);
+      });
+
+      replayer.addReplayHandler('l-add', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.addLayer>;
+        this.klCanvas.addLayer(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-dupl', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.duplicateLayer>;
+        this.klCanvas.duplicateLayer(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-rm', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.removeLayer>;
+        this.klCanvas.removeLayer(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-ren', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.renameLayer>;
+        this.klCanvas.renameLayer(...data);
+      });
+
+      replayer.addReplayHandler('l-opac', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.setOpacity>;
+        this.klCanvas.setOpacity(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-vis', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.setLayerIsVisible>;
+        this.klCanvas.setLayerIsVisible(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-move', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.moveLayer>;
+        this.klCanvas.moveLayer(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-merge', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.mergeLayers>;
+        this.klCanvas.mergeLayers(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-merge-all', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.mergeAll>;
+        this.klCanvas.mergeAll(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('rotate', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.rotate>;
+        this.klCanvas.rotate(...data);
+        this.easelProjectUpdater.update();
+        this.easel.resetOrFitTransform(true);
+      });
+
+      replayer.addReplayHandler('l-flip', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.flip>;
+        this.klCanvas.flip(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-fill', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.layerFill>;
+        this.klCanvas.layerFill(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('flood-fill', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.floodFill>;
+        this.klCanvas.floodFill(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('shape', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.drawShape>;
+        this.klCanvas.drawShape(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('grad', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.drawGradient>;
+        this.klCanvas.drawGradient(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('text', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.text>;
+        this.klCanvas.text(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('l-erase', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.eraseLayer>;
+        this.klCanvas.eraseLayer(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('set-mixmode', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.setMixMode>;
+        this.klCanvas.setMixMode(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('selection', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.setSelection>;
+        this.klCanvas.setSelection(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('selection-transform', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.transformViaSelection>;
+        this.klCanvas.transformViaSelection(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('selection-transform-clone', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.transformCloneViaSelection>;
+        this.klCanvas.transformCloneViaSelection(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('filter', event => {
+        const filterKey = event.data.filterKey as string;
+        const filterInput = event.data.input as any;
+        const filterResult = FILTER_LIB[filterKey].apply!({
+          layer: this.currentLayer,
+          klCanvas: this.klCanvas,
+          klHistory: this.klHistory,
+          input: filterInput,
+        });
+        if (!filterResult) {
+          console.log('Failed to apply filter during replay:', filterKey);
+          return;
+        }
+        FILTER_LIB[filterKey].updatePos && this.easelProjectUpdater.update();
+        this.easel.resetOrFitTransform(true);
+      });
+    }
+
+    this.klHistoryExecutor = new KlHistoryExecutor({
+      klHistory: this.klHistory,
+      tempHistory: this.tempHistory,
+      onCanUndoRedoChange: (canUndo, canRedo) => {
+        this.uiState.canUndo = canUndo;
+        this.uiState.canRedo = canRedo;
         this.updateUi();
+      },
+    });
+
+    // Viewport initialization
+    this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
+    this.resize(this.uiWidth, this.uiHeight);
+
+    // Update initial brush
+    this.setBrushConfig({
+      ...this.uiState.brushConfig[this.uiState.currentBrushId],
+      size: 4,
+      color: this.uiState.primaryColorRgb,
+    });
+
+    if (p.initialViewport?.canvasWidth && p.canvasWidth) {
+      // apply scale
+      const scale = (p.initialViewport.canvasWidth ?? 0) / (p.canvasWidth ?? 1);
+      this.easel.scale(scale);
+      // this.resetView()
+    }
+
+    this.saveToComputer = new SaveToComputer(
+      () => exportType,
+      this.klCanvas,
+      () => {
+        this.updateLastSaved();
+      }
+    );
+
+    // Initialize layer controller
+    this.layerController = new LayerHeadlessController({
+      klCanvas: this.klCanvas,
+      klHistory: this.klHistory,
+      maxNumLayers: this.featureConfiguration.maxNumberOfLayers,
+      applyUncommitted: () => this.applyUncommitted(),
+      onUpdateProject: () => this.easelProjectUpdater.update(),
+      onClearLayer: () => this.clearLayer(true),
+      onSelect: (layerIndex: number) => {
+        const layer = this.klCanvas.getLayer(layerIndex);
+        if (!layer) return;
+
+        this.setCurrentLayer(layer);
+        if (this.layerController) this.notifyUi('layersChanged', this.layerController?.getState());
+
+        // Fix the history, if there were two active layer changes in a row, replace the top one.
+        const topEntry = this.klHistory.getEntries().at(-1)!.data;
+        const replaceTop = isHistoryEntryActiveLayerChange(topEntry);
+
+        this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
+        this.klRecorder?.record('l-select', [layerIndex]);
+      },
+      onLayersChange: state => {
+        this.notifyUi('layersChanged', state);
+      },
+    });
+
+    // TODO enable if you like
+    /*this.unloadWarningTrigger = new UnloadWarningTrigger({
+        klHistory: this.klHistory,
+        getLastSavedHistoryIndex: () => this.lastSavedHistoryIndex,
+    });*/
+
+    {
+      window.addEventListener('resize', () => {
+        this.resize(window.innerWidth, window.innerHeight);
+      });
+      window.addEventListener('orientationchange', () => {
+        this.resize(window.innerWidth, window.innerHeight);
+      });
+      // 2024-08: window.resize doesn't fire on iPad Safari when:
+      // pinch zoomed page, then reload, and un-pinch-zoom page
+      // therefor also listen to visualViewport.
+      if ('visualViewport' in window && visualViewport !== null) {
+        visualViewport.addEventListener('resize', () => {
+          this.resize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      // iPad doesn't trigger 'resize' event when using text zoom, although it's resizing the window.
+      // Workaround: place a div in the body that fills the window, and use a ResizeObserver
+      const windowResizeWatcher = el({
+        parent: document.body,
+        css: {
+          position: 'fixed',
+          left: '0',
+          top: '0',
+          right: '0',
+          bottom: '0',
+          pointerEvents: 'none',
+          zIndex: '-1',
+          userSelect: 'none',
+        },
+      });
+      try {
+        // Not all browsers support ResizeObserver. Not critical though.
+        const observer = new ResizeObserver(() => {
+          this.resize(window.innerWidth, window.innerHeight);
+        });
+        observer.observe(windowResizeWatcher);
+      } catch (e) {
+        windowResizeWatcher.remove();
+      }
+
+      // prevent ctrl scroll -> zooming page
+      this.rootEl.addEventListener(
+        'wheel',
+        event => {
+          if (this.keyListener.isPressed('ctrl')) {
+            event.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+      //maybe prevent zooming on safari mac os - todo still needed?
+      const prevent = (e: Event) => {
+        e.preventDefault();
+      };
+      window.addEventListener('gesturestart', prevent, { passive: false });
+      window.addEventListener('gesturechange', prevent, { passive: false });
+      window.addEventListener('gestureend', prevent, { passive: false });
+
+      const pinchZoomWatcher = new PinchZoomWatcher();
+    }
+
+    /*setTimeout(() => {
+        runBrowserStorageBanner({
+            projectStore,
+            klRecoveryManager,
+            onOpenBrowserStorage,
+            klHistory: this.klHistory,
+        });
+    });*/
+    this.saveReminder?.init();
+
+    const seedLayerConfig = () => {
+      if (p.initialLayerConfiguration) {
+        // rename first layer
+        if (p.initialLayerConfiguration[0].name !== undefined)
+          this.layerController.setLayerName(p.initialLayerConfiguration[0].name);
+        // Add and rename other layer
+        for (let i = 1; i < p.initialLayerConfiguration.length; i++) {
+          this.layerController.addLayer();
+          if (p.initialLayerConfiguration[i].name !== undefined)
+            this.layerController.setLayerName(p.initialLayerConfiguration[i].name!);
+        }
+      }
+    };
+
+    // Load the drawing from the storage provider, or start a new one.
+    if (!!this.klRecorder) {
+      this.klRecorder?.loadFromStorage().then(x => {
+        if (x === 'empty-storage') {
+          // Begin recording already
+          this.klRecorder?.start();
+
+          // Initial clear
+          this.klRecorder?.record('reset', [
+            {
+              width: oldestComposed.size.width,
+              height: oldestComposed.size.height,
+              color: { r: 255, g: 255, b: 255 } as TRgb,
+            },
+          ]);
+
+          // Start with layerconfiguration
+          seedLayerConfig();
+        }
+        // Finalise
+        this.klCanvas.fixHistoryState();
+
+        // Select the 1st layer, instead of the 0th
+        if (this.klCanvas.getLayerCount() >= 1) this.layerController.setActiveLayerInternal(1);
+
+        // Propagate the state to the ui
+        this.updateUi();
+        this.notifyUi('layersChanged', this.layerController.getState());
         this.resetView();
 
-        // Done
-        this.klRecorder.start();
-        this.notifyUi('isReplaying', false);
-        return result;
+        // We are ready to rock
+        this.klRecorder?.start();
+        p.onReady?.();
+      });
+    } else {
+      // Start without recorder
+      seedLayerConfig();
+      this.klCanvas.fixHistoryState();
+      p.onReady?.();
     }
+  } // end of constructor
+
+  // -------- interface --------
+
+  getElement(): HTMLElement {
+    return this.rootEl;
+  }
+
+  resize(w: number, h: number): void {
+    // iPad scrolls down when increasing text zoom
+    if (window.scrollY > 0) {
+      window.scrollTo(0, 0);
+    }
+
+    if (this.uiWidth === Math.max(0, w) && this.uiHeight === Math.max(0, h)) {
+      return;
+    }
+
+    this.uiWidth = Math.max(0, w);
+    this.uiHeight = Math.max(0, h);
+
+    // Propagate resize:
+    this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
+    this.updateUi();
+  }
+
+  out(msg: string): void {
+    this.showStatusMessageCallback(msg);
+  }
+
+  async getPNG(): Promise<Blob> {
+    return await canvasToBlob(this.klCanvas.getCompleteCanvas(1), 'image/png');
+  }
+
+  getPSD = async (): Promise<Blob> => {
+    return await klCanvasToPsdBlob(this.klCanvas);
+  };
+
+  getProject(): TKlProject {
+    return this.klCanvas.getProject();
+  }
+
+  saveAsPsd(): void {
+    this.saveToComputer.save('psd');
+  }
+
+  isDrawing(): boolean {
+    return this.lineSanitizer.getIsDrawing() || this.easel.getIsLocked();
+  }
+
+  setColors(color1: TRgb, color2: TRgb | undefined): void {
+    this.uiState.primaryColorRgb = color1;
+    this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color1);
+    if (color2) {
+      this.uiState.secondaryColorRgb = color2;
+      this.uiState.secondaryColorHsv = ColorConverter._RGBtoHSV(color2);
+    }
+    this.setBrushConfig({ color: color1 });
+    this.updateUi();
+  }
+
+  setCurrentBrush(brushId: TKlBrushId | -1) {
+    if (brushId == -1) brushId = this.lastNonEraserBrushId;
+
+    if (brushId !== 'EraserBrush') {
+      this.lastNonEraserBrushId = brushId;
+    }
+
+    this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
+
+    this.uiState.currentBrushId = brushId;
+    this.setBrushConfig({
+      color: this.uiState.primaryColorRgb,
+    });
+    this.easelBrush.setBrush({
+      radius: this.uiState.brushConfig[this.uiState.currentBrushId].size,
+      type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
+    });
+    this.updateUi();
+  }
+
+  setBrushConfig(data: Partial<TBrushConfigTypes>) {
+    if (data == undefined) return;
+
+    const brushLogic = this.brushes[this.uiState.currentBrushId];
+    brushLogic.setBrushConfig(data);
+
+    this.uiState.brushConfig[this.uiState.currentBrushId] = {
+      ...this.uiState.brushConfig[this.uiState.currentBrushId],
+      ...data,
+    };
+
+    // console.log('set brush', this.uiState.currentBrushId, this.uiState.brushConfig[this.uiState.currentBrushId]);
+
+    // Update context (varies)
+    if ('setLayer' in brushLogic) brushLogic.setLayer(this.currentLayer);
+    else if ('setContext' in brushLogic) brushLogic.setContext(this.currentLayer.context);
+
+    // if there is a "size" prop
+    if (data.size !== undefined) {
+      if (this.easelBrush) {
+        this.easelBrush.setBrush({ radius: data.size });
+      }
+    }
+    // if there is a "color" prop
+    if ((data as any).color !== undefined && !!(data as any).color.r) {
+      const color = copyObj<TRgb>((data as any).color as TRgb);
+      this.uiState.primaryColorRgb = color;
+      this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(color);
+    }
+    this.updateUi();
+  }
+
+  updateBrushConfig(f: (old: TBrushConfigTypes) => Partial<TBrushConfigTypes> | null) {
+    const oldConfig = this.uiState.brushConfig[this.uiState.currentBrushId];
+    const newConfig = f(oldConfig);
+    if (newConfig != null) this.setBrushConfig(newConfig);
+  }
+
+  setTool(toolId: TKlToolId): void {
+    this.applyUncommitted();
+    this.easel.setTool(toolId);
+    this.uiState.tool = toolId;
+    this.updateUi();
+  }
+
+  setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
+    this.uiState.shape = {
+      ...this.uiState.shape,
+      ...config,
+    };
+    this.updateUi();
+  }
+
+  setGradientConfig(config: Partial<typeof this.uiState.gradient>): void {
+    this.uiState.gradient = {
+      ...this.uiState.gradient,
+      ...config,
+    };
+    this.updateUi();
+  }
+
+  setFillConfig(config: Partial<typeof this.uiState.fill>): void {
+    this.uiState.fill = {
+      ...this.uiState.fill,
+      ...config,
+    };
+    this.updateUi();
+  }
+
+  getCurrentBrushConfig() {
+    return this.uiState.brushConfig[this.uiState.currentBrushId];
+  }
+
+  getUiState(): TKlHeadlessUiState {
+    return { ...this.uiState };
+  }
+
+  getProjectId(): string {
+    return this.klHistory.getComposed().projectId?.value || '';
+  }
+
+  destroy(): void {
+    // Cleanup
+    this.layerController.destroy();
+    this.easel.destroy();
+    this.klCanvas.destroy();
+    this.keyListener.destroy();
+  }
+
+  on(eventType: TUiEventType, handler: TUiEventHandler): void {
+    if (!this.uiUpdateListeners.has(eventType)) {
+      this.uiUpdateListeners.set(eventType, []);
+    }
+    this.uiUpdateListeners.get(eventType)!.push(handler);
+  }
+
+  off(eventType: TUiEventType, handler: TUiEventHandler): void {
+    const handlers = this.uiUpdateListeners.get(eventType);
+    if (handlers) {
+      const index = handlers.indexOf(handler);
+      if (index > -1) {
+        handlers.splice(index, 1);
+        if (handlers.length === 0) {
+          this.uiUpdateListeners.delete(eventType);
+        }
+      }
+    }
+  }
+
+  resetView(): void {
+    this.easel.scaleToNormal(false);
+    this.notifyUi('transformChanged', {
+      transform: this.easel.getTransform(),
+      isScaleOrAngleChanged: true,
+    });
+  }
+
+  getLayerController(): IHeadlessLayerControllerActions {
+    return this.layerController;
+  }
+
+  getSelectionController(): IHeadlessSelectActions {
+    return this.klAppSelect;
+  }
+
+  getDimensions() {
+    return {
+      width: this.klCanvas.getWidth(),
+      height: this.klCanvas.getHeight(),
+    };
+  }
+
+  async replayAnimation(config?: TReplayConfig) {
+    if (!this.klRecorder) {
+      console.log('No recorder available for replay');
+      return 'recorder-is-disabled';
+    }
+
+    // Prepare
+    this.klRecorder.pause();
+    this.resetView();
+    this.notifyUi('isReplaying', true);
+
+    // Start
+    const events = await this.klRecorder.getEvents();
+    const result = await this.klRecorder.getReplayer().startReplay(events, config);
+
+    // Fix ui state
+    this.klCanvas.fixHistoryState();
+    this.layerController.setActiveLayerInternal(0);
+    this.setBrushConfig(this.getCurrentBrushConfig());
+
+    this.notifyUi('layersChanged', this.layerController.getState());
+    this.updateUi();
+    this.resetView();
+
+    // Done
+    this.klRecorder.start();
+    this.notifyUi('isReplaying', false);
+    return result;
+  }
 }

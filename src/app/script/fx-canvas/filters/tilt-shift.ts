@@ -24,28 +24,21 @@ import { TFxCanvas } from '../fx-canvas-types';
  * @param gradientRadius The distance from the line at which the maximum blur radius is reached.
  */
 export type TFilterTiltShift = (
-    this: TFxCanvas,
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number,
-    blurRadius: number,
-    gradientRadius: number,
+  this: TFxCanvas,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  blurRadius: number,
+  gradientRadius: number
 ) => TFxCanvas;
 
-export const tiltShift: TFilterTiltShift = function (
-    startX,
-    startY,
-    endX,
-    endY,
-    blurRadius,
-    gradientRadius,
-) {
-    gl.tiltShift =
-        gl.tiltShift ||
-        new FxShader(
-            null,
-            '\
+export const tiltShift: TFilterTiltShift = function (startX, startY, endX, endY, blurRadius, gradientRadius) {
+  gl.tiltShift =
+    gl.tiltShift ||
+    new FxShader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform float blurRadius;\
         uniform float gradientRadius;\
@@ -55,8 +48,8 @@ export const tiltShift: TFilterTiltShift = function (
         uniform vec2 texSize;\
         varying vec2 texCoord;\
         ' +
-                randomShaderFunc +
-                '\
+        randomShaderFunc +
+        '\
         void main() {\
             vec4 color = vec4(0.0);\
             float total = 0.0;\
@@ -78,28 +71,28 @@ export const tiltShift: TFilterTiltShift = function (
             gl_FragColor = color / total;\
         }\
     ',
-            'tiltShift',
-        );
+      'tiltShift'
+    );
 
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const d = Math.sqrt(dx * dx + dy * dy);
-    simpleShader.call(this, gl.tiltShift, {
-        blurRadius: blurRadius,
-        gradientRadius: gradientRadius,
-        start: [startX, startY],
-        end: [endX, endY],
-        delta: [dx / d, dy / d],
-        texSize: [this.width, this.height],
-    });
-    simpleShader.call(this, gl.tiltShift, {
-        blurRadius: blurRadius,
-        gradientRadius: gradientRadius,
-        start: [startX, startY],
-        end: [endX, endY],
-        delta: [-dy / d, dx / d],
-        texSize: [this.width, this.height],
-    });
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  simpleShader.call(this, gl.tiltShift, {
+    blurRadius: blurRadius,
+    gradientRadius: gradientRadius,
+    start: [startX, startY],
+    end: [endX, endY],
+    delta: [dx / d, dy / d],
+    texSize: [this.width, this.height],
+  });
+  simpleShader.call(this, gl.tiltShift, {
+    blurRadius: blurRadius,
+    gradientRadius: gradientRadius,
+    start: [startX, startY],
+    end: [endX, endY],
+    delta: [-dy / d, dx / d],
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 };

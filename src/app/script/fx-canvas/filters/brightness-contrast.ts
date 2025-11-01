@@ -10,18 +10,14 @@ import { TFxCanvas } from '../fx-canvas-types';
  * @param brightness -1 to 1 (-1 is solid black, 0 is no change, and 1 is solid white)
  * @param contrast   -1 to 1 (-1 is solid gray, 0 is no change, and 1 is maximum contrast)
  */
-export type TFilterBrightnessContrast = (
-    this: TFxCanvas,
-    brightness: number,
-    contrast: number,
-) => TFxCanvas;
+export type TFilterBrightnessContrast = (this: TFxCanvas, brightness: number, contrast: number) => TFxCanvas;
 
 export const brightnessContrast: TFilterBrightnessContrast = function (brightness, contrast) {
-    gl.brightnessContrast =
-        gl.brightnessContrast ||
-        new FxShader(
-            null,
-            '\
+  gl.brightnessContrast =
+    gl.brightnessContrast ||
+    new FxShader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform float brightness;\
         uniform float contrast;\
@@ -37,13 +33,13 @@ export const brightnessContrast: TFilterBrightnessContrast = function (brightnes
             gl_FragColor = clamp(color, 0.0, 1.0);\
         }\
     ',
-            'brightnessContrast',
-        );
+      'brightnessContrast'
+    );
 
-    simpleShader.call(this, gl.brightnessContrast, {
-        brightness: BB.clamp(brightness, -1, 1),
-        contrast: BB.clamp(contrast, -1, 1),
-    });
+  simpleShader.call(this, gl.brightnessContrast, {
+    brightness: BB.clamp(brightness, -1, 1),
+    contrast: BB.clamp(contrast, -1, 1),
+  });
 
-    return this;
+  return this;
 };

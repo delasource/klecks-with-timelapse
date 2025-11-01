@@ -10,11 +10,11 @@ import { TFxCanvas } from '../fx-canvas-types';
 export type TFilterMultiplyAlpha = (this: TFxCanvas) => TFxCanvas;
 
 export const multiplyAlpha: TFilterMultiplyAlpha = function () {
-    gl.multiplyAlpha =
-        gl.multiplyAlpha ||
-        new FxShader(
-            null,
-            '\
+  gl.multiplyAlpha =
+    gl.multiplyAlpha ||
+    new FxShader(
+      null,
+      '\
     uniform sampler2D texture;\
     uniform vec2 texSize;\
     varying vec2 texCoord;\
@@ -25,12 +25,12 @@ export const multiplyAlpha: TFilterMultiplyAlpha = function () {
         gl_FragColor = color;\
     }\
 ',
-            'multiplyAlpha',
-        );
+      'multiplyAlpha'
+    );
 
-    simpleShader.call(this, gl.multiplyAlpha, {
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.multiplyAlpha, {
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 };

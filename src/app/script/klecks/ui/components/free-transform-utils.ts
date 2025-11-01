@@ -3,28 +3,28 @@ import { BB } from '../../../bb/bb';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 
 export type TFreeTransform = {
-    x: number; // center of transform region. image space
-    y: number;
-    width: number; // size of transform region. image space
-    height: number;
-    angleDeg: number; // angle of transform region. degrees
+  x: number; // center of transform region. image space
+  y: number;
+  width: number; // size of transform region. image space
+  height: number;
+  angleDeg: number; // angle of transform region. degrees
 };
 
 export type TFreeTransformCorner = {
-    i: number; // index in corners array
-    el: HTMLElement; // draggable corner circle in DOM
-    x: number; // unscaled position (transform space)
-    y: number;
-    virtualPos: TVector2D; // unscaled temporary position (image space)
-    updateDOM: () => void; // update styling in DOM
-    pointerListener: PointerListener;
+  i: number; // index in corners array
+  el: HTMLElement; // draggable corner circle in DOM
+  x: number; // unscaled position (transform space)
+  y: number;
+  virtualPos: TVector2D; // unscaled temporary position (image space)
+  updateDOM: () => void; // update styling in DOM
+  pointerListener: PointerListener;
 };
 
 export type TFreeTransformEdge = {
-    // derive position from corners
-    el: HTMLElement;
-    updateDOM: () => void;
-    pointerListener: PointerListener;
+  // derive position from corners
+  el: HTMLElement;
+  updateDOM: () => void;
+  pointerListener: PointerListener;
 };
 
 /**
@@ -37,33 +37,33 @@ export type TFreeTransformEdge = {
  * @param transform
  */
 export function snapToPixel(transform: TFreeTransform): void {
-    if (Math.abs(transform.angleDeg) % 90 !== 0) {
-        return;
-    }
+  if (Math.abs(transform.angleDeg) % 90 !== 0) {
+    return;
+  }
 
-    transform.width = Math.round(transform.width);
-    transform.height = Math.round(transform.height);
-    // 0° is original orientation.
-    // At 90° and 270° width and height become swapped due to different orientation.
-    const whSwapped = Math.abs(transform.angleDeg - 90) % 180 === 0;
-    transform.x =
-        (whSwapped ? transform.height : transform.width) % 2 === 0
-            ? Math.round(transform.x)
-            : Math.round(transform.x - 0.5) + 0.5;
-    transform.y =
-        (whSwapped ? transform.width : transform.height) % 2 === 0
-            ? Math.round(transform.y)
-            : Math.round(transform.y - 0.5) + 0.5;
+  transform.width = Math.round(transform.width);
+  transform.height = Math.round(transform.height);
+  // 0° is original orientation.
+  // At 90° and 270° width and height become swapped due to different orientation.
+  const whSwapped = Math.abs(transform.angleDeg - 90) % 180 === 0;
+  transform.x =
+    (whSwapped ? transform.height : transform.width) % 2 === 0
+      ? Math.round(transform.x)
+      : Math.round(transform.x - 0.5) + 0.5;
+  transform.y =
+    (whSwapped ? transform.width : transform.height) % 2 === 0
+      ? Math.round(transform.y)
+      : Math.round(transform.y - 0.5) + 0.5;
 }
 
 export function copyTransform(transform: TFreeTransform): TFreeTransform {
-    return {
-        x: transform.x,
-        y: transform.y,
-        width: transform.width,
-        height: transform.height,
-        angleDeg: transform.angleDeg,
-    };
+  return {
+    x: transform.x,
+    y: transform.y,
+    width: transform.width,
+    height: transform.height,
+    angleDeg: transform.angleDeg,
+  };
 }
 
 /**
@@ -78,18 +78,18 @@ export function copyTransform(transform: TFreeTransform): TFreeTransform {
  * @param transform
  */
 export function toTransformSpace(x: number, y: number, transform: TFreeTransform): TVector2D {
-    let px, py;
-    px = x - transform.x;
-    py = y - transform.y;
+  let px, py;
+  px = x - transform.x;
+  py = y - transform.y;
 
-    const rot = BB.rotateAround({ x: 0, y: 0 }, { x: px, y: py }, -transform.angleDeg);
-    px = rot.x;
-    py = rot.y;
+  const rot = BB.rotateAround({ x: 0, y: 0 }, { x: px, y: py }, -transform.angleDeg);
+  px = rot.x;
+  py = rot.y;
 
-    return {
-        x: px,
-        y: py,
-    };
+  return {
+    x: px,
+    y: py,
+  };
 }
 
 /**
@@ -99,9 +99,9 @@ export function toTransformSpace(x: number, y: number, transform: TFreeTransform
  * @param transform
  */
 export function toImageSpace(x: number, y: number, transform: TFreeTransform): TVector2D {
-    const rot = BB.rotateAround({ x: 0, y: 0 }, { x: x, y: y }, transform.angleDeg);
-    return {
-        x: rot.x + transform.x,
-        y: rot.y + transform.y,
-    };
+  const rot = BB.rotateAround({ x: 0, y: 0 }, { x: x, y: y }, transform.angleDeg);
+  return {
+    x: rot.x + transform.x,
+    y: rot.y + transform.y,
+  };
 }

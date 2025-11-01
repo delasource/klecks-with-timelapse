@@ -5,45 +5,45 @@ import { canvasToLayerTiles } from './canvas-to-layer-tiles';
 
 type TLayerKey = keyof THistoryEntryLayer;
 type TLayerMapGeneric = {
-    attributes: 'all' | TLayerKey[];
+  attributes: 'all' | TLayerKey[];
 };
 type TLayerMapLayer = {
-    layerId: string;
-    attributes: 'all' | TLayerKey[];
-    bounds?: TBounds; // changed bounds
-    tiles?: (THistoryEntryLayerTile | undefined)[]; // custom tiles. bounds ignored if tiles set.
+  layerId: string;
+  attributes: 'all' | TLayerKey[];
+  bounds?: TBounds; // changed bounds
+  tiles?: (THistoryEntryLayerTile | undefined)[]; // custom tiles. bounds ignored if tiles set.
 };
 export type TLayerMapConfigItem = TLayerMapGeneric | TLayerMapLayer;
 
 // create individual THistoryEntryLayer
 function createEntryLayer(
-    layer: TKlCanvasLayer,
-    attributes: 'all' | TLayerKey[],
-    bounds?: TBounds,
-    tiles?: (THistoryEntryLayerTile | undefined)[],
+  layer: TKlCanvasLayer,
+  attributes: 'all' | TLayerKey[],
+  bounds?: TBounds,
+  tiles?: (THistoryEntryLayerTile | undefined)[]
 ): THistoryEntryLayer {
-    const useAll = attributes === 'all';
-    const result: THistoryEntryLayer = {};
+  const useAll = attributes === 'all';
+  const result: THistoryEntryLayer = {};
 
-    if (useAll || attributes.includes('name')) {
-        result.name = layer.name;
-    }
-    if (useAll || attributes.includes('opacity')) {
-        result.opacity = layer.opacity;
-    }
-    if (useAll || attributes.includes('isVisible')) {
-        result.isVisible = layer.isVisible;
-    }
-    if (useAll || attributes.includes('mixModeStr')) {
-        result.mixModeStr = layer.mixModeStr;
-    }
-    if (useAll || attributes.includes('index')) {
-        result.index = layer.index;
-    }
-    if (useAll || attributes.includes('tiles')) {
-        result.tiles = tiles ?? canvasToLayerTiles(layer.context.canvas, bounds);
-    }
-    return result;
+  if (useAll || attributes.includes('name')) {
+    result.name = layer.name;
+  }
+  if (useAll || attributes.includes('opacity')) {
+    result.opacity = layer.opacity;
+  }
+  if (useAll || attributes.includes('isVisible')) {
+    result.isVisible = layer.isVisible;
+  }
+  if (useAll || attributes.includes('mixModeStr')) {
+    result.mixModeStr = layer.mixModeStr;
+  }
+  if (useAll || attributes.includes('index')) {
+    result.index = layer.index;
+  }
+  if (useAll || attributes.includes('tiles')) {
+    result.tiles = tiles ?? canvasToLayerTiles(layer.context.canvas, bounds);
+  }
+  return result;
 }
 
 /**
@@ -60,27 +60,22 @@ function createEntryLayer(
  *  Can further customize by setting what bounds changed, or provide custom tiles.
  */
 export function createLayerMap(
-    layers: TKlCanvasLayer[],
-    ...items: (TLayerMapConfigItem | undefined)[]
+  layers: TKlCanvasLayer[],
+  ...items: (TLayerMapConfigItem | undefined)[]
 ): Record<TLayerId, THistoryEntryLayer> {
-    const generic: TLayerMapGeneric = items.find((item) => item && !('layerId' in item)) ?? {
-        attributes: [],
-    };
-    const targets: TLayerMapLayer[] = items
-        .filter((item) => !!item)
-        .filter((item) => 'layerId' in item);
+  const generic: TLayerMapGeneric = items.find(item => item && !('layerId' in item)) ?? {
+    attributes: [],
+  };
+  const targets: TLayerMapLayer[] = items.filter(item => !!item).filter(item => 'layerId' in item);
 
-    return Object.fromEntries(
-        layers.map((layer, index) => {
-            for (const target of targets) {
-                if (target.layerId === layer.id) {
-                    return [
-                        layer.id,
-                        createEntryLayer(layer, target.attributes, target.bounds, target.tiles),
-                    ];
-                }
-            }
-            return [layer.id, createEntryLayer(layer, generic.attributes)];
-        }),
-    );
+  return Object.fromEntries(
+    layers.map((layer, index) => {
+      for (const target of targets) {
+        if (target.layerId === layer.id) {
+          return [layer.id, createEntryLayer(layer, target.attributes, target.bounds, target.tiles)];
+        }
+      }
+      return [layer.id, createEntryLayer(layer, generic.attributes)];
+    })
+  );
 }

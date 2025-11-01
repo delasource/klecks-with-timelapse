@@ -14,203 +14,192 @@ import { getPreviewHeight, getPreviewWidth, MEDIUM_PREVIEW } from '../ui/utils/p
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 
 export type TFilterPerspectiveInput = {
-    before: TRectanglePoints;
-    after: TRectanglePoints;
+  before: TRectanglePoints;
+  after: TRectanglePoints;
 };
 
 export const filterPerspective = {
-    getDialog(params: TFilterGetDialogParam) {
-        const context = params.context;
-        const klCanvas = params.klCanvas;
-        if (!context || !klCanvas) {
-            return false;
-        }
+  getDialog(params: TFilterGetDialogParam) {
+    const context = params.context;
+    const klCanvas = params.klCanvas;
+    if (!context || !klCanvas) {
+      return false;
+    }
 
-        const isSmall = testIsSmall();
-        const layers = klCanvas.getLayers();
-        const selectedLayerIndex = klCanvas.getLayerIndex(context.canvas);
+    const isSmall = testIsSmall();
+    const layers = klCanvas.getLayers();
+    const selectedLayerIndex = klCanvas.getLayerIndex(context.canvas);
 
-        const rootEl = BB.el();
-        const result: TFilterGetDialogResult<TFilterPerspectiveInput> = {
-            element: rootEl,
-        };
-        if (!isSmall) {
-            result.width = MEDIUM_PREVIEW.width;
-        }
+    const rootEl = BB.el();
+    const result: TFilterGetDialogResult<TFilterPerspectiveInput> = {
+      element: rootEl,
+    };
+    if (!isSmall) {
+      result.width = MEDIUM_PREVIEW.width;
+    }
 
-        const fxCanvas = throwIfNull(getSharedFx());
-        const texture = throwIfUndefined(fxCanvas?.texture(context.canvas));
+    const fxCanvas = throwIfNull(getSharedFx());
+    const texture = throwIfUndefined(fxCanvas?.texture(context.canvas));
 
-        function update(): void {
-            if (isBefore) {
-                fxCanvas.draw(texture).update();
-            } else {
-                fxCanvas
-                    .draw(texture)
-                    .perspective(
-                        getFlatArr(beforeInputs) as TRectanglePoints,
-                        getFlatArr(afterInputs) as TRectanglePoints,
-                    )
-                    .update();
-            }
-            preview.render();
-        }
-
-        const rectPoints = [
-            { x: 0, y: 0 },
-            { x: context.canvas.width, y: 0 },
-            { x: context.canvas.width, y: context.canvas.height },
-            { x: 0, y: context.canvas.height },
-        ];
-        const beforeInputs = rectPoints.map((point) => {
-            return new DraggableInput({
-                value: point,
-                onChange: () => {
-                    update();
-                },
-            });
-        });
-        beforeInputs.forEach((item) => (item.getElement().style.display = 'none'));
-        const afterInputs = rectPoints.map((point) => {
-            return new DraggableInput({
-                value: point,
-                onChange: () => {
-                    update();
-                },
-            });
-        });
-        function getFlatArr(inputs: DraggableInput[], matrix?: Matrix): number[] {
-            return inputs.flatMap((item) => {
-                let value = item.getValue();
-                if (matrix) {
-                    value = applyToPoint(matrix, value);
-                }
-                return [value.x, value.y];
-            });
-        }
-
-        let isBefore = false;
-
-        const beforeAfterTabs = new TwoTabs({
-            left: LANG('compare-before'),
-            right: LANG('compare-after'),
-            init: 1,
-            onChange: (val: number) => {
-                isBefore = val === 0;
-                if (isBefore) {
-                    beforeInputs.forEach((item) => (item.getElement().style.display = 'block'));
-                    afterInputs.forEach((item) => (item.getElement().style.display = 'none'));
-                } else {
-                    beforeInputs.forEach((item, index) => {
-                        afterInputs[index].setValue(item.getValue());
-                    });
-                    beforeInputs.forEach((item) => (item.getElement().style.display = 'none'));
-                    afterInputs.forEach((item) => (item.getElement().style.display = 'block'));
-                }
-                update();
-            },
-        });
-        rootEl.append(beforeAfterTabs.getElement());
-
-        const previewLayerArr: TProjectViewportProject['layers'] = [];
-        {
-            for (let i = 0; i < layers.length; i++) {
-                previewLayerArr.push({
-                    image: i === selectedLayerIndex ? fxCanvas : layers[i].context.canvas,
-                    isVisible: layers[i].isVisible,
-                    opacity: layers[i].opacity,
-                    mixModeStr: layers[i].mixModeStr,
-                    hasClipping: false,
-                });
-            }
-        }
-
-        const preview = new Preview({
-            width: getPreviewWidth(isSmall),
-            height: getPreviewHeight(isSmall),
-            project: {
-                width: context.canvas.width,
-                height: context.canvas.height,
-                layers: previewLayerArr,
-            },
-            onTransformChange: (transform) => {
-                beforeInputs.forEach((item) => item.setTransform(transform));
-                afterInputs.forEach((item) => item.setTransform(transform));
-            },
-        });
-        css(preview.getElement(), {
-            overflow: 'hidden',
-            marginLeft: '-20px',
-            marginRight: '-20px',
-        });
-
-        preview
-            .getElement()
-            .append(
-                ...beforeInputs.map((item) => item.getElement()),
-                ...afterInputs.map((item) => item.getElement()),
-            );
-        rootEl.append(preview.getElement());
-
-        update();
-        result.destroy = (): void => {
-            preview.destroy();
-            texture.destroy();
-            beforeInputs.forEach((item) => item.destroy());
-            afterInputs.forEach((item) => item.destroy());
-        };
-        result.getInput = (): TFilterPerspectiveInput => {
-            result.destroy!();
-            return {
-                before: getFlatArr(beforeInputs) as TRectanglePoints,
-                after: getFlatArr(afterInputs) as TRectanglePoints,
-            };
-        };
-
-        return result;
-    },
-
-    apply(params: TFilterApply<TFilterPerspectiveInput>): boolean {
-        const context = params.layer.context;
-        const klHistory = params.klHistory;
-        const before = params.input.before;
-        const after = params.input.after;
-        if (!context || !before || !after) {
-            return false;
-        }
-        const fxCanvas = getSharedFx();
-        if (!fxCanvas) {
-            return false; // todo more specific error?
-        }
-        const texture = fxCanvas.texture(context.canvas);
+    function update(): void {
+      if (isBefore) {
+        fxCanvas.draw(texture).update();
+      } else {
         fxCanvas
-            .draw(texture)
-            .multiplyAlpha()
-            .perspective(before, after)
-            .unmultiplyAlpha()
-            .update();
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-        context.drawImage(fxCanvas, 0, 0);
-        texture.destroy();
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
+          .draw(texture)
+          .perspective(getFlatArr(beforeInputs) as TRectanglePoints, getFlatArr(afterInputs) as TRectanglePoints)
+          .update();
+      }
+      preview.render();
+    }
 
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
+    const rectPoints = [
+      { x: 0, y: 0 },
+      { x: context.canvas.width, y: 0 },
+      { x: context.canvas.width, y: context.canvas.height },
+      { x: 0, y: context.canvas.height },
+    ];
+    const beforeInputs = rectPoints.map(point => {
+      return new DraggableInput({
+        value: point,
+        onChange: () => {
+          update();
+        },
+      });
+    });
+    beforeInputs.forEach(item => (item.getElement().style.display = 'none'));
+    const afterInputs = rectPoints.map(point => {
+      return new DraggableInput({
+        value: point,
+        onChange: () => {
+          update();
+        },
+      });
+    });
+    function getFlatArr(inputs: DraggableInput[], matrix?: Matrix): number[] {
+      return inputs.flatMap(item => {
+        let value = item.getValue();
+        if (matrix) {
+          value = applyToPoint(matrix, value);
         }
-        return true;
-    },
+        return [value.x, value.y];
+      });
+    }
+
+    let isBefore = false;
+
+    const beforeAfterTabs = new TwoTabs({
+      left: LANG('compare-before'),
+      right: LANG('compare-after'),
+      init: 1,
+      onChange: (val: number) => {
+        isBefore = val === 0;
+        if (isBefore) {
+          beforeInputs.forEach(item => (item.getElement().style.display = 'block'));
+          afterInputs.forEach(item => (item.getElement().style.display = 'none'));
+        } else {
+          beforeInputs.forEach((item, index) => {
+            afterInputs[index].setValue(item.getValue());
+          });
+          beforeInputs.forEach(item => (item.getElement().style.display = 'none'));
+          afterInputs.forEach(item => (item.getElement().style.display = 'block'));
+        }
+        update();
+      },
+    });
+    rootEl.append(beforeAfterTabs.getElement());
+
+    const previewLayerArr: TProjectViewportProject['layers'] = [];
+    {
+      for (let i = 0; i < layers.length; i++) {
+        previewLayerArr.push({
+          image: i === selectedLayerIndex ? fxCanvas : layers[i].context.canvas,
+          isVisible: layers[i].isVisible,
+          opacity: layers[i].opacity,
+          mixModeStr: layers[i].mixModeStr,
+          hasClipping: false,
+        });
+      }
+    }
+
+    const preview = new Preview({
+      width: getPreviewWidth(isSmall),
+      height: getPreviewHeight(isSmall),
+      project: {
+        width: context.canvas.width,
+        height: context.canvas.height,
+        layers: previewLayerArr,
+      },
+      onTransformChange: transform => {
+        beforeInputs.forEach(item => item.setTransform(transform));
+        afterInputs.forEach(item => item.setTransform(transform));
+      },
+    });
+    css(preview.getElement(), {
+      overflow: 'hidden',
+      marginLeft: '-20px',
+      marginRight: '-20px',
+    });
+
+    preview
+      .getElement()
+      .append(...beforeInputs.map(item => item.getElement()), ...afterInputs.map(item => item.getElement()));
+    rootEl.append(preview.getElement());
+
+    update();
+    result.destroy = (): void => {
+      preview.destroy();
+      texture.destroy();
+      beforeInputs.forEach(item => item.destroy());
+      afterInputs.forEach(item => item.destroy());
+    };
+    result.getInput = (): TFilterPerspectiveInput => {
+      result.destroy!();
+      return {
+        before: getFlatArr(beforeInputs) as TRectanglePoints,
+        after: getFlatArr(afterInputs) as TRectanglePoints,
+      };
+    };
+
+    return result;
+  },
+
+  apply(params: TFilterApply<TFilterPerspectiveInput>): boolean {
+    const context = params.layer.context;
+    const klHistory = params.klHistory;
+    const before = params.input.before;
+    const after = params.input.after;
+    if (!context || !before || !after) {
+      return false;
+    }
+    const fxCanvas = getSharedFx();
+    if (!fxCanvas) {
+      return false; // todo more specific error?
+    }
+    const texture = fxCanvas.texture(context.canvas);
+    fxCanvas.draw(texture).multiplyAlpha().perspective(before, after).unmultiplyAlpha().update();
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    context.drawImage(fxCanvas, 0, 0);
+    texture.destroy();
+    {
+      const layerMap = Object.fromEntries(
+        params.klCanvas.getLayers().map(layerItem => {
+          if (layerItem.id === params.layer.id) {
+            return [
+              layerItem.id,
+              {
+                tiles: canvasToLayerTiles(params.layer.canvas),
+              },
+            ];
+          }
+
+          return [layerItem.id, {}];
+        })
+      );
+      klHistory.push({
+        layerMap,
+      });
+    }
+    return true;
+  },
 };

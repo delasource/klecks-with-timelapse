@@ -19,18 +19,18 @@ export type TTextureFormat = GLenum;
 export type TTextureType = GLenum;
 
 export class FxTexture {
-    // ---- static ----
-    static fromElement(element: TFxSupportedElements): FxTexture {
-        const texture = new FxTexture(0, 0, gl.RGBA, gl.UNSIGNED_BYTE);
-        texture.loadContentsOf(element);
-        return texture;
-    }
+  // ---- static ----
+  static fromElement(element: TFxSupportedElements): FxTexture {
+    const texture = new FxTexture(0, 0, gl.RGBA, gl.UNSIGNED_BYTE);
+    texture.loadContentsOf(element);
+    return texture;
+  }
 
-    // ---- private ----
-    private canvas: HTMLCanvasElement | null;
-    private type: TTextureType;
+  // ---- private ----
+  private canvas: HTMLCanvasElement | null;
+  private type: TTextureType;
 
-    /*
+  /*
     // never seen this being used
     private getCanvas(texture: Texture): CanvasRenderingContext2D {
         if (this.canvas == null) {
@@ -43,134 +43,99 @@ export class FxTexture {
         return c;
     }*/
 
-    // ----------------------------------- public -----------------------------------
-    constructor(width: number, height: number, format: TTextureFormat, type: TTextureType) {
-        this.gl = gl;
-        this.id = BB.throwIfNull(gl.createTexture());
-        this.width = width;
-        this.height = height;
-        this.format = format;
-        this.type = type;
-        this.canvas = null;
+  // ----------------------------------- public -----------------------------------
+  constructor(width: number, height: number, format: TTextureFormat, type: TTextureType) {
+    this.gl = gl;
+    this.id = BB.throwIfNull(gl.createTexture());
+    this.width = width;
+    this.height = height;
+    this.format = format;
+    this.type = type;
+    this.canvas = null;
 
-        gl.bindTexture(gl.TEXTURE_2D, this.id);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        if (width && height) {
-            gl.texImage2D(
-                gl.TEXTURE_2D,
-                0,
-                this.format,
-                width,
-                height,
-                0,
-                this.format,
-                this.type,
-                null,
-            );
-        }
+    gl.bindTexture(gl.TEXTURE_2D, this.id);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if (width && height) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, this.format, width, height, 0, this.format, this.type, null);
     }
+  }
 
-    // ---- interface ----
+  // ---- interface ----
 
-    gl: TFxGl;
-    width: number;
-    height: number;
-    id: WebGLTexture | null; // null -> destroyed
-    format: TTextureFormat;
+  gl: TFxGl;
+  width: number;
+  height: number;
+  id: WebGLTexture | null; // null -> destroyed
+  format: TTextureFormat;
 
-    loadContentsOf(element: TFxSupportedElements): void {
-        this.width = element.width || (element as HTMLVideoElement).videoWidth;
-        this.height = element.height || (element as HTMLVideoElement).videoHeight!;
-        gl.bindTexture(gl.TEXTURE_2D, this.id);
-        gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, element);
+  loadContentsOf(element: TFxSupportedElements): void {
+    this.width = element.width || (element as HTMLVideoElement).videoWidth;
+    this.height = element.height || (element as HTMLVideoElement).videoHeight!;
+    gl.bindTexture(gl.TEXTURE_2D, this.id);
+    gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, element);
+  }
+
+  initFromBytes(width: number, height: number, data: number[]): void {
+    this.width = width;
+    this.height = height;
+    this.format = gl.RGBA;
+    this.type = gl.UNSIGNED_BYTE;
+    gl.bindTexture(gl.TEXTURE_2D, this.id);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, this.type, new Uint8Array(data));
+  }
+
+  destroy(): void {
+    gl.deleteTexture(this.id);
+    this.id = null;
+  }
+
+  use(unit?: number): void {
+    gl.activeTexture(gl.TEXTURE0 + (unit || 0));
+    gl.bindTexture(gl.TEXTURE_2D, this.id);
+  }
+
+  unuse(unit: number): void {
+    gl.activeTexture(gl.TEXTURE0 + (unit || 0));
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+
+  ensureFormat(width: number, height: number, format: TTextureFormat, type: TTextureType): void {
+    // change the format only if required
+    if (width != this.width || height != this.height || format != this.format || type != this.type) {
+      this.width = width;
+      this.height = height;
+      this.format = format;
+      this.type = type;
+      gl.bindTexture(gl.TEXTURE_2D, this.id);
+      gl.texImage2D(gl.TEXTURE_2D, 0, this.format, width, height, 0, this.format, this.type, null);
     }
+  }
 
-    initFromBytes(width: number, height: number, data: number[]): void {
-        this.width = width;
-        this.height = height;
-        this.format = gl.RGBA;
-        this.type = gl.UNSIGNED_BYTE;
-        gl.bindTexture(gl.TEXTURE_2D, this.id);
-        gl.texImage2D(
-            gl.TEXTURE_2D,
-            0,
-            gl.RGBA,
-            width,
-            height,
-            0,
-            gl.RGBA,
-            this.type,
-            new Uint8Array(data),
-        );
+  ensureFormatViaTexture(texture: FxTexture): void {
+    this.ensureFormat(texture.width, texture.height, texture.format, texture.type);
+  }
+
+  drawTo(callback: () => void): void {
+    // start rendering to this texture
+    gl.framebuffer = gl.framebuffer || gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.id, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      throw new Error('incomplete framebuffer');
     }
+    gl.viewport(0, 0, this.width, this.height);
 
-    destroy(): void {
-        gl.deleteTexture(this.id);
-        this.id = null;
-    }
+    // do the drawing
+    callback();
 
-    use(unit?: number): void {
-        gl.activeTexture(gl.TEXTURE0 + (unit || 0));
-        gl.bindTexture(gl.TEXTURE_2D, this.id);
-    }
+    // stop rendering to this texture
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
 
-    unuse(unit: number): void {
-        gl.activeTexture(gl.TEXTURE0 + (unit || 0));
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-
-    ensureFormat(width: number, height: number, format: TTextureFormat, type: TTextureType): void {
-        // change the format only if required
-        if (
-            width != this.width ||
-            height != this.height ||
-            format != this.format ||
-            type != this.type
-        ) {
-            this.width = width;
-            this.height = height;
-            this.format = format;
-            this.type = type;
-            gl.bindTexture(gl.TEXTURE_2D, this.id);
-            gl.texImage2D(
-                gl.TEXTURE_2D,
-                0,
-                this.format,
-                width,
-                height,
-                0,
-                this.format,
-                this.type,
-                null,
-            );
-        }
-    }
-
-    ensureFormatViaTexture(texture: FxTexture): void {
-        this.ensureFormat(texture.width, texture.height, texture.format, texture.type);
-    }
-
-    drawTo(callback: () => void): void {
-        // start rendering to this texture
-        gl.framebuffer = gl.framebuffer || gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.id, 0);
-        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-            throw new Error('incomplete framebuffer');
-        }
-        gl.viewport(0, 0, this.width, this.height);
-
-        // do the drawing
-        callback();
-
-        // stop rendering to this texture
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    /*
+  /*
     // never seen this being used
     fillUsingCanvas (callback: (canvas: CanvasRenderingContext2D) => void): Texture {
         callback(this.getCanvas(this));
@@ -198,25 +163,25 @@ export class FxTexture {
     }
      */
 
-    swapWith(other: FxTexture): void {
-        let temp;
+  swapWith(other: FxTexture): void {
+    let temp;
 
-        temp = other.id;
-        other.id = this.id;
-        this.id = temp;
+    temp = other.id;
+    other.id = this.id;
+    this.id = temp;
 
-        temp = other.width;
-        other.width = this.width;
-        this.width = temp;
+    temp = other.width;
+    other.width = this.width;
+    this.width = temp;
 
-        temp = other.height;
-        other.height = this.height;
-        this.height = temp;
+    temp = other.height;
+    other.height = this.height;
+    this.height = temp;
 
-        temp = other.format;
-        other.format = this.format;
-        this.format = temp;
+    temp = other.format;
+    other.format = this.format;
+    this.format = temp;
 
-        // type?
-    }
+    // type?
+  }
 }

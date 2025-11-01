@@ -11,201 +11,198 @@ import { css } from '../../../bb/base/base';
  * Paint Bucket tab contents (color slider, opacity slider, etc)
  */
 export class FillUi {
-    private readonly rootEl: HTMLElement;
-    private isVisible: boolean;
-    private readonly colorDiv: HTMLElement;
-    private readonly colorSlider: KlColorSlider;
-    private readonly toleranceSlider: KlSlider;
-    private readonly opacitySlider: KlSlider;
-    private readonly modeSelect: Select<string>;
-    private readonly growSelect: Select<string>;
-    private isContiguous: boolean;
-    private readonly eraserToggle: Checkbox;
+  private readonly rootEl: HTMLElement;
+  private isVisible: boolean;
+  private readonly colorDiv: HTMLElement;
+  private readonly colorSlider: KlColorSlider;
+  private readonly toleranceSlider: KlSlider;
+  private readonly opacitySlider: KlSlider;
+  private readonly modeSelect: Select<string>;
+  private readonly growSelect: Select<string>;
+  private isContiguous: boolean;
+  private readonly eraserToggle: Checkbox;
 
-    // ----------------------------------- public -----------------------------------
+  // ----------------------------------- public -----------------------------------
 
-    constructor(p: {
-        colorSlider: KlColorSlider; // when opening tab, inserts it (snatches it from where else it was)
-    }) {
-        this.rootEl = BB.el({
-            css: {
-                margin: '10px',
-            },
-        });
-        this.isVisible = true;
+  constructor(p: {
+    colorSlider: KlColorSlider; // when opening tab, inserts it (snatches it from where else it was)
+  }) {
+    this.rootEl = BB.el({
+      css: {
+        margin: '10px',
+      },
+    });
+    this.isVisible = true;
 
-        this.colorDiv = BB.el({
-            parent: this.rootEl,
-            css: {
-                marginBottom: '10px',
-            },
-        });
+    this.colorDiv = BB.el({
+      parent: this.rootEl,
+      css: {
+        marginBottom: '10px',
+      },
+    });
 
-        this.colorSlider = p.colorSlider;
+    this.colorSlider = p.colorSlider;
 
-        this.opacitySlider = new KlSlider({
-            label: LANG('opacity'),
-            width: 250,
-            height: 30,
-            min: 1 / 100,
-            max: 1,
-            value: 1,
-            toValue: (displayValue) => displayValue / 100,
-            toDisplayValue: (value) => value * 100,
-        });
-        this.rootEl.append(this.opacitySlider.getElement());
+    this.opacitySlider = new KlSlider({
+      label: LANG('opacity'),
+      width: 250,
+      height: 30,
+      min: 1 / 100,
+      max: 1,
+      value: 1,
+      toValue: displayValue => displayValue / 100,
+      toDisplayValue: value => value * 100,
+    });
+    this.rootEl.append(this.opacitySlider.getElement());
 
-        this.toleranceSlider = new KlSlider({
-            label: LANG('bucket-tolerance'),
-            width: 250,
-            height: 30,
-            min: 0,
-            max: 255,
-            value: 20 * (255 / 100),
-            toValue: (displayValue) => displayValue * (255 / 100),
-            toDisplayValue: (value) => value / (255 / 100),
-        });
-        css(this.toleranceSlider.getElement(), {
-            marginTop: '10px',
-        });
-        this.rootEl.append(this.toleranceSlider.getElement());
+    this.toleranceSlider = new KlSlider({
+      label: LANG('bucket-tolerance'),
+      width: 250,
+      height: 30,
+      min: 0,
+      max: 255,
+      value: 20 * (255 / 100),
+      toValue: displayValue => displayValue * (255 / 100),
+      toDisplayValue: value => value / (255 / 100),
+    });
+    css(this.toleranceSlider.getElement(), {
+      marginTop: '10px',
+    });
+    this.rootEl.append(this.toleranceSlider.getElement());
 
-        const selectRow = BB.el({
-            parent: this.rootEl,
-            css: {
-                display: 'flex',
-                marginTop: '10px',
-            },
-        });
+    const selectRow = BB.el({
+      parent: this.rootEl,
+      css: {
+        display: 'flex',
+        marginTop: '10px',
+      },
+    });
 
-        const modeWrapper = BB.el({
-            content: LANG('bucket-sample') + '&nbsp;',
-            title: LANG('bucket-sample-title'),
-            css: {
-                fontSize: '15px',
-            },
-        });
-        this.modeSelect = new Select({
-            optionArr: [
-                ['all', LANG('bucket-sample-all')],
-                ['current', LANG('bucket-sample-active')],
-                ['above', LANG('bucket-sample-above')],
-            ],
-            initValue: 'all',
-            name: 'sampling-mode',
-        });
-        const modePointerListener = new BB.PointerListener({
-            target: this.modeSelect.getElement(),
-            onWheel: (e) => {
-                this.modeSelect.setDeltaValue(e.deltaY);
-            },
-        });
-        modeWrapper.append(this.modeSelect.getElement());
-        selectRow.append(modeWrapper);
+    const modeWrapper = BB.el({
+      content: LANG('bucket-sample') + '&nbsp;',
+      title: LANG('bucket-sample-title'),
+      css: {
+        fontSize: '15px',
+      },
+    });
+    this.modeSelect = new Select({
+      optionArr: [
+        ['all', LANG('bucket-sample-all')],
+        ['current', LANG('bucket-sample-active')],
+        ['above', LANG('bucket-sample-above')],
+      ],
+      initValue: 'all',
+      name: 'sampling-mode',
+    });
+    const modePointerListener = new BB.PointerListener({
+      target: this.modeSelect.getElement(),
+      onWheel: e => {
+        this.modeSelect.setDeltaValue(e.deltaY);
+      },
+    });
+    modeWrapper.append(this.modeSelect.getElement());
+    selectRow.append(modeWrapper);
 
-        const growWrapper = BB.el({
-            content: LANG('bucket-grow') + '&nbsp;',
-            title: LANG('bucket-grow-title'),
-            css: {
-                fontSize: '15px',
-                marginLeft: '10px',
-            },
-        });
-        this.growSelect = new Select({
-            optionArr: [
-                ['0', '0'],
-                ['1', '1'],
-                ['2', '2'],
-                ['3', '3'],
-                ['4', '4'],
-                ['5', '5'],
-                ['6', '6'],
-                ['7', '7'],
-            ],
-            initValue: '0',
-            name: 'fill-growth',
-        });
-        const growPointerListener = new BB.PointerListener({
-            target: this.growSelect.getElement(),
-            onWheel: (e) => {
-                this.growSelect.setDeltaValue(e.deltaY);
-            },
-        });
-        growWrapper.append(this.growSelect.getElement());
-        selectRow.append(growWrapper);
+    const growWrapper = BB.el({
+      content: LANG('bucket-grow') + '&nbsp;',
+      title: LANG('bucket-grow-title'),
+      css: {
+        fontSize: '15px',
+        marginLeft: '10px',
+      },
+    });
+    this.growSelect = new Select({
+      optionArr: [
+        ['0', '0'],
+        ['1', '1'],
+        ['2', '2'],
+        ['3', '3'],
+        ['4', '4'],
+        ['5', '5'],
+        ['6', '6'],
+        ['7', '7'],
+      ],
+      initValue: '0',
+      name: 'fill-growth',
+    });
+    const growPointerListener = new BB.PointerListener({
+      target: this.growSelect.getElement(),
+      onWheel: e => {
+        this.growSelect.setDeltaValue(e.deltaY);
+      },
+    });
+    growWrapper.append(this.growSelect.getElement());
+    selectRow.append(growWrapper);
 
-        this.isContiguous = true;
-        const contiguousToggle = new Checkbox({
-            init: true,
-            label: LANG('bucket-contiguous'),
-            title: LANG('bucket-contiguous-title'),
-            callback: (b) => {
-                this.isContiguous = b;
-            },
-            name: 'is-contiguous',
-        });
+    this.isContiguous = true;
+    const contiguousToggle = new Checkbox({
+      init: true,
+      label: LANG('bucket-contiguous'),
+      title: LANG('bucket-contiguous-title'),
+      callback: b => {
+        this.isContiguous = b;
+      },
+      name: 'is-contiguous',
+    });
 
-        this.eraserToggle = new Checkbox({
-            init: false,
-            label: LANG('eraser'),
-            name: 'eraser-toggle',
-        });
+    this.eraserToggle = new Checkbox({
+      init: false,
+      label: LANG('eraser'),
+      name: 'eraser-toggle',
+    });
 
-        this.rootEl.append(
-            BB.el({
-                content: [contiguousToggle.getElement(), this.eraserToggle.getElement()],
-                css: {
-                    display: 'flex',
-                    marginTop: '10px',
-                    gap: '10px',
-                },
-            }),
-        );
+    this.rootEl.append(
+      BB.el({
+        content: [contiguousToggle.getElement(), this.eraserToggle.getElement()],
+        css: {
+          display: 'flex',
+          marginTop: '10px',
+          gap: '10px',
+        },
+      })
+    );
+  }
+
+  getElement(): HTMLElement {
+    return this.rootEl;
+  }
+
+  setIsVisible(pIsVisible: boolean): void {
+    this.isVisible = pIsVisible;
+    this.rootEl.style.display = this.isVisible ? 'block' : 'none';
+    if (this.isVisible) {
+      this.colorDiv.append(this.colorSlider.getElement(), this.colorSlider.getOutputElement());
     }
+  }
 
-    getElement(): HTMLElement {
-        return this.rootEl;
+  /**
+   * [0, 1]
+   */
+  getTolerance(): number {
+    // slider may display 0 when value is 1 -> avoid confusing users
+    if (Math.round(this.toleranceSlider.getDisplayValue()) === 0) {
+      return 0;
     }
+    return this.toleranceSlider.getValue();
+  }
 
-    setIsVisible(pIsVisible: boolean): void {
-        this.isVisible = pIsVisible;
-        this.rootEl.style.display = this.isVisible ? 'block' : 'none';
-        if (this.isVisible) {
-            this.colorDiv.append(
-                this.colorSlider.getElement(),
-                this.colorSlider.getOutputElement(),
-            );
-        }
-    }
+  getOpacity(): number {
+    return this.opacitySlider.getValue();
+  }
 
-    /**
-     * [0, 1]
-     */
-    getTolerance(): number {
-        // slider may display 0 when value is 1 -> avoid confusing users
-        if (Math.round(this.toleranceSlider.getDisplayValue()) === 0) {
-            return 0;
-        }
-        return this.toleranceSlider.getValue();
-    }
+  getSample(): TFillSampling {
+    return this.modeSelect.getValue() as TFillSampling;
+  }
 
-    getOpacity(): number {
-        return this.opacitySlider.getValue();
-    }
+  getGrow(): number {
+    return parseInt(this.growSelect.getValue(), 10);
+  }
 
-    getSample(): TFillSampling {
-        return this.modeSelect.getValue() as TFillSampling;
-    }
+  getContiguous(): boolean {
+    return this.isContiguous;
+  }
 
-    getGrow(): number {
-        return parseInt(this.growSelect.getValue(), 10);
-    }
-
-    getContiguous(): boolean {
-        return this.isContiguous;
-    }
-
-    getIsEraser(): boolean {
-        return this.eraserToggle.getValue();
-    }
+  getIsEraser(): boolean {
+    return this.eraserToggle.getValue();
+  }
 }

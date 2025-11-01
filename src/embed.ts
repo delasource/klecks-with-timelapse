@@ -6,5 +6,5 @@ import { EmbedWrapper } from './app/script/embed/bootstrap/embed-wrapper';
 
 import('./app/style/embed.scss'); // loading like this gives it a hash
 Object.defineProperty(window, 'Klecks', {
-    value: EmbedWrapper,
+  value: EmbedWrapper,
 });

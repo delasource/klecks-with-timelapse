@@ -5,4 +5,4 @@ services:
     build: .
     container_name: klecks
     ports:
-     - 5050:3000
+      - 5050:3000

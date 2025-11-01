@@ -23,35 +23,35 @@ import { TFilter } from '../kl-types';
 type TModuleFilter = Pick<TFilter, 'getDialog' | 'apply'>;
 
 function importFilter(libObj: TFilter, moduleObj: TModuleFilter): void {
-    if (moduleObj.getDialog) {
-        libObj.getDialog = moduleObj.getDialog;
-    }
-    libObj.apply = moduleObj.apply;
+  if (moduleObj.getDialog) {
+    libObj.getDialog = moduleObj.getDialog;
+  }
+  libObj.apply = moduleObj.apply;
 }
 
 export function importFilters(): void {
-    if (FILTER_LIB_STATUS.isLoaded) {
-        return;
-    }
-    importFilter(FILTER_LIB.brightnessContrast, filterBrightnessContrast as TModuleFilter);
-    importFilter(FILTER_LIB.cropExtend, filterCropExtend as TModuleFilter);
-    importFilter(FILTER_LIB.curves, filterCurves as TModuleFilter);
-    importFilter(FILTER_LIB.flip, filterFlip as TModuleFilter);
-    importFilter(FILTER_LIB.hueSaturation, filterHueSaturation as TModuleFilter);
-    importFilter(FILTER_LIB.invert, filterInvert as TModuleFilter);
-    importFilter(FILTER_LIB.perspective, filterPerspective as TModuleFilter);
-    importFilter(FILTER_LIB.resize, filterResize as TModuleFilter);
-    importFilter(FILTER_LIB.rotate, filterRotate as TModuleFilter);
-    importFilter(FILTER_LIB.tiltShift, filterTiltShift as TModuleFilter);
-    importFilter(FILTER_LIB.transform, filterTransform as TModuleFilter);
-    importFilter(FILTER_LIB.blur, filterBlur as TModuleFilter);
-    importFilter(FILTER_LIB.unsharpMask, filterUnsharpMask as TModuleFilter);
-    importFilter(FILTER_LIB.toAlpha, filterToAlpha as TModuleFilter);
-    importFilter(FILTER_LIB.grid, filterGrid as TModuleFilter);
-    importFilter(FILTER_LIB.noise, filterNoise as TModuleFilter);
-    importFilter(FILTER_LIB.pattern, filterPattern as TModuleFilter);
-    importFilter(FILTER_LIB.distort, filterDistort as TModuleFilter);
-    importFilter(FILTER_LIB.vanishPoint, filterVanishPoint as TModuleFilter);
+  if (FILTER_LIB_STATUS.isLoaded) {
+    return;
+  }
+  importFilter(FILTER_LIB.brightnessContrast, filterBrightnessContrast as TModuleFilter);
+  importFilter(FILTER_LIB.cropExtend, filterCropExtend as TModuleFilter);
+  importFilter(FILTER_LIB.curves, filterCurves as TModuleFilter);
+  importFilter(FILTER_LIB.flip, filterFlip as TModuleFilter);
+  importFilter(FILTER_LIB.hueSaturation, filterHueSaturation as TModuleFilter);
+  importFilter(FILTER_LIB.invert, filterInvert as TModuleFilter);
+  importFilter(FILTER_LIB.perspective, filterPerspective as TModuleFilter);
+  importFilter(FILTER_LIB.resize, filterResize as TModuleFilter);
+  importFilter(FILTER_LIB.rotate, filterRotate as TModuleFilter);
+  importFilter(FILTER_LIB.tiltShift, filterTiltShift as TModuleFilter);
+  importFilter(FILTER_LIB.transform, filterTransform as TModuleFilter);
+  importFilter(FILTER_LIB.blur, filterBlur as TModuleFilter);
+  importFilter(FILTER_LIB.unsharpMask, filterUnsharpMask as TModuleFilter);
+  importFilter(FILTER_LIB.toAlpha, filterToAlpha as TModuleFilter);
+  importFilter(FILTER_LIB.grid, filterGrid as TModuleFilter);
+  importFilter(FILTER_LIB.noise, filterNoise as TModuleFilter);
+  importFilter(FILTER_LIB.pattern, filterPattern as TModuleFilter);
+  importFilter(FILTER_LIB.distort, filterDistort as TModuleFilter);
+  importFilter(FILTER_LIB.vanishPoint, filterVanishPoint as TModuleFilter);
 
-    FILTER_LIB_STATUS.isLoaded = true;
+  FILTER_LIB_STATUS.isLoaded = true;
 }

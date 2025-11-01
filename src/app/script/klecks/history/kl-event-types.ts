@@ -2,22 +2,22 @@
  * Configuration options for the event recorder
  */
 export type TRecorderConfig = {
-    /**
-     * Callback when a new event is recorded.
-     */
-    onEvent?: TEventRecordedCallback;
+  /**
+   * Callback when a new event is recorded.
+   */
+  onEvent?: TEventRecordedCallback;
 };
 
 /**
  * Configuration options for replay behavior
  */
 export type TReplayConfig = {
-    /** Target frames per second for the replay animation */
-    targetFps?: number;
-    /** Total time in milliseconds for the complete replay */
-    replayTimeInMs?: number;
-    /** Callback called on each frame during replay */
-    onFrame?: (currentIndex: number, totalEvents: number) => Promise<void>;
+  /** Target frames per second for the replay animation */
+  targetFps?: number;
+  /** Total time in milliseconds for the complete replay */
+  replayTimeInMs?: number;
+  /** Callback called on each frame during replay */
+  onFrame?: (currentIndex: number, totalEvents: number) => Promise<void>;
 };
 
 /**
@@ -26,13 +26,35 @@ export type TReplayConfig = {
  * are omitted to save in memory and bandwidth.
  */
 export type TEventType =
-    'undo' | 'redo' | 'draw' | 'reset' | 'resize' | 'resize-c' |
-    'l-flip' | 'l-select' | 'l-fill' | 'l-add' | 'l-opac' | 'l-dupl' | 'l-rm' |
-    'l-ren' | 'l-vis' | 'l-move' | 'l-merge' | 'l-merge-all' | 'l-erase' |
-    'rotate' | 'flood-fill' | 'shape' | 'grad' | 'text' | 'set-mixmode' |
-    'selection' | 'selection-transform' | 'selection-transform-clone' |
-    'filter'
-    ;
+  | 'undo'
+  | 'redo'
+  | 'draw'
+  | 'reset'
+  | 'resize'
+  | 'resize-c'
+  | 'l-flip'
+  | 'l-select'
+  | 'l-fill'
+  | 'l-add'
+  | 'l-opac'
+  | 'l-dupl'
+  | 'l-rm'
+  | 'l-ren'
+  | 'l-vis'
+  | 'l-move'
+  | 'l-merge'
+  | 'l-merge-all'
+  | 'l-erase'
+  | 'rotate'
+  | 'flood-fill'
+  | 'shape'
+  | 'grad'
+  | 'text'
+  | 'set-mixmode'
+  | 'selection'
+  | 'selection-transform'
+  | 'selection-transform-clone'
+  | 'filter';
 
 /**
  * Replay:
@@ -44,25 +66,24 @@ export type TEventType =
  */
 export const UNDO_IGNORED_EVENTS: TEventType[] = ['l-select'];
 
-
 /**
  * Event structure
  */
 export type TRecordedEvent = {
-    projectId: string;
-    sequenceNumber: number;
-    timestamp: number;
-    type: TEventType;
-    data: any;
+  projectId: string;
+  sequenceNumber: number;
+  timestamp: number;
+  type: TEventType;
+  data: any;
 };
 
 /**
  * Parameter type for getEvents
  */
 export type TGetEventsOptions = {
-    fromSequence?: number;
-    toSequence?: number;
-    includeTypes?: TEventType[];
+  fromSequence?: number;
+  toSequence?: number;
+  includeTypes?: TEventType[];
 };
 
 /**
@@ -70,12 +91,12 @@ export type TGetEventsOptions = {
  * Return type of the replay() function
  */
 export type TReplayStats = {
-    totalEvents: number;
-    processedEvents: number;
-    skippedEvents: number;
-    actualDuration: number;
-    targetDuration?: number;
-    averageFps: number;
+  totalEvents: number;
+  processedEvents: number;
+  skippedEvents: number;
+  actualDuration: number;
+  targetDuration?: number;
+  averageFps: number;
 };
 
 /**
@@ -97,13 +118,11 @@ export type TEventRecordedCallback = (event: TRecordedEvent, totalTime: number) 
  */
 export type TEventReplayingHandler = (event: TRecordedEvent) => void | Promise<void>;
 
-
 /**
  * Recorder:
  * When two events occur within this timespan, the actual time gets added to the "time taken" counter
  */
 export const TIMESPAN_ACCUMULATION_MS = 3000;
-
 
 export const DEBUG_RECORDER = true;
 export const DEBUG_REPLAYER = true;

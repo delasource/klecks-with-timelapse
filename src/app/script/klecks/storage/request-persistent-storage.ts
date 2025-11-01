@@ -7,7 +7,7 @@
  * from https://web.dev/articles/persistent-storage
  */
 export async function requestPersistentStorage(): Promise<void> {
-    if ('storage' in navigator && 'persist' in navigator.storage) {
-        await navigator.storage.persist();
-    }
+  if ('storage' in navigator && 'persist' in navigator.storage) {
+    await navigator.storage.persist();
+  }
 }

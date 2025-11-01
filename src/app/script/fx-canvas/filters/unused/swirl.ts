@@ -14,15 +14,15 @@ import { simpleShader } from '../core/simple-shader';
  *                the circular region will be rotated by.
  */
 export function swirl(centerX, centerY, radius, angle) {
-    gl.swirl =
-        gl.swirl ||
-        warpShader(
-            '\
+  gl.swirl =
+    gl.swirl ||
+    warpShader(
+      '\
         uniform float radius;\
         uniform float angle;\
         uniform vec2 center;\
     ',
-            '\
+      '\
         coord -= center;\
         float distance = length(coord);\
         if (distance < radius) {\
@@ -36,15 +36,15 @@ export function swirl(centerX, centerY, radius, angle) {
             );\
         }\
         coord += center;\
-    ',
-        );
+    '
+    );
 
-    simpleShader.call(this, gl.swirl, {
-        radius: radius,
-        center: [centerX, centerY],
-        angle: angle,
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.swirl, {
+    radius: radius,
+    center: [centerX, centerY],
+    angle: angle,
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 }

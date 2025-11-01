@@ -10,18 +10,14 @@ import { TRgba } from '../../klecks/kl-types';
  * @param isInverted    boolean - invert luminance
  * @param replaceRGBA    rgba - color to replace rgb with. if a = 0 -> keep orig color
  */
-export type TFilterToAlpha = (
-    this: TFxCanvas,
-    isInverted: boolean,
-    replaceRGBA: TRgba | null,
-) => TFxCanvas;
+export type TFilterToAlpha = (this: TFxCanvas, isInverted: boolean, replaceRGBA: TRgba | null) => TFxCanvas;
 
 export const toAlpha: TFilterToAlpha = function (isInverted, replaceRGBA) {
-    gl.toAlpha =
-        gl.toAlpha ||
-        new FxShader(
-            null,
-            '\
+  gl.toAlpha =
+    gl.toAlpha ||
+    new FxShader(
+      null,
+      '\
     uniform bool isInverted;\
     uniform vec4 replace;\
     uniform sampler2D texture;\
@@ -37,16 +33,16 @@ export const toAlpha: TFilterToAlpha = function (isInverted, replaceRGBA) {
         gl_FragColor = vec4(color.r, color.g, color.b, alpha);\
     }\
 ',
-            'toAlpha',
-        );
+      'toAlpha'
+    );
 
-    simpleShader.call(this, gl.toAlpha, {
-        isInverted: isInverted ? 1 : 0,
-        replace: replaceRGBA
-            ? [replaceRGBA.r / 255, replaceRGBA.g / 255, replaceRGBA.b / 255, replaceRGBA.a]
-            : [0, 0, 0, 0],
-        texSize: [this.width, this.height],
-    });
+  simpleShader.call(this, gl.toAlpha, {
+    isInverted: isInverted ? 1 : 0,
+    replace: replaceRGBA
+      ? [replaceRGBA.r / 255, replaceRGBA.g / 255, replaceRGBA.b / 255, replaceRGBA.a]
+      : [0, 0, 0, 0],
+    texSize: [this.width, this.height],
+  });
 
-    return this;
+  return this;
 };

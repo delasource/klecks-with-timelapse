@@ -11,11 +11,11 @@ import { BB } from '../../bb/bb';
  * @param amount -1 to 1 (-1 is minimum vibrance, 0 is no change, and 1 is maximum vibrance)
  */
 export function vibrance(amount) {
-    gl.vibrance =
-        gl.vibrance ||
-        new Shader(
-            null,
-            '\
+  gl.vibrance =
+    gl.vibrance ||
+    new Shader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform float amount;\
         varying vec2 texCoord;\
@@ -28,12 +28,12 @@ export function vibrance(amount) {
             gl_FragColor = color;\
         }\
     ',
-            'vibrance',
-        );
+      'vibrance'
+    );
 
-    simpleShader.call(this, gl.vibrance, {
-        amount: BB.clamp(amount, -1, 1),
-    });
+  simpleShader.call(this, gl.vibrance, {
+    amount: BB.clamp(amount, -1, 1),
+  });
 
-    return this;
+  return this;
 }

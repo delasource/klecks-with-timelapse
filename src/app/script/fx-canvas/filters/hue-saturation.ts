@@ -19,11 +19,11 @@ import { TFxCanvas } from '../fx-canvas-types';
 export type TFilterHueSaturation = (this: TFxCanvas, hue: number, saturation: number) => TFxCanvas;
 
 export const hueSaturation: TFilterHueSaturation = function (hue, saturation) {
-    gl.hueSaturation =
-        gl.hueSaturation ||
-        new FxShader(
-            null,
-            '\
+  gl.hueSaturation =
+    gl.hueSaturation ||
+    new FxShader(
+      null,
+      '\
         uniform sampler2D texture;\
         uniform float hue;\
         uniform float saturation;\
@@ -53,13 +53,13 @@ export const hueSaturation: TFilterHueSaturation = function (hue, saturation) {
             gl_FragColor = color;\
         }\
     ',
-            'hueSaturation',
-        );
+      'hueSaturation'
+    );
 
-    simpleShader.call(this, gl.hueSaturation, {
-        hue: BB.clamp(hue, -1, 1),
-        saturation: BB.clamp(saturation, -1, 1),
-    });
+  simpleShader.call(this, gl.hueSaturation, {
+    hue: BB.clamp(hue, -1, 1),
+    saturation: BB.clamp(saturation, -1, 1),
+  });
 
-    return this;
+  return this;
 };

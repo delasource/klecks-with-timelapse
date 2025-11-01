@@ -16,23 +16,23 @@ import fontTehroc from './Tehroc-Regular.woff2';
 import fontYunga from './YUNGA-Display.woff2';
 
 export const FONTS: {
-    name: string;
-    url: string;
+  name: string;
+  url: string;
 }[] = [
-    { name: 'Caveat', url: fontCaveat },
-    { name: 'ClimateCrisis', url: fontClimateCrisis },
-    { name: 'CorrectionBrush', url: fontCorrectionBrush },
-    { name: 'DancingScript', url: fontDancingScript },
-    { name: 'Diabolik', url: fontDiabolik },
-    { name: 'FreckleFace', url: fontFreckleFace },
-    { name: 'Gloock', url: fontGloock },
-    { name: 'GochiHand', url: fontGochiHand },
-    { name: 'Pacha', url: fontPacha },
-    { name: 'PassionOne', url: fontPassionOne },
-    { name: 'PixeloidSans', url: fontPixeloidSans },
-    { name: 'PlaypenSans', url: fontPlaypenSans },
-    { name: 'Quicksand', url: fontQuicksandLight },
-    { name: 'Silkscreen', url: fontSilkscreen },
-    { name: 'Tehroc', url: fontTehroc },
-    { name: 'YUNGA', url: fontYunga },
+  { name: 'Caveat', url: fontCaveat },
+  { name: 'ClimateCrisis', url: fontClimateCrisis },
+  { name: 'CorrectionBrush', url: fontCorrectionBrush },
+  { name: 'DancingScript', url: fontDancingScript },
+  { name: 'Diabolik', url: fontDiabolik },
+  { name: 'FreckleFace', url: fontFreckleFace },
+  { name: 'Gloock', url: fontGloock },
+  { name: 'GochiHand', url: fontGochiHand },
+  { name: 'Pacha', url: fontPacha },
+  { name: 'PassionOne', url: fontPassionOne },
+  { name: 'PixeloidSans', url: fontPixeloidSans },
+  { name: 'PlaypenSans', url: fontPlaypenSans },
+  { name: 'Quicksand', url: fontQuicksandLight },
+  { name: 'Silkscreen', url: fontSilkscreen },
+  { name: 'Tehroc', url: fontTehroc },
+  { name: 'YUNGA', url: fontYunga },
 ];
