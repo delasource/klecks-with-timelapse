@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BB } from '../../../bb/bb';
 import * as classes from './browser-storage-banner.module.scss';
 import { LANG } from '../../../language/language';

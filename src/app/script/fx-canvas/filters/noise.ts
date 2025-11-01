@@ -1,7 +1,7 @@
 import { gl } from '../core/gl';
 import { FxShader } from '../core/fx-shader';
 import { simpleShader } from '../core/simple-shader';
-import shaderNoise from '../shaders/shader-noise.glsl';
+import shaderNoise from '../shaders/shader-noise.glsl?raw';
 import { TFxCanvas } from '../fx-canvas-types';
 
 /**
