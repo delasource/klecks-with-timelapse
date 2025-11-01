@@ -1413,14 +1413,15 @@ export class KlHeadlessApp {
           // Start with layerconfiguration
           seedLayerConfig();
         }
-        // Finalise
-        this.klCanvas.fixHistoryState();
 
         // Select the 1st layer, instead of the 0th
-        if (this.klCanvas.getLayerCount() >= 1) {
+        /*if (this.klCanvas.getLayerCount() >= 1) {
           this.layerController.setActiveLayerInternal(1);
           this.setCurrentLayer(this.klCanvas.getLayer(1)!);
-        }
+        }*/
+
+        // Finalise
+        this.klCanvas.fixHistoryState();
 
         // Propagate the state to the ui
         this.updateUi();
