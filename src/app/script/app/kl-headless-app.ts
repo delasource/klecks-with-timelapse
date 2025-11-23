@@ -487,7 +487,7 @@ export class KlHeadlessApp {
     this.chainRecorder = this.klRecorder?.createChainRecorder(() => {
       return {
         id: this.uiState.currentBrushId,
-        cfg: this.getCurrentBrushConfig(),
+        cfg: this.getCurrentBrush().getBrushConfig(),
       };
     });
 
@@ -1415,13 +1415,14 @@ export class KlHeadlessApp {
 
         // this.layerController.setActiveLayerInternal(0);
         // this.setCurrentLayer(this.klCanvas.getLayer(0));
-        this.layerController.setActiveLayer(0);
+        // this.layerController.setActiveLayer(0);
 
         // Propagate the state to the ui
         this.updateUi();
         this.notifyUi('layersChanged', this.layerController.getState());
         this.notifyUi('colorPicked', this.uiState.primaryColorRgb);
         this.resetView();
+        this.resetBrushes();
 
         // We are ready to rock
         this.klRecorder?.start();
@@ -1648,6 +1649,27 @@ export class KlHeadlessApp {
     };
   }
 
+  resetBrushes(): void {
+    // Reset all brushes to their default configurations
+    Object.keys(this.brushes).forEach(brushId => {
+      const brush = this.brushes[brushId];
+      if ('reset' in brush && typeof brush.reset === 'function') {
+        brush.reset();
+        // Update the stored config to reflect the reset
+        this.uiState.brushConfig[brushId] = brush.getBrushConfig();
+      }
+    });
+
+    // Reset color
+    this.uiState.primaryColorRgb = { r: 0, g: 0, b: 0 };
+    this.uiState.primaryColorHsv = ColorConverter._RGBtoHSV(this.uiState.primaryColorRgb);
+    this.uiState.secondaryColorRgb = { r: 255, g: 255, b: 255 };
+    this.uiState.secondaryColorHsv = ColorConverter._RGBtoHSV(this.uiState.secondaryColorRgb);
+
+    // Apply the current brush's reset config to ensure UI consistency
+    this.setBrushConfig(this.getCurrentBrushConfig());
+  }
+
   async replayAnimation(config?: TReplayConfig) {
     if (!this.klRecorder) {
       console.log('No recorder available for replay');
@@ -1665,12 +1687,13 @@ export class KlHeadlessApp {
 
     // Fix ui state
     this.klCanvas.fixHistoryState();
-    this.layerController.setActiveLayerInternal(0);
-    this.setBrushConfig(this.getCurrentBrushConfig());
+    // this.layerController.setActiveLayerInternal(0);
+    // this.setBrushConfig(this.getCurrentBrushConfig());
 
     this.notifyUi('layersChanged', this.layerController.getState());
     this.updateUi();
     this.resetView();
+    this.resetBrushes();
 
     // Done
     this.klRecorder.start();

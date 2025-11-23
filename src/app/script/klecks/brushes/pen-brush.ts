@@ -562,4 +562,19 @@ export class PenBrush {
       this.setColor(config.color);
     }
   }
+
+  reset(): void {
+    this.setBrushConfig({
+      size: 2,
+      sizePressure: true,
+      opacity: 1,
+      opacityPressure: false,
+      scatter: 0,
+      scatterPressure: false,
+      spacing: 0.8489,
+      color: { r: 0, g: 0, b: 0 },
+      alphaId: ALPHA_CIRCLE,
+      lockLayerAlpha: false,
+    });
+  }
 }

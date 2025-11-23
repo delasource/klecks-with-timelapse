@@ -629,6 +629,18 @@ export class BlendBrush {
     }
   }
 
+  reset(): void {
+    this.setBrushConfig({
+      size: 29,
+      sizePressure: true,
+      opacity: 0.6,
+      opacityPressure: false,
+      blending: 0.65,
+      lockLayerAlpha: false,
+      color: { r: 0, g: 0, b: 0 },
+    });
+  }
+
   getIsDrawing(): boolean {
     return this.isDrawing;
   }

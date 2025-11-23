@@ -145,6 +145,16 @@ export class SketchyBrush {
     }
   }
 
+  reset(): void {
+    this.setBrushConfig({
+      size: 1,
+      opacity: 0.2,
+      blending: 0.5,
+      scale: 1,
+      color: { r: 0, g: 0, b: 0 },
+    });
+  }
+
   startLine(x: number, y: number, pressure: number, shift?: boolean): void {
     this.selection = this.klHistory.getComposed().selection.value;
     this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;

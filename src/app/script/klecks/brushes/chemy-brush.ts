@@ -338,6 +338,21 @@ export class ChemyBrush {
     }
   }
 
+  reset(): void {
+    this.setBrushConfig({
+      size: 0.25,
+      opacity: 1,
+      mode: 'fill',
+      lockLayerAlpha: false,
+      isEraser: false,
+      xSymmetry: false,
+      ySymmetry: false,
+      gradient: false,
+      color: { r: 0, g: 0, b: 0 },
+      distort: 0,
+    });
+  }
+
   startLine(x: number, y: number): void {
     this.selection = this.klHistory.getComposed().selection.value;
     this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;

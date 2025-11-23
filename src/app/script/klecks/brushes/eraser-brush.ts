@@ -298,4 +298,14 @@ export class EraserBrush {
       this.opacityPressure(config.opacityPressure);
     }
   }
+
+  reset(): void {
+    this.setBrushConfig({
+      size: 30,
+      sizePressure: true,
+      opacity: 1,
+      opacityPressure: false,
+      transparentBg: false,
+    });
+  }
 }

@@ -753,4 +753,16 @@ export class SmudgeBrush {
       this.setSpacing(config.spacing);
     }
   }
+
+  reset(): void {
+    this.setBrushConfig({
+      size: 35,
+      sizePressure: false,
+      opacity: 0.8,
+      opacityPressure: false,
+      lockLayerAlpha: false,
+      spacing: 0.20446882736951905,
+      color: { r: 0, g: 0, b: 0 },
+    });
+  }
 }

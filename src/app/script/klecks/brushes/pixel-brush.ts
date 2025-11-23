@@ -586,4 +586,18 @@ export class PixelBrush {
       this.setSpacing(config.spacing);
     }
   }
+
+  reset(): void {
+    this.setBrushConfig({
+      size: 0.5,
+      sizePressure: true,
+      opacity: 1,
+      opacityPressure: false,
+      spacing: 0.9,
+      lockLayerAlpha: false,
+      isEraser: false,
+      useDither: false,
+      color: { r: 0, g: 0, b: 0 },
+    });
+  }
 }
