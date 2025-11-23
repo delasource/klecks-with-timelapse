@@ -501,7 +501,7 @@ export class KlHeadlessApp {
 
     const drawEventChain = new EventChain({
       // TODO replace any with proper type/interface. EventChain needs to get a change here.
-      chainArr: [this.chainRecorder as any, this.lineSanitizer as any, lineSmoothing as any].filter(c => !!c),
+      chainArr: [this.lineSanitizer as any, lineSmoothing as any, this.chainRecorder as any].filter(c => !!c),
     });
 
     drawEventChain.setChainOut(((event: TDrawEvent) => {
