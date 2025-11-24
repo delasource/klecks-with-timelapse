@@ -854,6 +854,7 @@ export class KlHeadlessApp {
       onRedo: () => {
         this.redo(true);
       },
+      useWhiteBackdrop: true // Constant for ColorMari, this effectivly disables "global transparency"
     });
 
     css(this.easel.getElement(), {

@@ -40,6 +40,7 @@ export type TEaselParams<GToolId extends string> = {
   onTransformChange: (transform: TViewportTransform, scaleOrAngleChanged: boolean) => void; // whenever Viewport changes
   onUndo?: () => void; // gesture triggers undo
   onRedo?: () => void; // gesture triggers redo
+  useWhiteBackdrop?: boolean;
 };
 
 /**
@@ -323,6 +324,7 @@ export class Easel<GToolId extends string> {
         layers: this.project.layers,
       },
       transform: this.getResetTransform(),
+      whiteBackdrop: p.useWhiteBackdrop,
       renderAfter: (ctx, renderedTransform) => {
         const tool = this.getActiveTool();
         tool.renderAfterViewport?.(ctx, renderedTransform);

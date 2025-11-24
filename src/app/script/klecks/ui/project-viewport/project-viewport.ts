@@ -54,6 +54,7 @@ export type TProjectViewportParams = {
   useNativeResolution?: boolean;
   renderAfter?: (ctx: CanvasRenderingContext2D, transform: TViewportTransformXY) => void;
   fillParent?: boolean;
+  whiteBackdrop?: boolean; // render white background instead of checkerboard for transparency
 };
 
 /**
@@ -80,6 +81,7 @@ export class ProjectViewport {
   private pattern: CanvasPattern;
   private resFactor: number;
   private readonly drawBackground: boolean;
+  private readonly whiteBackdrop: boolean;
   private doResize: boolean = true;
   private readonly doFillParent: boolean;
   private readonly renderAfter: undefined | ((ctx: CanvasRenderingContext2D, transform: TViewportTransformXY) => void);
@@ -104,6 +106,7 @@ export class ProjectViewport {
     this.project = p.project;
     this.useNativeResolution = !!p.useNativeResolution;
     this.drawBackground = p.drawBackground ?? true;
+    this.whiteBackdrop = !!p.whiteBackdrop;
     this.doFillParent = !!p.fillParent;
     this.renderAfter = p.renderAfter;
 
@@ -189,24 +192,31 @@ export class ProjectViewport {
     if (this.drawBackground) {
       this.ctx.save();
 
-      this.ctx.fillStyle = THEME.isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
-      const scaledPixelX = 1 / renderedTransform.scaleX;
-      const scaledPixelY = 1 / renderedTransform.scaleY;
-      this.ctx.fillRect(
-        -scaledPixelX,
-        -scaledPixelY,
-        this.project.width + scaledPixelX * 2,
-        this.project.height + scaledPixelY * 2
-      );
+      if (this.whiteBackdrop) {
+        // Layer transparency mode: render white background instead of checkerboard
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.project.width, this.project.height);
+      } else {
+        // Normal mode: render checkerboard background
+        this.ctx.fillStyle = THEME.isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+        const scaledPixelX = 1 / renderedTransform.scaleX;
+        const scaledPixelY = 1 / renderedTransform.scaleY;
+        this.ctx.fillRect(
+          -scaledPixelX,
+          -scaledPixelY,
+          this.project.width + scaledPixelX * 2,
+          this.project.height + scaledPixelY * 2
+        );
 
-      this.ctx.fillStyle = this.pattern;
-      try {
-        // setTransform got browser support since 2018-2020. catch if fails.
-        this.pattern.setTransform(inverse(renderedMat));
-      } catch (e) {
-        /* */
+        this.ctx.fillStyle = this.pattern;
+        try {
+          // setTransform got browser support since 2018-2020. catch if fails.
+          this.pattern.setTransform(inverse(renderedMat));
+        } catch (e) {
+          /* */
+        }
+        this.ctx.fillRect(0, 0, this.project.width, this.project.height);
       }
-      this.ctx.fillRect(0, 0, this.project.width, this.project.height);
 
       this.ctx.restore();
     }
