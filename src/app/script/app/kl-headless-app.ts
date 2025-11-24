@@ -8,6 +8,7 @@ import { getSelectionPath2d } from '../bb/multi-polygon/get-selection-path-2d';
 import { BRUSHES, TBrushClassTypes, TBrushConfigTypes } from '../klecks/brushes/brushes';
 import { ERASE_COLOR } from '../klecks/brushes/erase-color';
 import { EraserBrush } from '../klecks/brushes/eraser-brush';
+import { drawProject } from '../klecks/canvas/draw-project';
 import { KlCanvas, TKlCanvasLayer } from '../klecks/canvas/kl-canvas';
 import { LineSanitizer } from '../klecks/events/line-sanitizer';
 import { LineSmoothing } from '../klecks/events/line-smoothing';
@@ -854,7 +855,7 @@ export class KlHeadlessApp {
       onRedo: () => {
         this.redo(true);
       },
-      useWhiteBackdrop: true // Constant for ColorMari, this effectivly disables "global transparency"
+      useWhiteBackdrop: true, // Constant for ColorMari, this effectivly disables "global transparency"
     });
 
     css(this.easel.getElement(), {
@@ -1466,9 +1467,17 @@ export class KlHeadlessApp {
     return await canvasToBlob(this.klCanvas.getCompleteCanvas(1), 'image/png');
   }
 
+  async getJPG(): Promise<Blob> {
+    return await canvasToBlob(this.klCanvas.getCompleteCanvasWithWhiteBackground(1), 'image/jpg');
+  }
+
   getPSD = async (): Promise<Blob> => {
     return await klCanvasToPsdBlob(this.klCanvas);
   };
+
+  getThumbnail(factor: number): HTMLCanvasElement {
+    return drawProject(this.klCanvas.getProject(), factor);
+  }
 
   getProject(): TKlProject {
     return this.klCanvas.getProject();

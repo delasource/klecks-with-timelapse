@@ -8,6 +8,7 @@ import {
   TFillSampling,
   TGradient,
   TKlProject,
+  TLayerFill,
   TLayerFromKlCanvas,
   TMixMode,
   TRgb,
@@ -1352,6 +1353,19 @@ export class KlCanvas {
 
   getCompleteCanvas(factor: number, maskSelection?: boolean): HTMLCanvasElement {
     return drawProject(this.getProject(), factor, maskSelection ? this.selection : undefined);
+  }
+
+  getCompleteCanvasWithWhiteBackground(factor: number, maskSelection?: boolean): HTMLCanvasElement {
+    const project = this.getProject();
+    // add a white layer as the background
+    project.layers.unshift({
+      name: 'bg',
+      isVisible: true,
+      opacity: 1,
+      mixModeStr: 'source-over',
+      image: { fill: 'white' } as TLayerFill,
+    });
+    return drawProject(project, factor, maskSelection ? this.selection : undefined);
   }
 
   getProject(): TKlProject {
