@@ -1039,8 +1039,8 @@ export class KlHeadlessApp {
         if (brushData && this.brushes[brushData.id]) {
           this.setCurrentBrush(brushData.id, brushData.cfg);
           // if (brushData.cfg) {
-            // console.log("PUSH ", brushData.cfg, "to", brushData.id);
-            // this.brushes[brushData.id].setBrushConfig(brushData.cfg);
+          // console.log("PUSH ", brushData.cfg, "to", brushData.id);
+          // this.brushes[brushData.id].setBrushConfig(brushData.cfg);
           // }
         } else {
           console.log('Unknown brush during replay:', brushData);
@@ -1408,14 +1408,10 @@ export class KlHeadlessApp {
         }
 
         // Finalise
-        this.klCanvas.fixHistoryState();
+        // this.klCanvas.fixHistoryState();
         this.applyUncommitted();
 
         this.klRecorder?.pause();
-
-        // this.layerController.setActiveLayerInternal(0);
-        // this.setCurrentLayer(this.klCanvas.getLayer(0));
-        // this.layerController.setActiveLayer(0);
 
         // Propagate the state to the ui
         this.updateUi();

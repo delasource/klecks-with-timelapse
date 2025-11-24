@@ -11,6 +11,12 @@ export interface IEventStorageProvider {
   storeEvent(event: TRecordedEvent): Promise<void>;
 
   /**
+   * Removes the previous event. This is intended to fix "duplicate" events occuring.
+   * @returns {Promise<void>}
+   */
+  removePreviousEvent(): Promise<void>;
+
+  /**
    * Retrieve events with optional filtering
    */
   getEvents(options?: TGetEventsOptions): Promise<TRecordedEvent[]>;
@@ -44,6 +50,23 @@ export class BrowserEventStorageProvider implements IEventStorageProvider {
       throw error;
     }
   }
+
+  async removePreviousEvent(): Promise<void> {
+    try {
+      const existingEvents = this.cachedEvents ?? (await this.getEvents());
+      if (existingEvents.length === 0) {
+        throw new Error('No previous event to remove');
+      }
+
+      existingEvents.pop();
+      await this.commit(existingEvents);
+    }
+    catch (error) {
+      console.error('Failed to remove previous event:', error);
+      throw error;
+    }
+  }
+
 
   async getEvents(options?: TGetEventsOptions): Promise<TRecordedEvent[]> {
     try {

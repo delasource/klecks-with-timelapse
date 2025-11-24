@@ -87,6 +87,8 @@ export class KlEventReplayer {
         return this.createStats(sortedEvents, processedEvents, 0, startTime, config.replayTimeInMs);
       }
 
+      // console.log('events\n', processedEvents.map(e => `${e.sequenceNumber} ${e.type}`).join('\n'));
+
       // Step 3: Calculate timing parameters
       const timingParams = this.calculateTimingParams(processedEvents.length, config);
 
@@ -165,6 +167,23 @@ export class KlEventReplayer {
           break;
       }
     }
+
+    const consoleStyles: string[] = [];
+    for (const event of events) {
+      let consoleStyle = '';
+
+      // Log
+      if (UNDO_IGNORED_EVENTS.includes(event.type)) consoleStyle = 'color: grey';
+      else if (event.type == 'undo') consoleStyle = 'color: lightblue';
+      else if (event.type == 'redo') consoleStyle = 'color: lightcoral';
+      else if (undoStack.indexOf(event) === -1) consoleStyle = 'color: orangered'; // removed
+      else if (redoStack.indexOf(event) === -1) consoleStyle = 'color: cyan'; // normal
+
+      consoleStyles.push(consoleStyle);
+    }
+
+    const eventStrings = events.map(e => `\n%c[${e.sequenceNumber}] ${e.type}`).join('');
+    console.log('resolved event stack' + eventStrings, ...consoleStyles);
 
     return finalEvents;
   }

@@ -28,6 +28,7 @@ export class KlEventRecorder {
   private replayer: KlEventReplayer;
   private storageProvider: IEventStorageProvider | undefined;
   private isStoringInProgress: boolean = false;
+  private previousEvent: TRecordedEvent | null = null;
 
   constructor(projectId: string, config?: TRecorderConfig, storageProvider?: IEventStorageProvider) {
     this.projectId = projectId;
@@ -92,6 +93,30 @@ export class KlEventRecorder {
     // Some user action is taking place, record the time!
     this.calculateTimeTaken();
 
+    // Check for duplicate events before recording
+    const sanitizeDuplicateEventsStrategy = this.sanitizeDuplicateEvents(event);
+    if (sanitizeDuplicateEventsStrategy == 'discard') {
+      if (DEBUG_RECORDER) {
+        console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring event (${type})`);
+      }
+
+      return;
+    } else if (sanitizeDuplicateEventsStrategy == 'discard-both') {
+      if (DEBUG_RECORDER) {
+        console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring both events (${type})`);
+      }
+
+      this.storageProvider?.removePreviousEvent();
+      return;
+    } else if (sanitizeDuplicateEventsStrategy == 'replace') {
+      if (DEBUG_RECORDER) {
+        console.log('%c[REC]', LOG_STYLE_RECORDER, `Replacing event (${type})`);
+      }
+
+      this.storageProvider?.removePreviousEvent();
+      // continue.
+    }
+
     // Don't record if paused
     if (this.isPaused || this.replayer?.isCurrentlyReplaying()) {
       // if (DEBUG_RECORDER) {
@@ -102,6 +127,9 @@ export class KlEventRecorder {
 
     // Increase counter
     this.sequenceNumber++;
+
+    // Update previous event reference
+    this.previousEvent = event;
 
     if (DEBUG_RECORDER) {
       console.log('%c[REC]', LOG_STYLE_RECORDER, 'Recording event', event);
@@ -144,6 +172,7 @@ export class KlEventRecorder {
     this.sequenceNumber = 0;
     this.lastTimestamp = 0;
     this.totalTimeTaken = 0;
+    this.previousEvent = null;
   }
 
   /**
@@ -234,6 +263,10 @@ export class KlEventRecorder {
 
     // Start the replaying
     const returnResult = await this.replayer.startReplay(events, config ?? {});
+
+    this.previousEvent = events[events.length - 1];
+
+    // Done
     console.log(
       '%c[REC]',
       LOG_STYLE_RECORDER,
@@ -271,5 +304,27 @@ export class KlEventRecorder {
    */
   async hasEvents(): Promise<boolean> {
     return (await this.getEventCount()) > 0;
+  }
+
+  private sanitizeDuplicateEvents(newEvent: TRecordedEvent): false | 'replace' | 'discard' | 'discard-both' {
+    if (!this.previousEvent) {
+      return false; // No previous event to compare with
+    }
+
+    // Custom criteria for when not to save the event
+    if (newEvent.type == 'l-select') {
+      if (this.previousEvent.type == 'l-move')
+        return 'discard'; // move auto selects it
+      else if (this.previousEvent.type == 'l-select') return 'replace'; // update the selected layer index
+    } else if (newEvent.type == 'l-move' && this.previousEvent.type == 'l-move') {
+      // data = [startIndex, relativePosition]
+      const newLayers: number[] = newEvent.data ?? [];
+      const prevLayers: number[] = this.previousEvent.data ?? [];
+      if (newLayers.length === prevLayers.length && newLayers.every((value, index) => value === prevLayers[index])) {
+        return 'discard-both'; // Moving a layer to the same position TWICE cancels out.
+      }
+    }
+
+    return false;
   }
 }
