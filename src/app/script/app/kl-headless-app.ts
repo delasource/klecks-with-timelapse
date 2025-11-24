@@ -64,19 +64,8 @@ import { IHeadlessSelectActions } from './kl-headless-select-types';
 import { LayerHeadlessController } from './layer-headless-controller';
 import { getDefaultProjectOptions } from './default-project';
 
-/* TODO
- * Select UI fehlt
- * UI: BrushOptions
- *   Slider Curves (siehe Klecks -UI)
- *   Slider (Range) Style besser machen
- *   Linke Seite sollte sich "top" orientieren und nicht "top mid" damit die ui nicht so springt
- * UI: Layers
- * UI: Colors
- * UI: Filter
- * Resize triggert nicht das resizen vom canvas element
- * Zoom-Indikator
- *
- */
+// Constant for ColorMari, this effectivly disables the "transparency chessboard"
+const USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0 = true;
 
 export type TKlToolId =
   | 'hand'
@@ -444,8 +433,8 @@ export class KlHeadlessApp {
 
     const oldestComposed = projectToComposed(
       typeof p.project === 'string'
-        ? getDefaultProjectOptions(p.project, initialWidth, initialHeight)
-        : (p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight))
+        ? getDefaultProjectOptions(p.project, initialWidth, initialHeight, !USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0)
+        : (p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight, !USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0))
     );
 
     this.klHistory = new KlHistory({
@@ -855,7 +844,7 @@ export class KlHeadlessApp {
       onRedo: () => {
         this.redo(true);
       },
-      useWhiteBackdrop: true, // Constant for ColorMari, this effectivly disables "global transparency"
+      useWhiteBackdrop: USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0,
     });
 
     css(this.easel.getElement(), {
@@ -1397,12 +1386,12 @@ export class KlHeadlessApp {
           // Begin recording already
           this.klRecorder?.start();
 
-          // Initial clear
+          // Initial size definition
           this.klRecorder?.record('reset', [
             {
               width: oldestComposed.size.width,
               height: oldestComposed.size.height,
-              color: { r: 255, g: 255, b: 255 } as TRgb,
+              // color: { r: 255, g: 255, b: 255 } as TRgb,
             },
           ]);
 

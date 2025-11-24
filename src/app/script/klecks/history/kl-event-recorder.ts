@@ -315,15 +315,17 @@ export class KlEventRecorder {
     if (newEvent.type == 'l-select') {
       if (this.previousEvent.type == 'l-move')
         return 'discard'; // move auto selects it
-      else if (this.previousEvent.type == 'l-select') return 'replace'; // update the selected layer index
-    } else if (newEvent.type == 'l-move' && this.previousEvent.type == 'l-move') {
+      else if (this.previousEvent.type == 'l-select') return 'replace';
+    }
+    // This is an idea of merging "l-move" events, to reduce epileptic flickering, but this is bad because it breaks the undo history.
+    /*else if (newEvent.type == 'l-move' && this.previousEvent.type == 'l-move') {
       // data = [startIndex, relativePosition]
       const newLayers: number[] = newEvent.data ?? [];
       const prevLayers: number[] = this.previousEvent.data ?? [];
       if (newLayers.length === prevLayers.length && newLayers.every((value, index) => value === prevLayers[index])) {
         return 'discard-both'; // Moving a layer to the same position TWICE cancels out.
       }
-    }
+    }*/
 
     return false;
   }
