@@ -266,6 +266,7 @@ export class KlHeadlessApp {
 
   private setCurrentLayer(layer: TKlCanvasLayer) {
     this.currentLayer = layer;
+    this.layerController.setActiveLayerInternal(layer.index);
 
     // set layer context in brush
     const brushLogic = this.brushes[this.uiState.currentBrushId];

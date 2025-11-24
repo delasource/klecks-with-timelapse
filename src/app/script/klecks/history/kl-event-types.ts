@@ -64,7 +64,7 @@ export type TEventType =
  * Event types defined here are "not undoable" so they will remain in the animation.
  * The undo-operation will affect the event prior to the ignored event (aka skip).
  */
-export const UNDO_IGNORED_EVENTS: TEventType[] = ['l-select'];
+export const UNDO_IGNORED_EVENTS: TEventType[] = [];
 
 /**
  * Event structure
