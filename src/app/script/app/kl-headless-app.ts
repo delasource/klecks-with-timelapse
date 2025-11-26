@@ -1013,6 +1013,16 @@ export class KlHeadlessApp {
           // Swap primary and secondary color
           this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
         }
+        if (comboStr === 'alt+F13') {
+          // Rotate right
+          event.preventDefault();
+          this.easel.setAngleDeg(2, true);
+        }
+        if (comboStr === 'alt+F14') {
+          // Rotate left
+          event.preventDefault();
+          this.easel.setAngleDeg(-2, true);
+        }
       },
       onUp: (keyStr, event) => {},
     });

@@ -49,6 +49,8 @@ const globalKey = ((): TGlobalKey => {
     x: ['x', 'X'],
     y: ['y', 'Y'],
     z: ['z', 'Z'],
+    F13: ['F13'],
+    F14: ['F14'],
     equals: '=',
     plus: '+',
     minus: '-',
