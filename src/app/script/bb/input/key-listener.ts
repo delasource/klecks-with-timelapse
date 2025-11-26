@@ -179,6 +179,26 @@ const globalKey = ((): TGlobalKey => {
       //add to combo
       comboArr.push(keyStr);
 
+      // When getting a key event with a modifier key pressed, but without the modifier-keydown registered before:
+      // Insert the modifier as if it has been pressed right before.
+      // This is a fix for XPPen Remotes, which when set to send "Command+Z" only send a single keydown event
+      if (e.metaKey && !comboArr.includes('cmd')) {
+        isDownObj['cmd'] = true;
+        comboArr.unshift('cmd');
+      }
+      if (e.shiftKey && !comboArr.includes('shift')) {
+        isDownObj['shift'] = true;
+        comboArr.unshift('shift');
+      }
+      if (e.altKey && !comboArr.includes('alt')) {
+        isDownObj['alt'] = true;
+        comboArr.unshift('alt');
+      }
+      if (e.ctrlKey && !comboArr.includes('ctrl')) {
+        isDownObj['ctrl'] = true;
+        comboArr.unshift('ctrl');
+      }
+
       emitDown(keyStr, e, comboArr.join('+'));
     }
   }
