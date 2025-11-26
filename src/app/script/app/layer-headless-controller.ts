@@ -427,4 +427,12 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
       freeCanvas(this.thumbnailCanvas);
     }
   }
+
+  addUpToNLayers(n: number): void {
+    // Temporary fix for a case when we lost a layer
+    const layerCount = this.getLayerCount();
+    while (layerCount < n) {
+      this.klCanvas.addLayer();
+    }
+  }
 }

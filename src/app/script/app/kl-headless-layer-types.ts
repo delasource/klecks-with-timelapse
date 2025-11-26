@@ -63,6 +63,8 @@ export interface IHeadlessLayerControllerActions {
   canMergeUp(): boolean;
 
   canMergeAll(): boolean;
+
+  addUpToNLayers(n: number): void;
 }
 
 export type THeadlessLayerState = {
