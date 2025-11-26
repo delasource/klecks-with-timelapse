@@ -431,8 +431,9 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
   addUpToNLayers(n: number): void {
     // Temporary fix for a case when we lost a layer
     const layerCount = this.getLayerCount();
-    while (layerCount < n) {
-      this.klCanvas.addLayer();
+    for (let i = layerCount; i < n; i++) {
+      this.klCanvas.addLayer(this.activeLayerIndex);
     }
+    this.notifyLayersChange();
   }
 }
