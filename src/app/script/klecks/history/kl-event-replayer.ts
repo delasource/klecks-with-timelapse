@@ -267,7 +267,7 @@ export class KlEventReplayer {
     events: TRecordedEvent[],
     timingParams: ReturnType<typeof this.calculateTimingParams>,
     signal: AbortSignal,
-    config?: TReplayConfig,
+    config?: TReplayConfig
   ): Promise<void> {
     const { frameTime, eventsPerFrame } = timingParams;
     let currentIndex = 0;
@@ -330,14 +330,19 @@ export class KlEventReplayer {
         }
       } else {
         // Sleep till the next frame should happen
-        // floor and "-10" is a precaution: Be faster early on, so that we have more time later
-        sleepTime = Math.max(0, Math.floor(thisFrameDelay - 10));
+        // floor and "-5" is a precaution: Be faster early on, so that we have more time later
+        sleepTime = Math.max(0, Math.floor(thisFrameDelay - 5));
         accumulatedDelay = 0;
       }
 
       if (sleepTime > 0) {
-        // Wait for next frame
-        await this.sleep(sleepTime);
+        if (sleepTime <= 2) {
+          // Use requestAnimationFrame to immediatly run on the next render cycle
+          await this.sleepOneFrame();
+        } else {
+          // Wait for next frame
+          await this.sleep(sleepTime);
+        }
       }
     }
   }
@@ -389,5 +394,13 @@ export class KlEventReplayer {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Sleep one animationframe helper function
+   * @private
+   */
+  private sleepOneFrame(): Promise<void> {
+    return new Promise(resolve => requestAnimationFrame(() => resolve()));
   }
 }
