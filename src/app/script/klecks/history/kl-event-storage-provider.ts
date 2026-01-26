@@ -60,13 +60,11 @@ export class BrowserEventStorageProvider implements IEventStorageProvider {
 
       existingEvents.pop();
       await this.commit(existingEvents);
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to remove previous event:', error);
       throw error;
     }
   }
-
 
   async getEvents(options?: TGetEventsOptions): Promise<TRecordedEvent[]> {
     try {
@@ -118,5 +116,54 @@ export class BrowserEventStorageProvider implements IEventStorageProvider {
       console.error('Failed to save events to browser storage:', error);
       throw error;
     }
+  }
+}
+
+/**
+ * This is not a recorder but just a player
+ */
+export class ReadOnlyPlayer implements IEventStorageProvider {
+  private cachedEvents: TRecordedEvent[];
+  private onEvent?: () => void;
+
+  constructor(events: TRecordedEvent[] | null | undefined, onEvent?: () => void) {
+    this.cachedEvents = events ?? [];
+    this.onEvent = onEvent;
+  }
+
+  async storeEvent(event: TRecordedEvent): Promise<void> {
+    this.onEvent?.();
+  }
+
+  async removePreviousEvent(): Promise<void> {
+    // nothing
+  }
+
+  async getEvents(options?: TGetEventsOptions): Promise<TRecordedEvent[]> {
+    try {
+      // Apply filters if provided
+      if (options) {
+        let filteredEvents = this.cachedEvents;
+        if (options.fromSequence !== undefined) {
+          filteredEvents = filteredEvents.filter(event => event.sequenceNumber >= options.fromSequence!);
+        }
+        if (options.toSequence !== undefined) {
+          filteredEvents = filteredEvents.filter(event => event.sequenceNumber <= options.toSequence!);
+        }
+        if (options.includeTypes && options.includeTypes.length > 0) {
+          filteredEvents = filteredEvents.filter(event => options.includeTypes!.includes(event.type));
+        }
+        return filteredEvents;
+      }
+
+      return this.cachedEvents;
+    } catch (error) {
+      console.error('Failed to retrieve events:', error);
+      return [];
+    }
+  }
+
+  async clearEvents(): Promise<void> {
+    // nothing
   }
 }

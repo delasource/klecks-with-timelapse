@@ -16,10 +16,8 @@ export type {
 
 export type { TViewportTransform } from './app/script/klecks/ui/project-viewport/project-viewport';
 
-export type {
-  IEventStorageProvider,
-  BrowserEventStorageProvider,
-} from './app/script/klecks/history/kl-event-storage-provider';
+export type { IEventStorageProvider } from './app/script/klecks/history/kl-event-storage-provider';
+export { BrowserEventStorageProvider, ReadOnlyPlayer } from './app/script/klecks/history/kl-event-storage-provider';
 
 export type { TBrushConfigTypes } from './app/script/klecks/brushes/brushes';
 

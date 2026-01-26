@@ -93,7 +93,7 @@ export class KlEventReplayer {
       const timingParams = this.calculateTimingParams(processedEvents.length, config);
 
       // Step 4: Execute replay with timing control
-      await this.executeReplay(processedEvents, timingParams, this.currentReplayAbortController.signal, config.onFrame);
+      await this.executeReplay(processedEvents, timingParams, this.currentReplayAbortController.signal, config);
 
       const actualDuration = performance.now() - startTime;
       const stats = this.createStats(sortedEvents, processedEvents, actualDuration, startTime, config.replayTimeInMs);
@@ -176,7 +176,8 @@ export class KlEventReplayer {
       if (UNDO_IGNORED_EVENTS.includes(event.type)) consoleStyle = 'color: grey';
       else if (event.type == 'undo') consoleStyle = 'color: lightblue';
       else if (event.type == 'redo') consoleStyle = 'color: lightcoral';
-      else if (undoStack.indexOf(event) === -1) consoleStyle = 'color: orangered'; // removed
+      else if (undoStack.indexOf(event) === -1)
+        consoleStyle = 'color: orangered'; // removed
       else if (redoStack.indexOf(event) === -1) consoleStyle = 'color: cyan'; // normal
 
       consoleStyles.push(consoleStyle);
@@ -266,7 +267,7 @@ export class KlEventReplayer {
     events: TRecordedEvent[],
     timingParams: ReturnType<typeof this.calculateTimingParams>,
     signal: AbortSignal,
-    onFrame?: (currentIndex: number, totalEvents: number) => Promise<void>
+    config?: TReplayConfig,
   ): Promise<void> {
     const { frameTime, eventsPerFrame } = timingParams;
     let currentIndex = 0;
@@ -289,14 +290,14 @@ export class KlEventReplayer {
       currentIndex += eventsToProcess;
 
       // Call frame callback
-      if (onFrame) {
-        await onFrame(currentIndex, events.length);
+      if (config) {
+        await config.onFrame?.(currentIndex, events.length);
       }
       if (this.onFrame) {
         await this.onFrame(currentIndex, events.length);
       }
 
-      if (frameTime <= 0) {
+      if (frameTime <= 0 || config?.noSleep === true) {
         // No animation
         continue;
       }

@@ -16,6 +16,8 @@ export type TReplayConfig = {
   targetFps?: number;
   /** Total time in milliseconds for the complete replay */
   replayTimeInMs?: number;
+  /** Whether to skip sleeping, outputing frames as fast as possible */
+  noSleep?: boolean;
   /** Callback called on each frame during replay */
   onFrame?: (currentIndex: number, totalEvents: number) => Promise<void>;
 };

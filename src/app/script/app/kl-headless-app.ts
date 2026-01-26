@@ -181,6 +181,18 @@ export type TKlHeadlessAppParams = {
   featureConfiguration?: TKlFeatureConfiguration;
   initialLayerConfiguration?: { name: string | undefined }[];
   onReady?: () => void;
+  screenSize?:
+    | 'fullscreen'
+    | 'contain' // not tested
+    | {
+        width: number;
+        height: number;
+        top: number;
+        left: number;
+      };
+  isReadOnly?: boolean;
+  isControlledReplaying?: boolean;
+  replayingConfig?: TReplayConfig;
 };
 
 const exportType: TExportType = 'png';
@@ -409,19 +421,48 @@ export class KlHeadlessApp {
     // Register parameter
     this.on('statusMessage', p.showStatusMessageCallback);
 
-    // UI is full browser size
-    this.uiWidth = Math.max(0, window.innerWidth);
-    this.uiHeight = Math.max(0, window.innerHeight);
-    this.rootEl = el({
-      className: 'g-root',
-      css: {
-        display: 'absolute',
-        left: '0',
-        top: '0',
-        right: '0',
-        bottom: '0',
-      },
-    });
+    if (p.screenSize === 'contain') {
+      // UI is contained in the available space (100%)
+      this.uiWidth = Math.max(0, window.innerWidth);
+      this.uiHeight = Math.max(0, window.innerHeight);
+      this.rootEl = el({
+        className: 'g-root',
+        css: {
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+        },
+      });
+    } else if (typeof p.screenSize === 'object') {
+      // UI is at a fixed position and size
+      this.uiWidth = p.screenSize.width;
+      this.uiHeight = p.screenSize.height;
+      this.rootEl = el({
+        className: 'g-root',
+        css: {
+          position: 'absolute',
+          left: `${p.screenSize.left}px`,
+          top: `${p.screenSize.top}px`,
+          width: `${p.screenSize.width}px`,
+          height: `${p.screenSize.height}px`,
+          overflow: 'hidden',
+        },
+      });
+    } else {
+      // UI is full browser size
+      this.uiWidth = Math.max(0, window.innerWidth);
+      this.uiHeight = Math.max(0, window.innerHeight);
+      this.rootEl = el({
+        className: 'g-root',
+        css: {
+          // display: 'absolute',
+          // left: '0',
+          // top: '0',
+          // right: '0',
+          // bottom: '0',
+        },
+      });
+    }
 
     // default 2048, unless your screen is bigger than that (that computer then probably has the horsepower for that)
     // but not larger than 4096 - a fairly arbitrary decision
@@ -431,10 +472,18 @@ export class KlHeadlessApp {
     const initialWidth = Math.max(10, Math.min(maxCanvasSize, desiredWidth));
     const initialHeight = Math.max(10, Math.min(maxCanvasSize, desiredHeight));
 
+    console.log('[KlHeadlessApp] Initializing with canvas size', initialWidth, 'x', initialHeight, { p });
+
     const oldestComposed = projectToComposed(
       typeof p.project === 'string'
         ? getDefaultProjectOptions(p.project, initialWidth, initialHeight, !USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0)
-        : (p.project ?? getDefaultProjectOptions(randomUuid(), initialWidth, initialHeight, !USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0))
+        : (p.project ??
+            getDefaultProjectOptions(
+              randomUuid(),
+              initialWidth,
+              initialHeight,
+              !USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0
+            ))
     );
 
     this.klHistory = new KlHistory({
@@ -845,12 +894,13 @@ export class KlHeadlessApp {
         this.redo(true);
       },
       useWhiteBackdrop: USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0,
+      isReadOnly: p.isReadOnly,
     });
 
     css(this.easel.getElement(), {
-      position: 'absolute',
-      left: '0',
-      top: '0',
+      // position: 'absolute',
+      // left: '0',
+      // top: '0',
     });
 
     append(this.rootEl, [this.easel.getElement()]);
@@ -874,7 +924,7 @@ export class KlHeadlessApp {
           return;
         }
 
-        if (this.isDrawing()) {
+        if (this.isDrawing() || p.isReadOnly === true) {
           return;
         }
 
@@ -1391,7 +1441,7 @@ export class KlHeadlessApp {
 
     // Load the drawing from the storage provider, or start a new one.
     if (!!this.klRecorder) {
-      this.klRecorder?.loadFromStorage().then(x => {
+      this.klRecorder?.loadFromStorage(p.replayingConfig).then(x => {
         if (x === 'empty-storage') {
           // Begin recording already
           this.klRecorder?.start();
@@ -1468,6 +1518,10 @@ export class KlHeadlessApp {
 
   async getJPG(): Promise<Blob> {
     return await canvasToBlob(this.klCanvas.getCompleteCanvasWithWhiteBackground(1), 'image/jpg');
+  }
+
+  getCanvasSnapshot(): HTMLCanvasElement {
+    return this.klCanvas.getCompleteCanvasWithWhiteBackground(1);
   }
 
   getPSD = async (): Promise<Blob> => {

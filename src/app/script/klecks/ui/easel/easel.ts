@@ -41,6 +41,7 @@ export type TEaselParams<GToolId extends string> = {
   onUndo?: () => void; // gesture triggers undo
   onRedo?: () => void; // gesture triggers redo
   useWhiteBackdrop?: boolean;
+  isReadOnly?: boolean;
 };
 
 /**
@@ -460,10 +461,12 @@ export class Easel<GToolId extends string> {
     this.pointerListener = new PointerListener({
       target: this.viewport.getElement(),
       onPointer: e => {
+        if (p.isReadOnly === true) return;
         this.pointerPreprocessor.chainIn(e);
       },
       onWheel: e => {
         e.event?.preventDefault();
+        if (p.isReadOnly === true) return;
         let isImmediate = false;
         if (Math.abs(e.deltaY) < 0.8) {
           isImmediate = true;
@@ -515,7 +518,7 @@ export class Easel<GToolId extends string> {
 
     this.keyListener = new KeyListener({
       onDown: (keyStr, e, comboStr, isRepeat) => {
-        if (this.isFrozen) {
+        if (this.isFrozen || p.isReadOnly === true) {
           return;
         }
 
@@ -591,9 +594,9 @@ export class Easel<GToolId extends string> {
       height: '' + this.height,
     });
     css(this.svgEl, {
-      position: 'absolute',
-      left: '0',
-      top: '0',
+      // position: 'absolute',
+      // left: '0',
+      // top: '0',
       pointerEvents: 'none',
     });
     this.svgEl.append(
