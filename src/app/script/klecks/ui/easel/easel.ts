@@ -594,9 +594,9 @@ export class Easel<GToolId extends string> {
       height: '' + this.height,
     });
     css(this.svgEl, {
-      // position: 'absolute',
-      // left: '0',
-      // top: '0',
+      position: 'absolute',
+      left: '0',
+      top: '0',
       pointerEvents: 'none',
     });
     this.svgEl.append(

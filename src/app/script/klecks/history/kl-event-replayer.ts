@@ -260,6 +260,15 @@ export class KlEventReplayer {
   }
 
   /**
+   * Check if an event is a blend brush event
+   * @private
+   */
+  private isBlendBrushEvent(event: TRecordedEvent): boolean {
+    return event.type === 'draw' && 
+           event.data?.brush?.id === 'BlendBrush';
+  }
+
+  /**
    * Execute the actual replay with timing control
    * @private
    */
@@ -279,6 +288,10 @@ export class KlEventReplayer {
 
       // Process a batch of events for this frame
       const frameEvents = events.slice(currentIndex, currentIndex + eventsToProcess);
+
+      // Count blend brush events in this frame (they get 2x time budget)
+      const blendBrushCount = frameEvents.filter(e => this.isBlendBrushEvent(e)).length;
+      const adjustedFrameBudget = frameTime * (1 + blendBrushCount);
 
       // Execute all handlers for each event in this frame
       for (const event of frameEvents) {
@@ -310,28 +323,28 @@ export class KlEventReplayer {
       // Calculate timing for next frame
       let sleepTime = 0;
       const thisFrameRealDuration = performance.now() - frameStartTime;
-      const thisFrameDelay = frameTime - thisFrameRealDuration; // positive=good
+      const thisFrameDelay = adjustedFrameBudget - thisFrameRealDuration; // positive=good
 
       // Calculate delay for next frame, compensating for any overrun
       const totalFrameDelay = -thisFrameDelay + accumulatedDelay;
       if (totalFrameDelay > 0) {
-        // We're behind schedule
+        // We're behind schedule (based on adjusted budget for blend brushes)
         // Try to keep up, sleep as little as possible
         sleepTime = 1;
-        // And it's still getting worse:
         accumulatedDelay += -thisFrameDelay;
 
         if (DEBUG_REPLAYER) {
           console.warn(
             '%c[REPLAY]',
             LOG_STYLE_REPLAYER,
-            `Trying to keep up. Overrun by ${-totalFrameDelay.toFixed(1)}ms, accumulated delay: ${accumulatedDelay.toFixed(1)}ms`
+            `Trying to keep up. Blend brushes: ${blendBrushCount}, Overrun by ${-totalFrameDelay.toFixed(1)}ms, accumulated delay: ${accumulatedDelay.toFixed(1)}ms`
           );
         }
       } else {
         // Sleep till the next frame should happen
         // floor and "-5" is a precaution: Be faster early on, so that we have more time later
-        sleepTime = Math.max(0, Math.floor(thisFrameDelay - 5));
+        // Note: We only sleep based on base frameTime, not the adjusted budget
+        sleepTime = Math.max(0, Math.min(thisFrameDelay, Math.floor(frameTime - 5)));
         accumulatedDelay = 0;
       }
 
