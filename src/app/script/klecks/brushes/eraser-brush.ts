@@ -305,7 +305,7 @@ export class EraserBrush {
       sizePressure: true,
       opacity: 1,
       opacityPressure: false,
-      transparentBg: false,
+      transparentBg: true,
     });
   }
 }
