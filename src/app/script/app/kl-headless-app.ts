@@ -1709,6 +1709,16 @@ export class KlHeadlessApp {
     };
   }
 
+  resizeCanvas(width: number, height: number, algorithm: 'smooth' | 'pixelated' = 'smooth'): boolean {
+    const result = this.klCanvas.resize(width, height, algorithm);
+    if (result) {
+      this.easelProjectUpdater.update();
+      this.easel.resetOrFitTransform(true);
+      this.updateUi();
+    }
+    return result;
+  }
+
   resetBrushes(): void {
     // Reset all brushes to their default configurations
     Object.keys(this.brushes).forEach(brushId => {
