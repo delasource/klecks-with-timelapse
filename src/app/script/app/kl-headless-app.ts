@@ -1460,7 +1460,7 @@ export class KlHeadlessApp {
         }
 
         // Finalise
-        // this.klCanvas.fixHistoryState();
+        this.klCanvas.fixHistoryState();
         this.applyUncommitted();
 
         this.klRecorder?.pause();

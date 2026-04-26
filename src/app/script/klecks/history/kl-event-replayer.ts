@@ -6,7 +6,7 @@ import {
   TEventType,
   TRecordedEvent,
   TReplayConfig,
-  TReplayStats,
+  TReplayStats
 } from './kl-event-types';
 
 /**
@@ -233,7 +233,7 @@ export class KlEventReplayer {
       }
       return {
         frameTime: 0,
-        eventsPerFrame: undefined,
+        eventsPerFrame: undefined
       };
     }
 
@@ -255,7 +255,7 @@ export class KlEventReplayer {
 
     return {
       frameTime: timePerFrame,
-      eventsPerFrame,
+      eventsPerFrame
     };
   }
 
@@ -264,8 +264,8 @@ export class KlEventReplayer {
    * @private
    */
   private isBlendBrushEvent(event: TRecordedEvent): boolean {
-    return event.type === 'draw' && 
-           event.data?.brush?.id === 'BlendBrush';
+    return event.type === 'draw' &&
+      event.data?.brush?.id === 'BlendBrush';
   }
 
   /**
@@ -294,20 +294,31 @@ export class KlEventReplayer {
       const adjustedFrameBudget = frameTime * (1 + blendBrushCount);
 
       // Execute all handlers for each event in this frame
+      let debugTimer = performance.now();
       for (const event of frameEvents) {
         if (signal.aborted) break;
 
+        console.log('[REPLAY DEBUG] BEFORE executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber);
         await this.executeEventHandlers(event);
+        console.log('[REPLAY DEBUG] AFTER executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber, 'time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
+        debugTimer = performance.now();
       }
 
       currentIndex += eventsToProcess;
 
       // Call frame callback
       if (config) {
+        console.log('[REPLAY DEBUG] BEFORE config.onFrame?.() call');
+        debugTimer = performance.now();
         await config.onFrame?.(currentIndex, events.length);
+        console.log('[REPLAY DEBUG] AFTER config.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
       }
+
       if (this.onFrame) {
+        console.log('[REPLAY DEBUG] BEFORE this.onFrame?.() call');
+        debugTimer = performance.now();
         await this.onFrame(currentIndex, events.length);
+        console.log('[REPLAY DEBUG] AFTER this.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
       }
 
       if (frameTime <= 0 || config?.noSleep === true) {
@@ -317,6 +328,7 @@ export class KlEventReplayer {
 
       if (currentIndex >= events.length || signal.aborted) {
         // Done or aborted
+        console.log('[REPLAY DEBUG] Done or aborted - breaking loop. currentIndex:', currentIndex, 'events.length:', events.length, 'signal.aborted:', signal.aborted);
         break;
       }
 
@@ -358,6 +370,8 @@ export class KlEventReplayer {
         }
       }
     }
+
+    console.log('[REPLAY DEBUG] executeReplay() END - completed. Final currentIndex:', currentIndex, 'events.length:', events.length);
   }
 
   private async executeEventHandlers(event: TRecordedEvent): Promise<void> {
@@ -397,23 +411,63 @@ export class KlEventReplayer {
       skippedEvents: originalEvents.length - processedEvents.length,
       actualDuration,
       targetDuration,
-      averageFps: processedEvents.length > 0 ? (processedEvents.length / actualDuration) * 1000 : 0,
+      averageFps: processedEvents.length > 0 ? (processedEvents.length / actualDuration) * 1000 : 0
     };
   }
 
   /**
-   * Sleep helper function
+   * Sleep helper function with timeout safeguard
    * @private
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => {
+      const timeoutId = setTimeout(resolve, ms);
+      // Safeguard: if setTimeout doesn't fire within 2x the requested time, force resolve
+      const safeguardId = setTimeout(() => {
+        clearTimeout(timeoutId);
+        console.warn('[REPLAY] sleep timeout fallback used');
+        resolve();
+      }, ms * 2);
+      // Clear safeguard if normal timeout fires first
+      const originalResolve = resolve;
+      resolve = () => {
+        clearTimeout(safeguardId);
+        originalResolve();
+      };
+    });
   }
 
   /**
-   * Sleep one animationframe helper function
+   * Sleep one animationframe helper function with timeout safeguard
    * @private
    */
   private sleepOneFrame(): Promise<void> {
-    return new Promise(resolve => requestAnimationFrame(() => resolve()));
+    return new Promise(resolve => {
+      let rafId: number | null = null;
+      let timeoutId: NodeJS.Timeout | null = null;
+
+      const cleanup = () => {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        if (timeoutId !== null) clearTimeout(timeoutId);
+      };
+
+      const wrappedResolve = () => {
+        cleanup();
+        resolve();
+      };
+
+      // Try requestAnimationFrame first
+      rafId = requestAnimationFrame(() => wrappedResolve());
+
+      // Safeguard: if rAF doesn't fire within 100ms, fall back to setTimeout
+      timeoutId = setTimeout(() => {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+          console.warn('[REPLAY] sleepOneFrame timeout fallback used');
+          wrappedResolve();
+        }
+      }, 100);
+    });
   }
 }
