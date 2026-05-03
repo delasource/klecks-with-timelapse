@@ -298,20 +298,20 @@ export class KlEventReplayer {
       for (const event of frameEvents) {
         if (signal.aborted) break;
 
-        console.log('[REPLAY DEBUG] BEFORE executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber);
+        //console.log('[REPLAY DEBUG] BEFORE executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber);
         await this.executeEventHandlers(event);
-        console.log('[REPLAY DEBUG] AFTER executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber, 'time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
-        debugTimer = performance.now();
+        //console.log('[REPLAY DEBUG] AFTER executeEventHandlers - event.type:', event.type, 'event.sequenceNumber:', event.sequenceNumber, 'time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
+        //debugTimer = performance.now();
       }
 
       currentIndex += eventsToProcess;
 
       // Call frame callback
       if (config) {
-        console.log('[REPLAY DEBUG] BEFORE config.onFrame?.() call');
-        debugTimer = performance.now();
+        //console.log('[REPLAY DEBUG] BEFORE config.onFrame?.() call');
+        //debugTimer = performance.now();
         await config.onFrame?.(currentIndex, events.length);
-        console.log('[REPLAY DEBUG] AFTER config.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
+        //console.log('[REPLAY DEBUG] AFTER config.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
       }
 
       if (this.onFrame) {
@@ -421,19 +421,17 @@ export class KlEventReplayer {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => {
-      const timeoutId = setTimeout(resolve, ms);
+      const timeoutId = setTimeout(() => {
+        clearTimeout(safeguardId);
+        resolve();
+      }, ms);
+
       // Safeguard: if setTimeout doesn't fire within 2x the requested time, force resolve
       const safeguardId = setTimeout(() => {
         clearTimeout(timeoutId);
         console.warn('[REPLAY] sleep timeout fallback used');
         resolve();
       }, ms * 2);
-      // Clear safeguard if normal timeout fires first
-      const originalResolve = resolve;
-      resolve = () => {
-        clearTimeout(safeguardId);
-        originalResolve();
-      };
     });
   }
 

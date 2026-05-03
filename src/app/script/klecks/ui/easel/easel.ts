@@ -782,9 +782,12 @@ export class Easel<GToolId extends string> {
    * Automatically decides between scale 1 and fitting based on project size relative to window.
    */
   scaleToNormal(isImmediate?: boolean): number {
-    const isFit = this.getTransform().scale >= 1;
+    const isFit = this.getTransform().scale === 1;
     const uiWidth = 440; // width of both sidebars
     const fitWithinUiScale = (this.width - uiWidth) / this.project.width;
+    const fitWithinUiScaleHeight = (this.height - 20) / this.project.height;
+    const maximumScale = Math.min(EASEL_MAX_SCALE, fitWithinUiScale, fitWithinUiScaleHeight);
+
     // Following code is similar to resetTransform
     const transform = createTransform(
       {
@@ -792,7 +795,7 @@ export class Easel<GToolId extends string> {
         y: this.height / 2,
       },
       { x: this.project.width / 2, y: this.project.height / 2 },
-      isFit ? fitWithinUiScale : 1,
+      isFit ? maximumScale : 1,
       0
     );
     this.setTargetTransform(transform, isImmediate);
