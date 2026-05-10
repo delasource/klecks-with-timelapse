@@ -71,7 +71,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     transform: identity(),
     doClone: false,
     targetLayerIndex: 0,
-    backgroundIsTransparent: true,
+    backgroundIsTransparent: true
   };
   private backgroundIsTransparent: boolean = true;
 
@@ -88,7 +88,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.onError = p.onError;
 
     this.selectTool = new SelectTool({
-      klCanvas: this.klCanvas,
+      klCanvas: this.klCanvas
     });
     this.transformTool = new SelectTransformTool();
 
@@ -133,7 +133,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         this.transformTool.translate(d);
         this.propagateTransformationChange();
       },
-      onResetSelection: () => this.internalResetSelection(),
+      onResetSelection: () => this.internalResetSelection()
     });
 
     this.klHistory.addListener(() => {
@@ -149,7 +149,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private isSourceLayerBackgroundTransparent(): boolean {
     const srcLayerCtx = this.getCurrentLayerCtx();
-    const srcLayerIndex = throwIfNull(this.klCanvas.getLayerIndex(srcLayerCtx.canvas));
+    const srcLayerIndex = this.klCanvas.getLayerIndex(srcLayerCtx.canvas, true);
+    if (srcLayerIndex == null) return true; // layer not existent
     if (srcLayerIndex > 0) {
       // not background layer
       return true;
@@ -159,7 +160,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private resetComposites(): void {
     const srcLayerCtx = this.getCurrentLayerCtx();
-    const srcLayerIndex = throwIfNull(this.klCanvas.getLayerIndex(srcLayerCtx.canvas));
+    const srcLayerIndex = this.klCanvas.getLayerIndex(srcLayerCtx.canvas, true);
+    if (srcLayerIndex == null) return;
     this.klCanvas.setComposite(srcLayerIndex, undefined);
     if (this.targetLayerIndex !== srcLayerIndex) {
       this.klCanvas.setComposite(this.targetLayerIndex, undefined);
@@ -192,8 +194,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         transform: this.transformTool.getTransform(),
         doClone: this.transformTool.getDoClone(),
         targetLayerIndex: this.targetLayerIndex,
-        backgroundIsTransparent: this.backgroundIsTransparent,
-      },
+        backgroundIsTransparent: this.backgroundIsTransparent
+      }
     } satisfies TSelectTransformTempEntry);
   }
 
@@ -207,7 +209,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   }
 
   private canTransform(): boolean {
-    const layerIndex = throwIfNull(this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas));
+    const layerIndex = this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas, true);
+    if (layerIndex === null) return false;
     return !!this.klCanvas.getSelectionArea(layerIndex);
   }
 
@@ -225,14 +228,14 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       this.klCanvas.transformCloneViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
-        transformation: this.transformTool.getTransform(),
+        transformation: this.transformTool.getTransform()
       });
     } else {
       this.klCanvas.transformViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform(),
-        backgroundIsTransparent: this.backgroundIsTransparent,
+        backgroundIsTransparent: this.backgroundIsTransparent
       });
     }
     this.statusOverlay.out(LANG('select-transform-applied'), true);
@@ -251,9 +254,9 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
             [width, 0],
             [width, height],
             [0, height],
-            [0, 0],
-          ],
-        ],
+            [0, 0]
+          ]
+        ]
       ];
     }
 
@@ -381,14 +384,14 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       this.klCanvas.transformCloneViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
-        transformation: this.transformTool.getTransform(),
+        transformation: this.transformTool.getTransform()
       });
     } else if (this.transformTool.isTransformationChanged()) {
       this.klCanvas.transformViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform(),
-        backgroundIsTransparent: this.backgroundIsTransparent,
+        backgroundIsTransparent: this.backgroundIsTransparent
       });
     }
     const oldSelection = this.transformTool.getTransformedSelection();
@@ -473,7 +476,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       targetLayerIndex: this.targetLayerIndex,
       backgroundIsTransparent: this.backgroundIsTransparent,
       canTransform: this.canTransform(),
-      isCloning: this.transformTool.getDoClone(),
+      isCloning: this.transformTool.getDoClone()
     };
   }
 
@@ -507,7 +510,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
       let state = {
         ...this.initialTransform,
-        doClone: this.transformTool.getDoClone(),
+        doClone: this.transformTool.getDoClone()
       };
       if (top && isSelectTransformTempEntry(top)) {
         state = top.data;
