@@ -1610,7 +1610,18 @@ export class KlCanvas {
     this.isDestroyed = true;
   }
 
-  fixHistoryState() {
+  /**
+   * Pushes the whole state of the canvas into the history: after a load or a replay, which fill
+   * the canvas without the history being a reliable account of it.
+   *
+   * `activeLayerId` is the layer the application draws on. It has to be said here: the brushes
+   * file a stroke under the layer the history calls active (`getPushableLayerChange`), and the
+   * canvas itself does not know which layer that is. Naming another one — this used to be the
+   * top layer, always — files every later stroke under the wrong layer, and the next undo then
+   * paints the tiles of one layer onto another.
+   */
+  fixHistoryState(activeLayerId?: TLayerId) {
+    const activeLayer = this.layers.find(layer => layer.id === activeLayerId) ?? this.layers[this.layers.length - 1];
     const historyEntryData: THistoryEntryDataComposed = {
       projectId: {
         value: this.klHistory.getComposed().projectId.value,
@@ -1620,7 +1631,7 @@ export class KlCanvas {
         height: this.height,
       },
       selection: { value: this.selection },
-      activeLayerId: this.layers[this.layers.length - 1].id,
+      activeLayerId: activeLayer.id,
       layerMap: createLayerMap(this.layers, {
         attributes: 'all',
       }) as Record<TLayerId, THistoryEntryLayerComposed>,

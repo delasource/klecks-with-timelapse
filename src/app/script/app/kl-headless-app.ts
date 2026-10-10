@@ -276,6 +276,27 @@ export class KlHeadlessApp {
     else if ('setContext' in brushLogic) brushLogic.setContext(this.currentLayer.context);
   }
 
+  /**
+   * Makes the layer picker and the history agree with the layer the brush draws on, and returns
+   * that layer.
+   *
+   * Needed wherever the canvas is changed behind the layer controller's back — by a replay
+   * handler that calls KlCanvas directly: KlCanvas names an active layer of its own in the
+   * history entry it pushes (the moved layer, the new one, …) and knows nothing of the layer
+   * controller's index. Live, the controller follows such a call with a selection; in a replay
+   * that selection is only there if it was recorded (after a move it is not).
+   */
+  private reassertCurrentLayer(): TKlCanvasLayer {
+    // The same layer by id: its index may have changed, and an undo replaces the layer objects.
+    const layer =
+      this.klCanvas.getLayerById(this.currentLayer.id) ?? this.klCanvas.getLayer(this.klCanvas.getLayerCount() - 1);
+    this.setCurrentLayer(layer);
+    if (!this.klHistory.isPaused() && this.klHistory.getComposed().activeLayerId !== layer.id) {
+      this.klHistory.push({ activeLayerId: layer.id });
+    }
+    return layer;
+  }
+
   private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
     clipboardDialog(
       this.rootEl,
@@ -1178,6 +1199,9 @@ export class KlHeadlessApp {
       replayer.addReplayHandler('l-move', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.moveLayer>;
         this.klCanvas.moveLayer(...data);
+        // A move leaves the active layer active, wherever it ends up. The selection that says so
+        // live is not in the recording (the recorder leaves out the one a move brings with it).
+        this.reassertCurrentLayer();
         this.easelProjectUpdater.update();
       });
 
@@ -1462,7 +1486,7 @@ export class KlHeadlessApp {
         }
 
         // Finalise
-        this.klCanvas.fixHistoryState();
+        this.klCanvas.fixHistoryState(this.reassertCurrentLayer().id);
         this.applyUncommitted();
 
         this.klRecorder?.pause();
@@ -1758,7 +1782,7 @@ export class KlHeadlessApp {
     const result = await this.klRecorder.getReplayer().startReplay(events, config);
 
     // Fix ui state
-    this.klCanvas.fixHistoryState();
+    this.klCanvas.fixHistoryState(this.reassertCurrentLayer().id);
     // this.layerController.setActiveLayerInternal(0);
     // this.setBrushConfig(this.getCurrentBrushConfig());
 
