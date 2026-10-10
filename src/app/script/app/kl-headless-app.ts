@@ -1592,7 +1592,9 @@ export class KlHeadlessApp {
   }
 
   async getJPG(): Promise<Blob> {
-    return await canvasToBlob(this.klCanvas.getCompleteCanvasWithWhiteBackground(1), 'image/jpg');
+    // 'image/jpeg' — a browser does not know 'image/jpg' and answers an unknown type with a PNG,
+    // three to five times the size, which was then uploaded and served as a JPEG.
+    return await canvasToBlob(this.klCanvas.getCompleteCanvasWithWhiteBackground(1), 'image/jpeg', 0.9);
   }
 
   getCanvasSnapshot(): HTMLCanvasElement {

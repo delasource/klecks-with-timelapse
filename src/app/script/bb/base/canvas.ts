@@ -454,24 +454,29 @@ export function canvasBounds(context: CanvasRenderingContext2D, integerBounds?: 
   };
 }
 
-export function htmlCanvasToBlobAsync(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
+// quality: 0 - 1, for the lossy types (image/jpeg, image/webp). The browser's default if left out.
+export function htmlCanvasToBlobAsync(canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) {
-        resolve(blob);
-      } else {
-        reject(new Error('Failed to create blob from canvas.'));
-      }
-    }, mimeType);
+    canvas.toBlob(
+      blob => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to create blob from canvas.'));
+        }
+      },
+      mimeType,
+      quality
+    );
   });
 }
 
-export async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
+export async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<Blob> {
   if ('toBlob' in HTMLCanvasElement.prototype) {
-    return await htmlCanvasToBlobAsync(canvas, mimeType);
+    return await htmlCanvasToBlobAsync(canvas, mimeType, quality);
   } else {
     // assume base64
-    return base64ToBlob(canvas.toDataURL(mimeType));
+    return base64ToBlob(canvas.toDataURL(mimeType, quality));
   }
 }
 
