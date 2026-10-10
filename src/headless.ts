@@ -42,6 +42,14 @@ export type {
   IHeadlessLayerControllerActions,
 } from './app/script/app/kl-headless-layer-types';
 
+export type {
+  IHeadlessOverlayActions,
+  TOverlayState,
+  TOverlayTransform,
+  TOverlayPlacement,
+} from './app/script/klecks/ui/easel/reference-overlay';
+export { OVERLAY_MIN_SCALE, OVERLAY_MAX_SCALE } from './app/script/klecks/ui/easel/reference-overlay';
+
 export type { TLayerId } from './app/script/klecks/history/history.types';
 
 export type { TBooleanOperation, TSelectShape } from './app/script/klecks/select-tool/select-tool';

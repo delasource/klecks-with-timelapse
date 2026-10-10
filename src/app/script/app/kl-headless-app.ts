@@ -64,6 +64,8 @@ import { KlHeadlessSelect } from './kl-headless-select';
 import { IHeadlessSelectActions } from './kl-headless-select-types';
 import { LayerHeadlessController } from './layer-headless-controller';
 import { getDefaultProjectOptions } from './default-project';
+import { IHeadlessOverlayActions, ReferenceOverlay } from '../klecks/ui/easel/reference-overlay';
+import { EaselOverlay } from '../klecks/ui/easel/tools/easel-overlay';
 
 // Constant for ColorMari, this effectivly disables the "transparency chessboard"
 const USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0 = true;
@@ -78,7 +80,9 @@ export type TKlToolId =
   | 'text'
   | 'shape'
   | 'rotate'
-  | 'zoom';
+  | 'zoom'
+  // moves the reference overlay (a picture shown as a sketching help, never part of the drawing)
+  | 'overlay';
 
 export type TKlBrushId = keyof typeof BRUSHES;
 
@@ -205,7 +209,8 @@ export type TUiEventType =
   | 'statusMessage'
   | 'colorPicked'
   | 'layersChanged'
-  | 'isReplaying';
+  | 'isReplaying'
+  | 'overlayChanged'; // the reference overlay: TOverlayState
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
 export class KlHeadlessApp {
@@ -228,6 +233,7 @@ export class KlHeadlessApp {
   private readonly layerController: LayerHeadlessController;
   private readonly featureConfiguration: TKlFeatureConfiguration = {};
   private readonly keyListener: KeyListener;
+  private readonly overlay: ReferenceOverlay;
 
   private lastSavedHistoryIndex: number = 0;
   private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
@@ -826,6 +832,28 @@ export class KlHeadlessApp {
       },
     });
 
+    // The reference overlay: a picture the easel shows with the layers. It is no layer of KlCanvas
+    // and nothing of it is recorded or pushed to the history — see ReferenceOverlay.
+    this.overlay = new ReferenceOverlay({
+      getProjectSize: () => ({ width: this.klCanvas.getWidth(), height: this.klCanvas.getHeight() }),
+      isDisabled: p.isReadOnly === true || p.isControlledReplaying === true,
+      onChange: change => {
+        if (change === 'transform') {
+          // The overlay's entry reads its transform at every render.
+          this.easel.requestRender();
+        } else {
+          this.easelProjectUpdater.update();
+          if (!this.overlay.getState().hasImage && this.uiState.tool === 'overlay') {
+            // nothing left to move
+            this.setTool('brush');
+          }
+        }
+        easelOverlay.updateOutline();
+        this.notifyUi('overlayChanged', this.overlay.getState());
+      },
+    });
+    const easelOverlay = new EaselOverlay({ overlay: this.overlay });
+
     // This is the canvas:
     this.easel = new Easel({
       width: Math.max(0, this.uiWidth),
@@ -931,6 +959,7 @@ export class KlHeadlessApp {
         shape: easelShape,
         rotate: new EaselRotate({}),
         zoom: new EaselZoom({}),
+        overlay: easelOverlay,
       },
       tool: 'brush',
       onChangeTool: toolId => {
@@ -960,6 +989,7 @@ export class KlHeadlessApp {
     this.easelProjectUpdater = new EaselProjectUpdater({
       klCanvas: this.klCanvas,
       easel: this.easel,
+      overlay: this.overlay,
     });
 
     this.klHistory.addListener(() => {
@@ -1418,7 +1448,11 @@ export class KlHeadlessApp {
         this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
         // Replacing may leave no entry at all: the selection went back to where it started.
         const cancelledOut = replaceTop && this.klHistory.getTotalIndex() < indexBefore;
-        this.klRecorder?.record('l-select', [layerIndex], !replaceTop ? 'keep' : cancelledOut ? 'discard-both' : 'replace');
+        this.klRecorder?.record(
+          'l-select',
+          [layerIndex],
+          !replaceTop ? 'keep' : cancelledOut ? 'discard-both' : 'replace'
+        );
       },
       onLayersChange: state => {
         this.notifyUi('layersChanged', state);
@@ -1795,6 +1829,11 @@ export class KlHeadlessApp {
     return this.klAppFilter;
   }
 
+  /** The reference overlay: a picture shown in the easel as a sketching help, never part of the drawing. */
+  getOverlayController(): IHeadlessOverlayActions {
+    return this.overlay;
+  }
+
   getDimensions() {
     return {
       width: this.klCanvas.getWidth(),
@@ -1805,6 +1844,7 @@ export class KlHeadlessApp {
   resizeCanvas(width: number, height: number, algorithm: 'smooth' | 'pixelated' = 'smooth'): boolean {
     const result = this.klCanvas.resize(width, height, algorithm);
     if (result) {
+      this.overlay.fit(); // its place was given in pixels of the old size
       this.easelProjectUpdater.update();
       this.easel.resetOrFitTransform(true);
       this.updateUi();
@@ -1843,10 +1883,17 @@ export class KlHeadlessApp {
     this.klRecorder.pause();
     this.resetView();
     this.notifyUi('isReplaying', true);
+    // The replay shows how the drawing came to be; the reference picture is no part of that.
+    this.overlay.setSuspended(true);
 
     // Start
-    const events = await this.klRecorder.getEvents();
-    const result = await this.klRecorder.getReplayer().startReplay(events, config);
+    let result;
+    try {
+      const events = await this.klRecorder.getEvents();
+      result = await this.klRecorder.getReplayer().startReplay(events, config);
+    } finally {
+      this.overlay.setSuspended(false);
+    }
 
     // Fix ui state. The history the replay has built stays as it is (see the constructor).
     this.reassertCurrentLayer();

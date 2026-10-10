@@ -27,6 +27,9 @@ export type TProjectViewportProject = {
     opacity: number;
     mixModeStr: TMixMode;
     hasClipping: boolean;
+    // Not a layer of the drawing (the reference overlay): placed by its own transform, so it is
+    // clipped to the project and always drawn smoothed, at whatever resolution it has itself.
+    isViewOnly?: boolean;
   }[];
 };
 
@@ -228,6 +231,14 @@ export class ProjectViewport {
       this.ctx.save();
       this.ctx.globalCompositeOperation = layer.mixModeStr;
       this.ctx.globalAlpha = layer.opacity;
+      if (layer.isViewOnly) {
+        // still in project space here: the clip is the paper
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, this.project.width, this.project.height);
+        this.ctx.clip();
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+      }
 
       let image: CanvasImageSource;
       if (typeof layer.image === 'function') {
