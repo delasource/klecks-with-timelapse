@@ -241,7 +241,9 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
     }
 
     this.applyUncommitted();
-    this.klCanvas.moveLayer(fromIndex, toIndex - fromIndex);
+    // The active layer stays the active one, wherever it ends up: say so in the same history
+    // entry, so that a move is one undo step.
+    this.klCanvas.moveLayer(fromIndex, toIndex - fromIndex, this.klCanvas.getLayer(this.activeLayerIndex)?.id);
 
     // Adjust active layer index
     if (fromIndex === this.activeLayerIndex) {
@@ -433,6 +435,10 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
     const layerCount = this.getLayerCount();
     for (let i = layerCount; i < n; i++) {
       this.klCanvas.addLayer(this.activeLayerIndex);
+    }
+    // KlCanvas names each new layer as the active one in the history; the active layer stays.
+    if (this.getLayerCount() > layerCount) {
+      this.onSelectLayer?.(this.activeLayerIndex);
     }
     this.notifyLayersChange();
   }

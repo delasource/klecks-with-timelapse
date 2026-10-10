@@ -690,7 +690,12 @@ export class KlCanvas {
     }
   }
 
-  moveLayer(index: number, delta: number): void | number {
+  /**
+   * `activeLayerId` is the layer that is active afterwards, for the history. Left out, it is the
+   * moved layer — which is right only when the active layer itself is moved: a caller that drags
+   * another layer names the active one, or the move and the correction are two undo steps.
+   */
+  moveLayer(index: number, delta: number, activeLayerId?: TLayerId): void | number {
     if (delta === 0) {
       return;
     }
@@ -706,7 +711,9 @@ export class KlCanvas {
     if (!this.klHistory.isPaused()) {
       this.klRecorder?.record('l-move', [index, delta]);
       this.klHistory.push({
-        activeLayerId: this.layers[targetIndex].id,
+        activeLayerId: this.layers.some(layer => layer.id === activeLayerId)
+          ? activeLayerId
+          : this.layers[targetIndex].id,
         layerMap: createLayerMap(this.layers, { attributes: ['index'] }),
       });
     }
@@ -807,7 +814,8 @@ export class KlCanvas {
       this.klRecorder?.record('l-merge-all', []);
       this.klHistory.push({
         activeLayerId,
-        layerMap: createLayerMap(this.layers, { attributes: ['tiles'] }),
+        // The name too: the bottom layer was renamed above, and an undo has to give the old one back.
+        layerMap: createLayerMap(this.layers, { attributes: ['tiles', 'name', 'index'] }),
       });
     }
 

@@ -192,6 +192,26 @@ export class KlHistory {
     this.broadcast();
   }
 
+  /**
+   * Makes the current state the oldest one: everything before it can no longer be undone, and
+   * nothing can be redone. Used where a drawing begins — after a paper's setup (its named layers
+   * are not something the user did), and after a 'reset' — so that undo cannot walk out of the
+   * drawing into what was there before.
+   */
+  rebase(): void {
+    this.indexOffset += this.index;
+    this.entries = [
+      {
+        timestamp: new Date().getTime(),
+        memoryEstimateBytes: estimateBytes(this.composed),
+        description: 'oldest',
+        data: this.composed,
+      },
+    ];
+    this.index = 0;
+    this.broadcast();
+  }
+
   increaseIndex(): THistoryEntry {
     if (this.canRedo()) {
       this.index++;

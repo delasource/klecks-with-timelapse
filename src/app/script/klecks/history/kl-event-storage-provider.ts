@@ -99,6 +99,8 @@ export class BrowserEventStorageProvider implements IEventStorageProvider {
   async clearEvents(): Promise<void> {
     try {
       localStorage.removeItem(this.storageKey);
+      // The cache too: the next stored event was appended to it and brought everything back.
+      this.cachedEvents = null;
     } catch (error) {
       console.error('Failed to clear events:', error);
       throw error;

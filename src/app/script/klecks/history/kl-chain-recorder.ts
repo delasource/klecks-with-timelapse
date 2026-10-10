@@ -130,7 +130,12 @@ export class KlChainRecorder {
 
     if (typeChar == 'L') {
       const linePart = str.slice(1);
-      const [startPart, endPart] = linePart.split('-');
+      // "<x0>|<y0>|<pressure0>-<x1>|<y1>|<pressure1>". A coordinate may be negative (a line that
+      // starts or ends outside the canvas), so the '-' that separates the two points is the one
+      // behind the first pressure — which is never negative.
+      const separator = linePart.match(/^([^|]+\|[^|]+\|[^|-]+)-(.+)$/);
+      if (!separator) return null;
+      const [, startPart, endPart] = separator;
       const [x0Str, y0Str, pressure0Str] = startPart.split('|');
       const [x1Str, y1Str, pressure1Str] = endPart.split('|');
       return {

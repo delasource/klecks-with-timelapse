@@ -297,6 +297,17 @@ export class KlHeadlessApp {
     return layer;
   }
 
+  /**
+   * After a replayed layer operation: draws on the layer KlCanvas named as the active one in the
+   * history entry it just pushed (the new layer, the copy, the one below a removed layer, the
+   * merged one). Live, the layer controller selects exactly that layer after its call, and that
+   * selection is neither a history entry nor a recorded event — so the replay has to make it.
+   */
+  private followActiveLayerOfHistory(): void {
+    const layer = this.klCanvas.getLayerById(this.klHistory.getComposed().activeLayerId);
+    if (layer) this.setCurrentLayer(layer);
+  }
+
   private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
     clipboardDialog(
       this.rootEl,
@@ -413,7 +424,9 @@ export class KlHeadlessApp {
       // didn't do anything
       return;
     }
-    this.klRecorder?.record('undo', []);
+    // Only a step of the history is a step of the recording. An undo inside an open
+    // transformation ('tempUndo') takes back something that was never recorded.
+    if (result.type === 'undo') this.klRecorder?.record('undo', []);
     this.propagateUndoRedoChanges(result.type, composedBefore);
     if (showMessage) {
       this.showStatusMessageCallback(LANG('undo'));
@@ -428,7 +441,7 @@ export class KlHeadlessApp {
       // didn't do anything
       return;
     }
-    this.klRecorder?.record('redo', []);
+    if (result.type === 'redo') this.klRecorder?.record('redo', []);
     this.propagateUndoRedoChanges(result.type, composedBefore);
     if (showMessage) {
       this.showStatusMessageCallback(LANG('redo'));
@@ -1141,10 +1154,18 @@ export class KlHeadlessApp {
         const data = event.data as Parameters<typeof KlCanvas.prototype.reset>;
         const layerIndex = this.klCanvas.reset(...data);
         this.setCurrentLayer(this.klCanvas.getLayer(layerIndex));
+        // A reset is where a drawing begins: undo must not walk through it into whatever was
+        // on the canvas before (the in-app replay runs on a canvas with a history of its own).
+        this.klHistory.rebase();
         this.easelProjectUpdater.update();
         this.easel.resetOrFitTransform(true);
         this.updateUi();
         this.notifyUi('layersChanged', this.layerController.getState());
+      });
+
+      replayer.addReplayHandler('setup-done', () => {
+        // The paper's own setup is not undoable — as it was not when the paper was new.
+        this.klHistory.rebase();
       });
 
       replayer.addReplayHandler('resize', event => {
@@ -1164,18 +1185,21 @@ export class KlHeadlessApp {
       replayer.addReplayHandler('l-add', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.addLayer>;
         this.klCanvas.addLayer(...data);
+        this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
 
       replayer.addReplayHandler('l-dupl', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.duplicateLayer>;
         this.klCanvas.duplicateLayer(...data);
+        this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
 
       replayer.addReplayHandler('l-rm', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.removeLayer>;
         this.klCanvas.removeLayer(...data);
+        this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
 
@@ -1197,10 +1221,10 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('l-move', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.moveLayer>;
-        this.klCanvas.moveLayer(...data);
-        // A move leaves the active layer active, wherever it ends up. The selection that says so
-        // live is not in the recording (the recorder leaves out the one a move brings with it).
+        const [index, delta] = event.data as [number, number];
+        // A move leaves the active layer active, wherever it ends up — as the layer controller
+        // does it live, in one history entry.
+        this.klCanvas.moveLayer(index, delta, this.currentLayer.id);
         this.reassertCurrentLayer();
         this.easelProjectUpdater.update();
       });
@@ -1208,12 +1232,14 @@ export class KlHeadlessApp {
       replayer.addReplayHandler('l-merge', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.mergeLayers>;
         this.klCanvas.mergeLayers(...data);
+        this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
 
       replayer.addReplayHandler('l-merge-all', event => {
         const data = event.data as Parameters<typeof KlCanvas.prototype.mergeAll>;
         this.klCanvas.mergeAll(...data);
+        this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
 
@@ -1359,12 +1385,28 @@ export class KlHeadlessApp {
         this.setCurrentLayer(layer);
         if (this.layerController) this.notifyUi('layersChanged', this.layerController?.getState());
 
-        // Fix the history, if there were two active layer changes in a row, replace the top one.
-        const topEntry = this.klHistory.getEntries().at(-1)!.data;
-        const replaceTop = isHistoryEntryActiveLayerChange(topEntry);
+        // The history and the recording have to make the same steps of a selection: every undo is
+        // "one history entry back" on the canvas and "one recorded event out" in a replay.
+        if (this.klHistory.isPaused()) return;
+        if (this.klHistory.getComposed().activeLayerId === layer.id) {
+          // Nothing changes: a click on the active layer, or the selection the layer controller
+          // makes after adding, removing, moving or merging — KlCanvas has already said so in
+          // the entry of that operation. No step of its own, in neither.
+          return;
+        }
 
+        // Two selections in a row are one step: the second replaces the first — if both the
+        // history and the recording end on a selection (they do not after an undo, or a load).
+        const topEntry = this.klHistory.getEntries().at(-1)!.data;
+        const replaceTop =
+          isHistoryEntryActiveLayerChange(topEntry) &&
+          (!this.klRecorder || this.klRecorder.getPreviousEventType() === 'l-select');
+
+        const indexBefore = this.klHistory.getTotalIndex();
         this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
-        this.klRecorder?.record('l-select', [layerIndex]);
+        // Replacing may leave no entry at all: the selection went back to where it started.
+        const cancelledOut = replaceTop && this.klHistory.getTotalIndex() < indexBefore;
+        this.klRecorder?.record('l-select', [layerIndex], !replaceTop ? 'keep' : cancelledOut ? 'discard-both' : 'replace');
       },
       onLayersChange: state => {
         this.notifyUi('layersChanged', state);
@@ -1483,10 +1525,17 @@ export class KlHeadlessApp {
 
           // Start with layerconfiguration
           seedLayerConfig();
+
+          // The setup is not something the user did: undo stops here, now and in every replay.
+          this.klRecorder?.record('setup-done', []);
+          this.klHistory.rebase();
         }
 
-        // Finalise
-        this.klCanvas.fixHistoryState(this.reassertCurrentLayer().id);
+        // Finalise. The history the replay has built is the paper's undo history: it is kept, so
+        // that the first undo after opening a paper takes back its last step. (A full entry
+        // pushed here, as it used to be, was itself the first thing an undo took back — nothing
+        // visible — while the recording counted that undo against the last stroke.)
+        this.reassertCurrentLayer();
         this.applyUncommitted();
 
         this.klRecorder?.pause();
@@ -1781,8 +1830,8 @@ export class KlHeadlessApp {
     const events = await this.klRecorder.getEvents();
     const result = await this.klRecorder.getReplayer().startReplay(events, config);
 
-    // Fix ui state
-    this.klCanvas.fixHistoryState(this.reassertCurrentLayer().id);
+    // Fix ui state. The history the replay has built stays as it is (see the constructor).
+    this.reassertCurrentLayer();
     // this.layerController.setActiveLayerInternal(0);
     // this.setBrushConfig(this.getCurrentBrushConfig());
 

@@ -28,7 +28,11 @@ export class KlEventRecorder {
   private replayer: KlEventReplayer;
   private storageProvider: IEventStorageProvider | undefined;
   private isStoringInProgress: boolean = false;
+  // What is still to be done to the storage, in order: see enqueueStorageOperation.
+  private pendingStorageOperations: Array<() => Promise<void> | undefined> = [];
   private previousEvent: TRecordedEvent | null = null;
+  // The event recorded before previousEvent: what is "previous" again once that one is taken back.
+  private eventBeforePrevious: TRecordedEvent | null = null;
   // True once the selection that a layer move brings with it was left out (see sanitizeDuplicateEvents).
   private hasSkippedSelectionOfMove: boolean = false;
 
@@ -48,23 +52,48 @@ export class KlEventRecorder {
   }
 
   private saveToStorage(event: TRecordedEvent) {
-    if (this.isStoringInProgress) {
-      // Set timeout and try later
-      // This ensures, that the storageProvider (which is an async function)
-      // can finish before a new event occurs.
-      setTimeout(() => this.saveToStorage(event), 50);
-      return;
-    }
+    this.enqueueStorageOperation(() => this.storageProvider?.storeEvent(event), 'Failed to store event. Error:');
+  }
+
+  private removePreviousFromStorage() {
+    this.enqueueStorageOperation(
+      () => this.storageProvider?.removePreviousEvent(),
+      'Failed to remove the previous event. Error:'
+    );
+  }
+
+  /**
+   * Everything that changes the storage goes through this queue, one operation at a time and in
+   * the order it was asked for. The storage is asynchronous and "remove the previous event" means
+   * whatever it holds last: when a store was still under way (or, as it used to be, waiting for
+   * a retry timer), a removal overtook it and took away the event before — a stroke, a layer.
+   *
+   * An idle queue runs the operation at once, within the call.
+   */
+  private enqueueStorageOperation(operation: () => Promise<void> | undefined, errorMessage: string) {
+    this.pendingStorageOperations.push(() => {
+      try {
+        return Promise.resolve(operation()).catch(error => {
+          console.error('%c[REC]', LOG_STYLE_RECORDER, errorMessage, error);
+        });
+      } catch (error) {
+        console.error('%c[REC]', LOG_STYLE_RECORDER, errorMessage, error);
+        return undefined;
+      }
+    });
+    this.runStorageQueue();
+  }
+
+  private runStorageQueue() {
+    if (this.isStoringInProgress) return;
+    const operation = this.pendingStorageOperations.shift();
+    if (!operation) return;
 
     this.isStoringInProgress = true;
-    this.storageProvider
-      ?.storeEvent(event)
-      .catch(error => {
-        console.error('%c[REC]', LOG_STYLE_RECORDER, 'Failed to store event. Error:', error);
-      })
-      .finally(() => {
-        this.isStoringInProgress = false;
-      });
+    Promise.resolve(operation()).finally(() => {
+      this.isStoringInProgress = false;
+      this.runStorageQueue();
+    });
   }
 
   /**
@@ -81,9 +110,17 @@ export class KlEventRecorder {
   }
 
   /**
-   * Record an event
+   * Record an event.
+   *
+   * `duplicates` says what becomes of the previous event:
+   * - 'auto' (default): the recorder decides by its own rules (sanitizeDuplicateEvents).
+   * - 'keep': it stays; the new event is recorded after it.
+   * - 'replace': it is taken back and the new event recorded in its place.
+   * - 'discard-both': it is taken back and the new event is not recorded — the two cancel out.
+   * The application passes the last three for layer selections, where it knows what the undo
+   * history made of the selection: recording and history have to count the same steps.
    */
-  record(type: TEventType, data: any): void {
+  record(type: TEventType, data: any, duplicates: 'auto' | 'keep' | 'replace' | 'discard-both' = 'auto'): void {
     const event: TRecordedEvent = {
       projectId: this.projectId,
       timestamp: Date.now(),
@@ -104,7 +141,8 @@ export class KlEventRecorder {
     }
 
     // Check for duplicate events before recording
-    const sanitizeDuplicateEventsStrategy = this.sanitizeDuplicateEvents(event);
+    const sanitizeDuplicateEventsStrategy =
+      duplicates === 'auto' ? this.sanitizeDuplicateEvents(event) : duplicates === 'keep' ? false : duplicates;
     if (sanitizeDuplicateEventsStrategy == 'discard') {
       if (DEBUG_RECORDER) {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring event (${type})`);
@@ -116,14 +154,17 @@ export class KlEventRecorder {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring both events (${type})`);
       }
 
-      this.storageProvider?.removePreviousEvent();
+      this.removePreviousFromStorage();
+      this.previousEvent = this.eventBeforePrevious;
+      this.eventBeforePrevious = null;
       return;
     } else if (sanitizeDuplicateEventsStrategy == 'replace') {
       if (DEBUG_RECORDER) {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Replacing event (${type})`);
       }
 
-      this.storageProvider?.removePreviousEvent();
+      this.removePreviousFromStorage();
+      this.previousEvent = this.eventBeforePrevious;
       // continue.
     }
 
@@ -131,6 +172,7 @@ export class KlEventRecorder {
     this.sequenceNumber++;
 
     // Update previous event reference
+    this.eventBeforePrevious = this.previousEvent;
     this.previousEvent = event;
     this.hasSkippedSelectionOfMove = false;
 
@@ -146,6 +188,13 @@ export class KlEventRecorder {
         console.error('%c[REC]', LOG_STYLE_RECORDER, 'Failed to notify listeners. Error:', error);
       }
     }
+  }
+
+  /**
+   * The type of the event recorded last (after loading: of the paper's last event), if any.
+   */
+  getPreviousEventType(): TEventType | null {
+    return this.previousEvent?.type ?? null;
   }
 
   /**
@@ -176,6 +225,7 @@ export class KlEventRecorder {
     this.lastTimestamp = 0;
     this.totalTimeTaken = 0;
     this.previousEvent = null;
+    this.eventBeforePrevious = null;
   }
 
   /**
@@ -241,15 +291,19 @@ export class KlEventRecorder {
       return null;
     }
 
-    if (events.length <= 1) {
-      return 'empty-storage';
-    }
-
     // Ensure correct order
     events.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
     this.lastTimestamp = 0;
-    this.sequenceNumber = events.reduce((max, evnt) => (evnt.sequenceNumber >= max ? evnt.sequenceNumber + 1 : max), 0);
+    // The highest number in use; record() counts on from it.
+    this.sequenceNumber = events.reduce((max, evnt) => Math.max(max, evnt.sequenceNumber), 0);
+
+    if (events.length <= 1) {
+      // Nothing, or only the initial 'reset' (the page was closed before the paper was set up):
+      // the caller sets the paper up anew. The numbering goes on behind what is stored — a second
+      // event with the number 1 would sort to an arbitrary place in every later replay.
+      return 'empty-storage';
+    }
     this.totalTimeTaken =
       events.length > 0
         ? events.reduce((acc, evnt, index) => {

@@ -32,6 +32,7 @@ export type TEventType =
   | 'redo'
   | 'draw'
   | 'reset'
+  | 'setup-done'
   | 'resize'
   | 'resize-c'
   | 'l-flip'
@@ -66,7 +67,11 @@ export type TEventType =
  * Event types defined here are "not undoable" so they will remain in the animation.
  * The undo-operation will affect the event prior to the ignored event (aka skip).
  */
-export const UNDO_IGNORED_EVENTS: TEventType[] = [];
+export const UNDO_IGNORED_EVENTS: TEventType[] = [
+  // The end of a paper's setup (the reset and the initial layers). Not an action of the user:
+  // live, undo stops there (the history is rebased), so no recorded undo ever means it.
+  'setup-done',
+];
 
 /**
  * Event structure
