@@ -29,6 +29,8 @@ export class KlEventRecorder {
   private storageProvider: IEventStorageProvider | undefined;
   private isStoringInProgress: boolean = false;
   private previousEvent: TRecordedEvent | null = null;
+  // True once the selection that a layer move brings with it was left out (see sanitizeDuplicateEvents).
+  private hasSkippedSelectionOfMove: boolean = false;
 
   constructor(projectId: string, config?: TRecorderConfig, storageProvider?: IEventStorageProvider) {
     this.projectId = projectId;
@@ -93,6 +95,14 @@ export class KlEventRecorder {
     // Some user action is taking place, record the time!
     this.calculateTimeTaken();
 
+    // Don't record if paused — and decide that first: what follows may take an event out of the
+    // storage, and an event that is not recorded must not cost a stored one. (A replay plays
+    // layer selections through the same code that records them; with the checks the other way
+    // round, every replayed selection deleted the last event of the paper.)
+    if (this.isPaused || this.replayer?.isCurrentlyReplaying()) {
+      return;
+    }
+
     // Check for duplicate events before recording
     const sanitizeDuplicateEventsStrategy = this.sanitizeDuplicateEvents(event);
     if (sanitizeDuplicateEventsStrategy == 'discard') {
@@ -117,19 +127,12 @@ export class KlEventRecorder {
       // continue.
     }
 
-    // Don't record if paused
-    if (this.isPaused || this.replayer?.isCurrentlyReplaying()) {
-      // if (DEBUG_RECORDER) {
-      //     console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring event (${type}) - recording paused`);
-      // }
-      return;
-    }
-
     // Increase counter
     this.sequenceNumber++;
 
     // Update previous event reference
     this.previousEvent = event;
+    this.hasSkippedSelectionOfMove = false;
 
     if (DEBUG_RECORDER) {
       console.log('%c[REC]', LOG_STYLE_RECORDER, 'Recording event', event);
@@ -313,9 +316,15 @@ export class KlEventRecorder {
 
     // Custom criteria for when not to save the event
     if (newEvent.type == 'l-select') {
-      if (this.previousEvent.type == 'l-move')
-        return 'discard'; // move auto selects it
-      else if (this.previousEvent.type == 'l-select') return 'replace';
+      if (this.previousEvent.type == 'l-move') {
+        // A move brings one selection with it (the layer controller re-selects the active
+        // layer): that one is left out. Any further selection is the user's and is recorded —
+        // the move stays the previous event while selections are left out, so without this
+        // flag every selection after a move was dropped until something else was recorded.
+        if (this.hasSkippedSelectionOfMove) return false;
+        this.hasSkippedSelectionOfMove = true;
+        return 'discard';
+      } else if (this.previousEvent.type == 'l-select') return 'replace';
     }
     // This is an idea of merging "l-move" events, to reduce epileptic flickering, but this is bad because it breaks the undo history.
     /*else if (newEvent.type == 'l-move' && this.previousEvent.type == 'l-move') {
