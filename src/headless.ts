@@ -50,6 +50,13 @@ export type { TSelectToolMode } from './app/script/klecks/ui/tool-tabs/select-ui
 
 export type { IHeadlessSelectActions, IHeadlessSelectState } from './app/script/app/kl-headless-select-types';
 
+export type {
+  IHeadlessFilterActions,
+  THeadlessFilterInputs,
+  THeadlessFilterKey,
+  THeadlessFilterPreview,
+} from './app/script/app/kl-headless-filter';
+
 export { SplineInterpolator, powerSplineInput } from './app/script/bb/math/line';
 
 export type {

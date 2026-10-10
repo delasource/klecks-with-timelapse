@@ -9,11 +9,16 @@ import { MultiPolygon } from 'polygon-clipping';
 import { KlHistory } from '../history/kl-history';
 import { getSharedFx } from '../../fx-canvas/shared-fx';
 
-export function applyFxFilter(
-  context: CanvasRenderingContext2D,
+/**
+ * Runs a WebGL filter over `source` and draws the result into `target` (which may be the context
+ * of `source` itself). With a selection only the selected area changes. Nothing is pushed to
+ * the history: this is the filter alone, as a preview needs it — applyFxFilter is the edit.
+ */
+export function runFxFilter(
+  source: HTMLCanvasElement,
+  target: CanvasRenderingContext2D,
   selection: MultiPolygon | undefined,
-  applyFn: (fxCanvas: TFxCanvas) => void,
-  klHistory: KlHistory
+  applyFn: (fxCanvas: TFxCanvas) => void
 ): boolean {
   const fxCanvas = getSharedFx();
   if (!fxCanvas) {
@@ -22,13 +27,13 @@ export function applyFxFilter(
 
   let maskTexture: TWrappedTexture | undefined;
   if (selection) {
-    const maskCanvas = BB.canvas(context.canvas.width, context.canvas.height);
+    const maskCanvas = BB.canvas(source.width, source.height);
     const maskContext = BB.ctx(maskCanvas);
     drawSelectionMask(selection, maskContext);
     maskTexture = fxCanvas.texture(maskCanvas);
     BB.freeCanvas(maskCanvas);
   }
-  const originalTexture = fxCanvas.texture(context.canvas);
+  const originalTexture = fxCanvas.texture(source);
   fxCanvas.draw(originalTexture);
   applyFn(fxCanvas);
   if (maskTexture) {
@@ -37,8 +42,20 @@ export function applyFxFilter(
   }
   originalTexture.destroy();
   fxCanvas.update();
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-  context.drawImage(fxCanvas, 0, 0);
+  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  target.drawImage(fxCanvas, 0, 0);
+  return true;
+}
+
+export function applyFxFilter(
+  context: CanvasRenderingContext2D,
+  selection: MultiPolygon | undefined,
+  applyFn: (fxCanvas: TFxCanvas) => void,
+  klHistory: KlHistory
+): boolean {
+  if (!runFxFilter(context.canvas, context, selection, applyFn)) {
+    return false;
+  }
 
   klHistory.push(
     getPushableLayerChange(

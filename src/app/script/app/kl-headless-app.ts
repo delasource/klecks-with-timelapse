@@ -59,6 +59,7 @@ import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
 import { IHeadlessLayerControllerActions } from './kl-headless-layer-types';
+import { IHeadlessFilterActions, KlHeadlessFilter } from './kl-headless-filter';
 import { KlHeadlessSelect } from './kl-headless-select';
 import { IHeadlessSelectActions } from './kl-headless-select-types';
 import { LayerHeadlessController } from './layer-headless-controller';
@@ -223,6 +224,7 @@ export class KlHeadlessApp {
   private readonly lineSanitizer: LineSanitizer;
   private readonly saveToComputer: SaveToComputer;
   private readonly klAppSelect: KlHeadlessSelect;
+  private readonly klAppFilter: KlHeadlessFilter;
   private readonly layerController: LayerHeadlessController;
   private readonly featureConfiguration: TKlFeatureConfiguration = {};
   private readonly keyListener: KeyListener;
@@ -601,6 +603,22 @@ export class KlHeadlessApp {
         this.easel.requestRender();
       }
     }) as any);
+
+    // Filters (Klecks' "Edit" tab, the WebGL ones)
+    this.klAppFilter = new KlHeadlessFilter({
+      klCanvas: this.klCanvas,
+      klHistory: this.klHistory,
+      getCurrentLayer: () => this.currentLayer,
+      applyUncommitted: () => this.applyUncommitted(),
+      onApplied: (filterKey, input) => {
+        // 'keep': the same filter twice in a row is two steps (two inverts, two blurs) — the
+        // recorder's own rules for repeated events must not make one of them.
+        this.klRecorder?.record('filter', { filterKey, input }, 'keep');
+        this.easelProjectUpdater.update();
+        this.notifyUi('layersChanged', this.layerController.getState());
+      },
+      backdrop: USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0 ? '#fff' : undefined,
+    });
 
     // Selection
     this.klAppSelect = new KlHeadlessSelect({
@@ -1318,19 +1336,13 @@ export class KlHeadlessApp {
 
       replayer.addReplayHandler('filter', event => {
         const filterKey = event.data.filterKey as string;
-        const filterInput = event.data.input as any;
-        const filterResult = FILTER_LIB[filterKey].apply!({
-          layer: this.currentLayer,
-          klCanvas: this.klCanvas,
-          klHistory: this.klHistory,
-          input: filterInput,
-        });
-        if (!filterResult) {
+        if (!this.klAppFilter.applyRecorded(filterKey, event.data.input)) {
           console.log('Failed to apply filter during replay:', filterKey);
           return;
         }
-        FILTER_LIB[filterKey].updatePos && this.easelProjectUpdater.update();
-        this.easel.resetOrFitTransform(true);
+        this.easelProjectUpdater.update();
+        // Only an edit that changes the size or orientation of the canvas moves the view.
+        FILTER_LIB[filterKey]?.updatePos && this.easel.resetOrFitTransform(true);
       });
     }
 
@@ -1777,6 +1789,10 @@ export class KlHeadlessApp {
 
   getSelectionController(): IHeadlessSelectActions {
     return this.klAppSelect;
+  }
+
+  getFilterController(): IHeadlessFilterActions {
+    return this.klAppFilter;
   }
 
   getDimensions() {
