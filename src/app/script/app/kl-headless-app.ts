@@ -1426,7 +1426,9 @@ export class KlHeadlessApp {
     this.saveReminder?.init();
 
     const seedLayerConfig = () => {
-      if (p.initialLayerConfiguration) {
+      // An empty list is "no configuration" too (the video renderer passes one): reading its first
+      // entry threw, inside the promise below, and onReady was never called.
+      if (p.initialLayerConfiguration?.length) {
         // rename first layer
         if (p.initialLayerConfiguration[0].name !== undefined)
           this.layerController.setLayerName(p.initialLayerConfiguration[0].name);
