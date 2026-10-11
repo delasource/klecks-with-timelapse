@@ -7,91 +7,94 @@ export type TTheme = 'dark' | 'light' | 'blue';
 type TThemeListener = () => void;
 
 class Theme {
-  private storedTheme: TTheme | undefined;
-  // initialization will be overwritten.
-  private mediaQueryTheme: TTheme = 'light'; // prefers-color-scheme
-  private theme: TTheme = 'light';
-  private readonly listeners: TThemeListener[] = [];
+    private storedTheme: TTheme | undefined;
+    // initialization will be overwritten.
+    private mediaQueryTheme: TTheme = 'light'; // prefers-color-scheme
+    private theme: TTheme = 'light';
+    private readonly listeners: TThemeListener[] = [];
 
-  private updateTheme(): void {
-    const oldTheme = this.theme;
-    this.theme = this.storedTheme || this.mediaQueryTheme;
+    private updateTheme(): void {
+        const oldTheme = this.theme;
+        this.theme = this.storedTheme || this.mediaQueryTheme;
 
-    if (this.theme === oldTheme) {
-      return;
+        if (this.theme === oldTheme) {
+            return;
+        }
+        document.body.classList.toggle('kl-theme-dark', this.theme === 'dark');
+        document.body.classList.toggle('kl-theme-blue', this.theme === 'blue');
+        this.listeners.forEach((item) => item());
     }
-    document.body.classList.toggle('kl-theme-dark', this.theme === 'dark');
-    document.body.classList.toggle('kl-theme-blue', this.theme === 'blue');
-    this.listeners.forEach(item => item());
-  }
 
-  private readLocalStorage(): TTheme | undefined {
-    let result = LocalStorage.getItem(LS_THEME_KEY) as unknown;
-    if (!result || (typeof result === 'string' && !['dark', 'light', 'blue'].includes(result))) {
-      result = undefined;
-      LocalStorage.removeItem(LS_THEME_KEY); // reset because invalid
+    private readLocalStorage(): TTheme | undefined {
+        let result = LocalStorage.getItem(LS_THEME_KEY) as unknown;
+        if (
+            !result ||
+            (typeof result === 'string' && !['dark', 'light', 'blue'].includes(result))
+        ) {
+            result = undefined;
+            LocalStorage.removeItem(LS_THEME_KEY); // reset because invalid
+        }
+        return result as TTheme | undefined;
     }
-    return result as TTheme | undefined;
-  }
 
-  // ----------------------------------- public -----------------------------------
-  constructor() {
-    // init media query
-    this.mediaQueryTheme = isDark() ? 'dark' : 'light';
-    addIsDarkListener(() => {
-      this.mediaQueryTheme = isDark() ? 'dark' : 'light';
-      this.updateTheme();
-    });
+    // ----------------------------------- public -----------------------------------
+    constructor() {
+        // init media query
+        this.mediaQueryTheme = isDark() ? 'dark' : 'light';
+        addIsDarkListener(() => {
+            this.mediaQueryTheme = isDark() ? 'dark' : 'light';
+            this.updateTheme();
+        });
 
-    // init local storage
-    this.storedTheme = this.readLocalStorage();
-    addEventListener('storage', e => {
-      if (e.key === LS_THEME_KEY) {
+        // init local storage
         this.storedTheme = this.readLocalStorage();
+        addEventListener('storage', (e) => {
+            if (e.key === LS_THEME_KEY) {
+                this.storedTheme = this.readLocalStorage();
+                this.updateTheme();
+            }
+        });
+
         this.updateTheme();
-      }
-    });
-
-    this.updateTheme();
-  }
-
-  isDark(): boolean {
-    return this.theme === 'dark';
-  }
-
-  addIsDarkListener(func: TThemeListener): void {
-    if (this.listeners.includes(func)) {
-      return;
     }
-    this.listeners.push(func);
-  }
 
-  removeIsDarkListener(func: TThemeListener): void {
-    for (let i = 0; i < this.listeners.length; i++) {
-      if (this.listeners[i] === func) {
-        this.listeners.splice(i, 1);
-        return;
-      }
+    isDark(): boolean {
+        return this.theme === 'dark';
     }
-  }
 
-  getMediaQueryTheme(): TTheme {
-    return this.mediaQueryTheme;
-  }
-
-  getStoredTheme(): TTheme | undefined {
-    return this.storedTheme;
-  }
-
-  setStoredTheme(theme: TTheme | undefined): void {
-    if (theme) {
-      LocalStorage.setItem(LS_THEME_KEY, theme);
-    } else {
-      LocalStorage.removeItem(LS_THEME_KEY);
+    addIsDarkListener(func: TThemeListener): void {
+        if (this.listeners.includes(func)) {
+            return;
+        }
+        this.listeners.push(func);
     }
-    this.storedTheme = theme;
-    this.updateTheme();
-  }
+
+    removeIsDarkListener(func: TThemeListener): void {
+        for (let i = 0; i < this.listeners.length; i++) {
+            if (this.listeners[i] === func) {
+                this.listeners.splice(i, 1);
+                return;
+            }
+        }
+    }
+
+    getMediaQueryTheme(): TTheme {
+        return this.mediaQueryTheme;
+    }
+
+    getStoredTheme(): TTheme | undefined {
+        return this.storedTheme;
+    }
+
+    setStoredTheme(theme: TTheme | undefined): void {
+        if (theme) {
+            LocalStorage.setItem(LS_THEME_KEY, theme);
+        } else {
+            LocalStorage.removeItem(LS_THEME_KEY);
+        }
+        this.storedTheme = theme;
+        this.updateTheme();
+    }
 }
 
 export const THEME = new Theme();

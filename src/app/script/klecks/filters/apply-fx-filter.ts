@@ -15,53 +15,56 @@ import { getSharedFx } from '../../fx-canvas/shared-fx';
  * the history: this is the filter alone, as a preview needs it — applyFxFilter is the edit.
  */
 export function runFxFilter(
-  source: HTMLCanvasElement,
-  target: CanvasRenderingContext2D,
-  selection: MultiPolygon | undefined,
-  applyFn: (fxCanvas: TFxCanvas) => void
+    source: HTMLCanvasElement,
+    target: CanvasRenderingContext2D,
+    selection: MultiPolygon | undefined,
+    applyFn: (fxCanvas: TFxCanvas) => void,
 ): boolean {
-  const fxCanvas = getSharedFx();
-  if (!fxCanvas) {
-    return false; // todo more specific error?
-  }
+    const fxCanvas = getSharedFx();
+    if (!fxCanvas) {
+        return false; // todo more specific error?
+    }
 
-  let maskTexture: TWrappedTexture | undefined;
-  if (selection) {
-    const maskCanvas = BB.canvas(source.width, source.height);
-    const maskContext = BB.ctx(maskCanvas);
-    drawSelectionMask(selection, maskContext);
-    maskTexture = fxCanvas.texture(maskCanvas);
-    BB.freeCanvas(maskCanvas);
-  }
-  const originalTexture = fxCanvas.texture(source);
-  fxCanvas.draw(originalTexture);
-  applyFn(fxCanvas);
-  if (maskTexture) {
-    fxCanvas.multiplyAlpha().mask(maskTexture, originalTexture).unmultiplyAlpha();
-    maskTexture.destroy();
-  }
-  originalTexture.destroy();
-  fxCanvas.update();
-  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
-  target.drawImage(fxCanvas, 0, 0);
-  return true;
+    let maskTexture: TWrappedTexture | undefined;
+    if (selection) {
+        const maskCanvas = BB.canvas(source.width, source.height);
+        const maskContext = BB.ctx(maskCanvas);
+        drawSelectionMask(selection, maskContext);
+        maskTexture = fxCanvas.texture(maskCanvas);
+        BB.freeCanvas(maskCanvas);
+    }
+    const originalTexture = fxCanvas.texture(source);
+    fxCanvas.draw(originalTexture);
+    applyFn(fxCanvas);
+    if (maskTexture) {
+        fxCanvas.multiplyAlpha().mask(maskTexture, originalTexture).unmultiplyAlpha();
+        maskTexture.destroy();
+    }
+    originalTexture.destroy();
+    fxCanvas.update();
+    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+    target.drawImage(fxCanvas, 0, 0);
+    return true;
 }
 
 export function applyFxFilter(
-  context: CanvasRenderingContext2D,
-  selection: MultiPolygon | undefined,
-  applyFn: (fxCanvas: TFxCanvas) => void,
-  klHistory: KlHistory
+    context: CanvasRenderingContext2D,
+    selection: MultiPolygon | undefined,
+    applyFn: (fxCanvas: TFxCanvas) => void,
+    klHistory: KlHistory,
 ): boolean {
-  if (!runFxFilter(context.canvas, context, selection, applyFn)) {
-    return false;
-  }
+    if (!runFxFilter(context.canvas, context, selection, applyFn)) {
+        return false;
+    }
 
-  klHistory.push(
-    getPushableLayerChange(
-      klHistory.getComposed(),
-      canvasToLayerTiles(context.canvas, selection ? integerBounds(getMultiPolyBounds(selection)) : undefined)
-    )
-  );
-  return true;
+    klHistory.push(
+        getPushableLayerChange(
+            klHistory.getComposed(),
+            canvasToLayerTiles(
+                context.canvas,
+                selection ? integerBounds(getMultiPolyBounds(selection)) : undefined,
+            ),
+        ),
+    );
+    return true;
 }
