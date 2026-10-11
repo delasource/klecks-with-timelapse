@@ -375,6 +375,19 @@ export class KlHeadlessApp {
     return false;
   }
 
+  /**
+   * Has the current brush put what it has drawn of an unfinished stroke onto the layer.
+   *
+   * Since Klecks 0.11 the blend, chemy, pixel and smudge brush draw a stroke somewhere of their own
+   * and bring it to the layer's canvas when they are asked to (`transferToCanvas`), or when the
+   * stroke ends. Nobody asking means a stroke that shows up when the pen is lifted. So this is
+   * called before the easel renders, and before anything else reads the canvas (a snapshot, a
+   * thumbnail, an export). The pen, the sketchy brush and the eraser draw on the layer directly.
+   */
+  private transferStrokeToLayer(): void {
+    (this.brushes[this.uiState.currentBrushId] as { transferToCanvas?: () => void } | undefined)?.transferToCanvas?.();
+  }
+
   private getCurrentBrush() {
     return this.brushes[this.uiState.currentBrushId];
   }
@@ -870,6 +883,8 @@ export class KlHeadlessApp {
 
     // This is the canvas:
     this.easel = new Easel({
+      // What makes a stroke visible while it is drawn — see transferStrokeToLayer().
+      onBeforeRender: () => this.transferStrokeToLayer(),
       width: Math.max(0, this.uiWidth),
       height: this.uiHeight,
       project: {
@@ -1665,16 +1680,19 @@ export class KlHeadlessApp {
   }
 
   async getPNG(): Promise<Blob> {
+    this.transferStrokeToLayer();
     return await canvasToBlob(this.klCanvas.getCanvas(1), 'image/png');
   }
 
   async getJPG(): Promise<Blob> {
     // 'image/jpeg' — a browser does not know 'image/jpg' and answers an unknown type with a PNG,
     // three to five times the size, which was then uploaded and served as a JPEG.
+    this.transferStrokeToLayer();
     return await canvasToBlob(this.klCanvas.getCompleteCanvasWithWhiteBackground(1), 'image/jpeg', 0.9);
   }
 
   getCanvasSnapshot(): HTMLCanvasElement {
+    this.transferStrokeToLayer();
     return this.klCanvas.getCompleteCanvasWithWhiteBackground(1);
   }
 
@@ -1683,6 +1701,7 @@ export class KlHeadlessApp {
   };
 
   getThumbnail(factor: number): HTMLCanvasElement {
+    this.transferStrokeToLayer();
     return drawProject(this.klCanvas.getProject(), factor);
   }
 
@@ -1718,6 +1737,11 @@ export class KlHeadlessApp {
       this.lastNonEraserBrushId = brushId;
     }
 
+    if (brushId !== this.uiState.currentBrushId) {
+      // The brush that is put down gives back what it keeps between strokes (the pixel brush: a
+      // canvas of the paper's size). It does nothing while it is in the middle of a stroke.
+      (this.brushes[this.uiState.currentBrushId] as { freeResources?: () => void } | undefined)?.freeResources?.();
+    }
     this.uiState.isColorPickerEnabled = brushId !== 'EraserBrush';
     this.uiState.currentBrushId = brushId;
 
