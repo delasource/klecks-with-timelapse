@@ -507,14 +507,31 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     return result;
   }
 
+  /**
+   * Leaves an open transformation without applying it — what an undo does that has nothing of
+   * the transformation left to take back, right before it takes back a step of the history.
+   *
+   * It has to take away everything the transformation put up, as enterSelectMode does when a
+   * transformation is applied: afterwards the mode is 'select', so nothing else will. Above all
+   * the outline — the easel shows a tool's rendered selection *instead of* the drawing's for as
+   * long as there is one, so one that is left behind hides every later change of the selection
+   * (the undone selection stayed on the canvas as a dotted line, and no new one was shown).
+   */
   discardTransform(): boolean {
     if (this.mode === 'transform') {
+      this.resetComposites();
+      this.tempHistory.clear();
+      this.tempHistory.setIsActive(false);
+      this.selectionTransform.clearSelectionSample();
+      this.easelSelect.clearRenderedSelection(true);
+      this.selectTool.setSelection(this.klCanvas.getSelection());
       this.transformTool.reset();
       this.transformTool.setDoClone(false);
       const currentCanvas = this.getCurrentLayerCtx().canvas;
       this.targetLayerIndex = throwIfNull(this.getLayerIndex(currentCanvas));
       this.mode = 'select';
       this.easelSelect.setMode(this.mode);
+      this.onUpdateProject();
       this.notifyUi();
       return true;
     }
