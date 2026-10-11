@@ -3,40 +3,27 @@ import {
     centerWithin,
     copyObj,
     createSvg,
-    css,
     dateDayDifference,
     decToFraction,
     fitInto,
     gcd,
-    getDate,
     handleClick,
-    imageBlobToUrl,
     insertAfter,
     isDark,
-    loadImage,
     nullToUndefined,
     reduce,
     setAttributes,
     shareCanvas,
     throwIfNull,
 } from './base/base';
-import {
-    canShareFiles,
-    EVENT_USES_HIGH_RES_TIMESTAMP,
-    HAS_POINTER_EVENTS,
-    IS_CSS_MIN_MAX_SUPPORTED,
-    unsetEventHandler,
-} from './base/browser';
+import { canShareFiles, EVENT_USES_HIGH_RES_TIMESTAMP, HAS_POINTER_EVENTS } from './base/browser';
 import { KeyListener, sameKeys } from './input/key-listener';
 import { PointerListener } from './input/pointer-listener';
 import {
-    canvasBounds,
-    convertToAlphaChannelCanvas,
-    copyCanvas,
+    copyToCanvas,
     createCheckerCanvas,
     createCheckerDataUrl,
     ctx,
-    drawTransformedImageOnCanvas,
     drawTransformedImageWithBounds,
     freeCanvas,
     resizeCanvas,
@@ -44,27 +31,14 @@ import {
 } from './base/canvas';
 import { Matrix } from './math/matrix';
 import { Vec2 } from './math/vec2';
-import {
-    BezierLine,
-    PointLine,
-    powerSplineInput,
-    projectPointOnLine,
-    SplineInterpolator,
-} from './math/line';
+import { BezierLine, PointLine, projectPointOnLine, SplineInterpolator } from './math/line';
 import { CMYK, ColorConverter, HSV, RGB, testIsWhiteBestContrast } from './color/color';
+import { appendTextDiv, clearSelection, el, isInputFocused, unfocusAnyInput } from './base/ui';
 import {
-    appendTextDiv,
-    clearSelection,
-    destroyEl,
-    el,
-    isInputFocused,
-    unfocusAnyInput,
-} from './base/ui';
-import {
-    boundsInArea,
     clamp,
     dist,
     distSquared,
+    indexBoundsInArea,
     intDxy,
     isInsideRect,
     lenSquared,
@@ -79,7 +53,6 @@ import {
     updateBounds,
 } from './math/math';
 import { createCanvas } from './base/create-canvas';
-import { BbLog } from './base/bb-log';
 import { LocalStorage } from './base/local-storage';
 import { CoalescedExploder } from './input/event-chain/coalesced-exploder';
 import { NFingerTapper } from './input/event-chain/n-finger-tapper';
@@ -92,29 +65,22 @@ export const BB = {
     // ---- browser ----
     eventUsesHighResTimeStamp: EVENT_USES_HIGH_RES_TIMESTAMP,
     hasPointerEvents: HAS_POINTER_EVENTS,
-    isCssMinMaxSupported: IS_CSS_MIN_MAX_SUPPORTED,
     canShareFiles: canShareFiles,
-    unsetEventHandler,
 
     // ---- base ----
     insertAfter,
-    loadImage,
-    css,
     setAttributes,
     append,
     fitInto,
     centerWithin,
-    getDate,
     gcd,
     reduce,
     decToFraction,
-    imageBlobToUrl,
     dateDayDifference,
     copyObj,
     shareCanvas,
     handleClick,
     createSvg,
-    BbLog,
     LocalStorage,
     throwIfNull,
     nullToUndefined,
@@ -138,28 +104,24 @@ export const BB = {
     roundUneven,
     round,
     updateBounds,
-    boundsInArea,
+    indexBoundsInArea,
 
     // ---- line ----
     projectPointOnLine,
     PointLine,
     BezierLine,
     SplineInterpolator,
-    powerSplineInput,
 
     // ---- canvas ----
     canvas: createCanvas,
     ctx,
-    copyCanvas,
+    copyToCanvas,
     testShouldPixelate,
     drawTransformedImageWithBounds,
-    drawTransformedImageOnCanvas,
     createCheckerCanvas,
     createCheckerDataUrl,
     resizeCanvas,
-    convertToAlphaChannelCanvas,
     freeCanvas,
-    canvasBounds,
 
     // ---- color ----
     HSV,
@@ -172,7 +134,6 @@ export const BB = {
     appendTextDiv,
     clearSelection,
     el,
-    destroyEl,
     isInputFocused,
     unfocusAnyInput,
 

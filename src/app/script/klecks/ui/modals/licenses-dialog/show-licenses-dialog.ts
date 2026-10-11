@@ -5,8 +5,8 @@ import { BB } from '../../../../bb/bb';
 import { LANG } from '../../../../language/language';
 
 export function showLicensesDialog() {
-    const libraries = c('.' + (classes as any).licenses, LANG('loading'));
-    const fonts = c('.' + (classes as any).licenses, LANG('loading'));
+    const libraries = c('.' + classes.licenses, LANG('loading'));
+    const fonts = c('.' + classes.licenses, LANG('loading'));
 
     const content = c(',flex,flexCol,gap-10', [libraries, fonts]);
 
@@ -19,12 +19,11 @@ export function showLicensesDialog() {
             css: {
                 height: '100%',
                 overflowY: 'auto',
-                padding: '10px',
+                padding: 10,
                 boxSizing: 'border-box',
             },
         }),
         width: 800,
-        isMaxHeight: true,
         onClose: () => {
             if (window.location.hash === '#licenses') {
                 history.replaceState(

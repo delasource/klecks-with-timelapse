@@ -1,5 +1,5 @@
 import { BB } from '../../bb/bb';
-import { TBounds, TRect } from '../../bb/bb-types';
+import { TIndexBounds, TRect } from '../../bb/bb-types';
 import { TRgba } from '../kl-types';
 
 export type TTextFormat = 'left' | 'center' | 'right';
@@ -108,7 +108,8 @@ export function renderText(
     const lines = p.text.split('\n').map((line) => line.replaceAll('\t', '    '));
 
     // bounds
-    const bounds: TBounds = {
+    const bounds: TIndexBounds = {
+        type: 'index',
         x1: 0,
         y1: 0,
         x2: 0,
@@ -125,13 +126,13 @@ export function renderText(
                 isFirst = false;
                 bounds.x1 = x + mRect.x;
                 bounds.y1 = y + mRect.y;
-                bounds.x2 = x + mRect.x + mRect.width;
-                bounds.y2 = y + mRect.y + mRect.height;
+                bounds.x2 = x + mRect.x + mRect.width - 1;
+                bounds.y2 = y + mRect.y + mRect.height - 1;
             } else {
                 bounds.x1 = Math.min(bounds.x1, x + mRect.x);
                 bounds.y1 = Math.min(bounds.y1, y + mRect.y);
-                bounds.x2 = Math.max(bounds.x2, x + mRect.x + mRect.width);
-                bounds.y2 = Math.max(bounds.y2, y + mRect.y + mRect.height);
+                bounds.x2 = Math.max(bounds.x2, x + mRect.x + mRect.width - 1);
+                bounds.y2 = Math.max(bounds.y2, y + mRect.y + mRect.height - 1);
             }
         });
     }

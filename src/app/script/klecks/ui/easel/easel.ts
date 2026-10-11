@@ -15,10 +15,9 @@ import {
     TEaselTool,
     TEaselToolTrigger,
 } from './easel.types';
-import { TBounds, TVector2D } from '../../../bb/bb-types';
+import { TVector2D } from '../../../bb/bb-types';
 import { zoomByStep } from '../project-viewport/utils/zoom-by-step';
 import { SelectionRenderer } from './selection-renderer';
-import { TVec4 } from '../../../bb/math/matrix';
 import { KL_CONFIG } from '../../kl-config';
 import { minimizeAngleDeg, snapAngleDeg } from '../../../bb/math/math';
 import {
@@ -30,7 +29,12 @@ import {
 } from './easel.config';
 import { isTransformEqual } from '../project-viewport/utils/is-transform-equal';
 import { blendTransform } from '../project-viewport/utils/blend-transform';
+import { getFitRectTransform } from '../project-viewport/utils/get-fit-rect-transform';
 import { css } from '../../../bb/base/base';
+import { TWheelEvent } from '../../../bb/input/event.types';
+import { getIconSvg } from '../../../icon/icon';
+import { type IconName } from '../../../../icons/icons';
+import { LANG } from '../../../language/language';
 
 function getToolEntries<GToolId extends string>(
     tools: Record<GToolId, TEaselTool>,
@@ -46,10 +50,15 @@ export type TEaselParams<GToolId extends string> = {
     tool: NoInfer<GToolId>;
     onChangeTool: (toolId: NoInfer<GToolId>) => void;
     onTransformChange: (transform: TViewportTransform, scaleOrAngleChanged: boolean) => void; // whenever Viewport changes
+    onBeforeRender?: () => void;
     onUndo?: () => void; // gesture triggers undo
     onRedo?: () => void; // gesture triggers redo
     useWhiteBackdrop?: boolean;
     isReadOnly?: boolean;
+    // no indicators (view is flipped, something is selected) in the corner: the application around
+    // the easel shows such things itself
+    hideIndicators?: boolean;
+    onResetSelection: () => void; // via selection indicator
 };
 
 /**
@@ -59,6 +68,9 @@ export type TEaselParams<GToolId extends string> = {
 export class Easel<GToolId extends string> {
     private readonly rootEl: HTMLElement;
     private readonly svgEl: SVGElement; // each tool gets an element in this SVG tag, for an SVG overlay
+    private readonly htmlOverlayEl: HTMLElement; // each tool can get an element in this html node, for an interactive overlay
+    private readonly mirrorIndicatorEl: HTMLElement;
+    private readonly selectionIndicatorEl: HTMLElement;
     private readonly viewport: ProjectViewport;
     private readonly pointerPreprocessor: EaselPointerPreprocessor;
     private readonly pointerListener: PointerListener;
@@ -82,15 +94,16 @@ export class Easel<GToolId extends string> {
     private project: TEaselProject;
     private width: number;
     private height: number;
-    private tool: GToolId;
-    private tempTool: GToolId | undefined;
+    private toolId: GToolId;
+    private tempToolId: GToolId | undefined;
     private animationFrameId: ReturnType<typeof requestAnimationFrame> | undefined;
     private doRender = false; // true -> will render on next renderLoop
     private cursorPos: TVector2D | undefined; // so brush cursor not top left corner after reload
     private isFrozen: boolean = false; // disable interaction with the easel whatsoever
+    private readonly isReadOnly: boolean; // a viewer: no pointer, wheel or key changes anything
     private lastRenderedTransform: TViewportTransform = {} as TViewportTransform; // previously rendered viewport transformation
     private pinchInitialTransform: TViewportTransform | undefined; // when starting a pinch-to-zoom gesture
-    private targetTransform: TViewportTransform = {} as TViewportTransform;
+    private targetTransform: TViewportTransform;
 
     // custom interface passed to tools
     private readonly easelInterface: TEaselInterface = {
@@ -110,6 +123,8 @@ export class Easel<GToolId extends string> {
         setRenderedSelection: (selection) => this.selectionRenderer.setRenderedSelection(selection),
         clearRenderedSelection: (isImmediate) =>
             this.selectionRenderer.clearRenderedSelection(isImmediate),
+        onWheel: (e) => this.onWheel(e),
+        getElement: () => this.rootEl,
     };
 
     private setTargetTransform(transform: TViewportTransform, isImmediate?: boolean): void {
@@ -121,17 +136,16 @@ export class Easel<GToolId extends string> {
     }
 
     private updateToolSvgs(): void {
-        const tool = this.tempTool ?? this.tool;
-        Object.keys(this.toolsMap).forEach((toolId) => {
-            this.toolsMap[toolId as GToolId].getSvgElement().style.display =
-                toolId === tool ? '' : 'none';
+        const targetTool = this.tempToolId ?? this.toolId;
+        getToolEntries(this.toolsMap).forEach(([toolId, tool]) => {
+            tool.getSvgElement().style.display = toolId === targetTool ? '' : 'none';
         });
     }
 
     // different tools allow different pointer types to trigger the gesture
     private updateDoubleTapPointerTypes(): void {
         const pointerTypes =
-            this.toolsMap[this.tempTool ?? this.tool].doubleTapPointerTypes ??
+            this.toolsMap[this.tempToolId ?? this.toolId].doubleTapPointerTypes ??
             DEFAULT_DOUBLE_TAP_POINTER_TYPES;
         this.pointerPreprocessor.setDoubleTapPointerTypes(pointerTypes);
     }
@@ -183,9 +197,10 @@ export class Easel<GToolId extends string> {
         const isScaleOrAngleChanged =
             newTransform.scale !== this.lastRenderedTransform.scale ||
             newTransform.angleDeg !== this.lastRenderedTransform.angleDeg;
+        const isMirroredChanged = newTransform.isMirrored !== this.lastRenderedTransform.isMirrored;
 
         this.viewport.render(!isTransformEqual(oldTransform, newTransform));
-        if (isPositionChanged || isScaleOrAngleChanged) {
+        if (isPositionChanged || isScaleOrAngleChanged || isMirroredChanged) {
             tool.onUpdateTransform?.(newTransform);
             this.selectionRenderer.setTransform(newTransform);
             this.onTransformChange(this.targetTransform, isScaleOrAngleChanged);
@@ -197,16 +212,18 @@ export class Easel<GToolId extends string> {
      * activate temporary tool. Can only push one.
      */
     private pushTempTool(toolId: GToolId | undefined): void {
-        if (this.tempTool !== undefined || toolId === undefined) {
+        if (this.tempToolId !== undefined || toolId === undefined) {
             return;
         }
-        const tool = this.toolsMap[this.tool];
+        const tool = this.toolsMap[this.toolId];
         if (tool.getIsLocked?.()) {
             return;
         }
 
-        this.tempTool = toolId;
-        this.getActiveTool().activate?.(this.cursorPos);
+        this.tempToolId = toolId;
+        const activeToolId = this.getActiveToolId();
+        this.toolsMap[activeToolId].activate?.(this.cursorPos);
+        Object.values<TEaselTool>(this.toolsMap).forEach((tool) => tool.onTool?.(activeToolId));
         this.updateToolSvgs();
         this.updateDoubleTapPointerTypes();
     }
@@ -215,20 +232,26 @@ export class Easel<GToolId extends string> {
      * Turn off temporary tool
      */
     private popTempTool(toolId: GToolId | undefined): void {
-        if (this.tempTool !== toolId || toolId === undefined) {
+        if (this.tempToolId !== toolId || toolId === undefined) {
             return;
         }
-        this.tempTool = undefined;
+        this.tempToolId = undefined;
         this.getActiveTool().activate?.(this.cursorPos, true);
+        const activeToolId = this.getActiveToolId();
+        Object.values<TEaselTool>(this.toolsMap).forEach((tool) => tool.onTool?.(activeToolId));
         this.updateToolSvgs();
         this.updateDoubleTapPointerTypes();
     }
 
-    private getActiveTool(): TEaselTool {
-        return this.toolsMap[this.tempTool ?? this.tool];
+    private getActiveToolId(): GToolId {
+        return this.tempToolId ?? this.toolId;
     }
 
-    private getResetTransform(): TViewportTransform {
+    private getActiveTool(): TEaselTool {
+        return this.toolsMap[this.getActiveToolId()];
+    }
+
+    private getResetTransform(isMirrored: boolean = false): TViewportTransform {
         return createTransform(
             {
                 x: this.width / 2,
@@ -237,95 +260,72 @@ export class Easel<GToolId extends string> {
             { x: this.project.width / 2, y: this.project.height / 2 },
             1,
             0,
+            isMirrored,
         );
     }
 
     private getFitTransform(): TViewportTransform {
-        const oldTransform = this.viewport.getTransform();
-        // rotate
-        let newAngleDeg = oldTransform.angleDeg;
-        if (newAngleDeg === 45) {
-            // would otherwise get rounded to 90
-            newAngleDeg = 0;
-        }
-        newAngleDeg = snapAngleDeg(newAngleDeg, 90, 90);
-
-        //calc width and height of bounds
-        const projectWidth = this.project.width;
-        const projectHeight = this.project.height;
-        const canvasPointsArr = [
-            [0, 0], // top left
-            [projectWidth, 0], // top right
-            [projectWidth, projectHeight], // bottom right
-            [0, projectHeight], // bottom left
-            [projectWidth / 2, projectHeight / 2], // center
-        ];
-
-        //setup transformation matrix
-        let matrix = BB.Matrix.getIdentity();
-        matrix = BB.Matrix.multiplyMatrices(
-            matrix,
-            BB.Matrix.createRotationMatrix((newAngleDeg / 180) * Math.PI),
-        );
-
-        //rotate points
-        for (let i = 0; i < canvasPointsArr.length; i++) {
-            let coords: TVec4 = [canvasPointsArr[i][0], canvasPointsArr[i][1], 0, 1];
-            coords = BB.Matrix.multiplyMatrixAndPoint(matrix, coords);
-            canvasPointsArr[i][0] = coords[0];
-            canvasPointsArr[i][1] = coords[1];
-        }
-
-        const boundsObj: Partial<TBounds> = {};
-        for (let i = 0; i < canvasPointsArr.length; i++) {
-            if (boundsObj.x1 === undefined || canvasPointsArr[i][0] < boundsObj.x1) {
-                boundsObj.x1 = canvasPointsArr[i][0];
-            }
-            if (boundsObj.y1 === undefined || canvasPointsArr[i][1] < boundsObj.y1) {
-                boundsObj.y1 = canvasPointsArr[i][1];
-            }
-            if (boundsObj.x2 === undefined || canvasPointsArr[i][0] > boundsObj.x2) {
-                boundsObj.x2 = canvasPointsArr[i][0];
-            }
-            if (boundsObj.y2 === undefined || canvasPointsArr[i][1] > boundsObj.y2) {
-                boundsObj.y2 = canvasPointsArr[i][1];
-            }
-        }
-        const boundsWidth = boundsObj.x2! - boundsObj.x1!;
-        const boundsHeight = boundsObj.y2! - boundsObj.y1!;
-
-        //fit bounds
-        const padding = 0;
-        const { width: fitWidth } = BB.fitInto(
-            boundsWidth,
-            boundsHeight,
-            this.width - padding,
-            this.height - padding,
-            1,
-        );
-
-        //determine scale
-        const factor = Math.min(EASEL_MAX_SCALE, fitWidth / boundsWidth);
-
-        const viewportRect = { width: this.width, height: this.height };
-        const viewportCenterP = {
-            x: viewportRect.width / 2,
-            y: viewportRect.height / 2,
-        };
-        return createTransform(
-            viewportCenterP,
-            { x: projectWidth / 2, y: projectHeight / 2 },
-            factor,
-            newAngleDeg,
+        return getFitRectTransform(
+            { x: 0, y: 0, width: this.project.width, height: this.project.height },
+            this.viewport.getTransform(),
+            { width: this.width, height: this.height },
+            true,
         );
     }
+
+    private readonly onWheel = (e: TWheelEvent): void => {
+        e.event?.preventDefault();
+        if (this.isReadOnly) {
+            return;
+        }
+        let isImmediate = false;
+        if (Math.abs(e.deltaY) < 0.8) {
+            isImmediate = true;
+        }
+        if (e.event && e.event.ctrlKey && !this.keyListener.isPressed('ctrl')) {
+            isImmediate = true;
+            let factor = 1;
+            if (e.event.deltaMode === 0) {
+                factor = 6;
+            }
+            e.deltaY *= factor;
+        }
+        if (this.keyListener.isPressed('shift')) {
+            e.deltaY /= 4;
+        }
+
+        // zoom
+        const transform = this.targetTransform;
+        const viewportPoint = {
+            x: e.relX,
+            y: e.relY,
+        };
+        const mat = createMatrixFromTransform(transform);
+        const canvasPoint = applyToPoint(inverse(mat), viewportPoint);
+        const newScale = BB.clamp(
+            transform.scale * (1 + 2 / 10) ** -e.deltaY,
+            EASEL_MIN_SCALE,
+            EASEL_MAX_SCALE,
+        );
+        this.setTargetTransform(
+            createTransform(
+                viewportPoint,
+                canvasPoint,
+                newScale,
+                transform.angleDeg,
+                transform.isMirrored,
+            ),
+            isImmediate,
+        );
+    };
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TEaselParams<GToolId>) {
         this.project = p.project;
+        this.isReadOnly = p.isReadOnly === true;
         this.width = p.width;
         this.height = p.height;
-        this.tool = p.tool;
+        this.toolId = p.tool;
         this.toolsMap = { ...p.tools };
         this.onChangeTool = p.onChangeTool;
         this.onTransformChange = p.onTransformChange;
@@ -355,11 +355,13 @@ export class Easel<GToolId extends string> {
             },
             transform: this.getResetTransform(),
             whiteBackdrop: p.useWhiteBackdrop,
+            onBeforeRender: p.onBeforeRender,
             renderAfter: (ctx, renderedTransform) => {
                 const tool = this.getActiveTool();
                 tool.renderAfterViewport?.(ctx, renderedTransform);
             },
         });
+        this.targetTransform = this.viewport.getTransform();
 
         Object.values<TEaselTool>(this.toolsMap).forEach((tool) => {
             tool.setEaselInterface?.(this.easelInterface);
@@ -409,6 +411,7 @@ export class Easel<GToolId extends string> {
                             metaTransform.canvasP,
                             metaTransform.scale,
                             metaTransform.angleDeg,
+                            metaTransform.isMirrored,
                         ),
                         true,
                     );
@@ -496,43 +499,7 @@ export class Easel<GToolId extends string> {
                 if (p.isReadOnly === true) return;
                 this.pointerPreprocessor.chainIn(e);
             },
-            onWheel: (e) => {
-                e.event?.preventDefault();
-                if (p.isReadOnly === true) return;
-                let isImmediate = false;
-                if (Math.abs(e.deltaY) < 0.8) {
-                    isImmediate = true;
-                }
-                if (e.event && e.event.ctrlKey && !this.keyListener.isPressed('ctrl')) {
-                    isImmediate = true;
-                    let factor = 1;
-                    if (e.event.deltaMode === 0) {
-                        factor = 6;
-                    }
-                    e.deltaY *= factor;
-                }
-                if (this.keyListener.isPressed('shift')) {
-                    e.deltaY /= 4;
-                }
-
-                // zoom
-                const transform = this.targetTransform;
-                const viewportPoint = {
-                    x: e.relX,
-                    y: e.relY,
-                };
-                const mat = createMatrixFromTransform(transform);
-                const canvasPoint = applyToPoint(inverse(mat), viewportPoint);
-                const newScale = BB.clamp(
-                    transform.scale * Math.pow(1 + 2 / 10, -e.deltaY),
-                    EASEL_MIN_SCALE,
-                    EASEL_MAX_SCALE,
-                );
-                this.setTargetTransform(
-                    createTransform(viewportPoint, canvasPoint, newScale, transform.angleDeg),
-                    isImmediate,
-                );
-            },
+            onWheel: this.onWheel,
             onEnterLeave: (isOver) => {
                 const tool = this.getActiveTool();
                 if (!isOver) {
@@ -549,7 +516,7 @@ export class Easel<GToolId extends string> {
             if (this.isFrozen) {
                 return;
             }
-            if (!this.rootEl.contains(e.target as Node)) {
+            if (!(e.target instanceof Node && this.rootEl.contains(e.target))) {
                 this.getActiveTool().onClickOutside?.();
             }
         };
@@ -557,7 +524,7 @@ export class Easel<GToolId extends string> {
 
         this.keyListener = new KeyListener({
             onDown: (keyStr, e, comboStr, isRepeat) => {
-                if (this.isFrozen || p.isReadOnly === true) {
+                if (this.isFrozen || this.isReadOnly || BB.isInputFocused(true)) {
                     return;
                 }
 
@@ -577,20 +544,26 @@ export class Easel<GToolId extends string> {
                     );
                     this.scale(newScale / oldScale);
                 }
-                if (this.keyListener.comboOnlyContains(['left', 'right', 'up', 'down'])) {
+                if (
+                    comboStr !== 'shift' &&
+                    this.keyListener.comboOnlyContains(['shift', 'left', 'right', 'up', 'down'])
+                ) {
+                    const arrowKey = comboStr
+                        .split('+')
+                        .find((item) => item !== 'shift')! as TArrowKey;
                     const activeTool = this.getActiveTool();
-                    if (!activeTool.onArrowKeys?.(keyStr as TArrowKey)) {
+                    if (!activeTool.onArrowKeys?.(arrowKey)) {
                         const stepSize = 40;
-                        if (keyStr === 'left') {
+                        if (arrowKey === 'left') {
                             this.translate(stepSize, 0);
                         }
-                        if (keyStr === 'right') {
+                        if (arrowKey === 'right') {
                             this.translate(-stepSize, 0);
                         }
-                        if (keyStr === 'up') {
+                        if (arrowKey === 'up') {
                             this.translate(0, stepSize);
                         }
-                        if (keyStr === 'down') {
+                        if (arrowKey === 'down') {
                             this.translate(0, -stepSize);
                         }
                     }
@@ -600,12 +573,12 @@ export class Easel<GToolId extends string> {
                 TEMP_TRIGGERS_KEYS.forEach((keyTrigger) => {
                     if (
                         comboStr === keyTrigger &&
-                        this.toolsMap[this.tool].blockTrigger !== keyTrigger
+                        this.toolsMap[this.toolId].blockTrigger !== keyTrigger
                     ) {
                         this.pushTempTool(this.tempTools[keyTrigger]);
                     }
                 });
-                const tool = this.toolsMap[this.tempTool ?? this.tool];
+                const tool = this.toolsMap[this.tempToolId ?? this.toolId];
                 tool.onKeyDown?.(keyStr, e, comboStr, isRepeat);
             },
             onUp: (keyStr, e, oldComboStr) => {
@@ -617,16 +590,16 @@ export class Easel<GToolId extends string> {
                 TEMP_TRIGGERS_KEYS.forEach((keyTrigger) => {
                     if (
                         keyStr === keyTrigger &&
-                        this.toolsMap[this.tool].blockTrigger !== keyTrigger
+                        this.toolsMap[this.toolId].blockTrigger !== keyTrigger
                     ) {
                         this.popTempTool(this.tempTools[keyTrigger]);
                     }
                 });
-                const tool = this.toolsMap[this.tempTool ?? this.tool];
+                const tool = this.toolsMap[this.tempToolId ?? this.toolId];
                 tool.onKeyUp?.(keyStr, e, oldComboStr);
             },
             onBlur: () => {
-                const tool = this.toolsMap[this.tempTool ?? this.tool];
+                const tool = this.toolsMap[this.tempToolId ?? this.toolId];
                 tool.onBlur?.();
             },
         });
@@ -646,15 +619,70 @@ export class Easel<GToolId extends string> {
         });
         css(this.svgEl, {
             position: 'absolute',
-            left: '0',
-            top: '0',
+            left: 0,
+            top: 0,
             pointerEvents: 'none',
         });
         this.svgEl.append(
             this.selectionRenderer.getElement(),
             ...Object.values<TEaselTool>(this.toolsMap).map((item) => item.getSvgElement()),
         );
+        this.htmlOverlayEl = BB.el({
+            css: {
+                position: 'absolute',
+                left: 0,
+                top: 0,
+            },
+        });
+        this.htmlOverlayEl.append(
+            ...Object.values<TEaselTool>(this.toolsMap)
+                .map((item) => item.getHtmlOverlayElement?.() || undefined)
+                .filter((item) => item !== undefined),
+        );
         this.updateToolSvgs();
+
+        const createIndicator = (icon: IconName, title: string, onClick: () => void) => {
+            const el = BB.el({
+                content: getIconSvg(icon, { width: 20, height: 20 }),
+                title,
+                onClick,
+                css: {
+                    display: 'none',
+                    padding: 5,
+                    borderRadius: 5,
+                    background: 'var(--canvas-overlay-bg)',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    pointerEvents: 'auto',
+                },
+            });
+            // rootEl prevents default on touchend, which would suppress the click
+            el.addEventListener('touchend', (e) => e.stopPropagation());
+            return el;
+        };
+        this.mirrorIndicatorEl = createIndicator('view-flip', LANG('hand-flip'), () =>
+            this.setIsMirrored(false),
+        );
+        this.selectionIndicatorEl = createIndicator(
+            'select-mode-select',
+            LANG('select-deselect'),
+            p.onResetSelection,
+        );
+        this.selectionIndicatorEl.style.display = this.project.selection ? '' : 'none';
+        const indicatorsEl = BB.el({
+            css: {
+                position: 'absolute',
+                left: 5,
+                bottom: 5,
+                display: 'flex',
+                gap: 5,
+                pointerEvents: 'none',
+            },
+        });
+        indicatorsEl.append(this.mirrorIndicatorEl, this.selectionIndicatorEl);
+        if (p.hideIndicators) {
+            indicatorsEl.style.display = 'none';
+        }
 
         this.rootEl = c(
             {
@@ -664,7 +692,7 @@ export class Easel<GToolId extends string> {
                     overscrollBehaviorX: 'none',
                 },
             },
-            [this.viewport.getElement(), this.svgEl],
+            [this.viewport.getElement(), this.svgEl, this.htmlOverlayEl, indicatorsEl],
         );
 
         // prevent contextmenu
@@ -688,11 +716,18 @@ export class Easel<GToolId extends string> {
             return false;
         });
 
-        this.toolsMap[this.tool].activate?.(this.cursorPos);
+        this.toolsMap[this.toolId].activate?.(this.cursorPos);
+        Object.values<TEaselTool>(this.toolsMap).forEach((tool) => tool.onTool?.(this.toolId));
+        {
+            // adjust the transform without triggering a render
+            const doRender = this.doRender;
+            this.resetOrFitTransform(true);
+            this.doRender = doRender;
+        }
         this.renderLoop();
     }
 
-    /** update and render */
+    // update and render
     setProject(project: TEaselProject): void {
         this.project = project;
         this.viewport.setProject({
@@ -701,11 +736,12 @@ export class Easel<GToolId extends string> {
             layers: this.project.layers,
         });
         this.selectionRenderer.setSelection(this.project.selection);
+        this.selectionIndicatorEl.style.display = this.project.selection ? '' : 'none';
         this.getActiveTool().onUpdateSelection?.(this.project.selection);
         this.requestRender();
     }
 
-    /** update and render */
+    // update and render
     setSize(width: number, height: number): void {
         const m = createMatrixFromTransform(this.viewport.getTransform());
         const canvasCenterPoint = applyToPoint(inverse(m), {
@@ -732,6 +768,7 @@ export class Easel<GToolId extends string> {
                 canvasCenterPoint,
                 transform.scale,
                 transform.angleDeg,
+                transform.isMirrored,
             ),
             true,
         );
@@ -752,11 +789,12 @@ export class Easel<GToolId extends string> {
     }
 
     setTool(toolId: GToolId): void {
-        if (toolId === this.tool) {
+        if (toolId === this.toolId) {
             return;
         }
-        this.tool = toolId;
-        this.toolsMap[this.tool].activate?.(this.cursorPos);
+        this.toolId = toolId;
+        this.toolsMap[this.toolId].activate?.(this.cursorPos);
+        Object.values<TEaselTool>(this.toolsMap).forEach((tool) => tool.onTool?.(this.toolId));
         this.onChangeTool(toolId);
         this.updateToolSvgs();
         this.updateDoubleTapPointerTypes();
@@ -764,7 +802,7 @@ export class Easel<GToolId extends string> {
     }
 
     getTool(): GToolId {
-        return this.tool;
+        return this.toolId;
     }
 
     translate(dX: number, dY: number): void {
@@ -795,12 +833,13 @@ export class Easel<GToolId extends string> {
                 metaTransform.canvasP,
                 metaTransform.scale,
                 metaTransform.angleDeg,
+                metaTransform.isMirrored,
             ),
         );
     }
 
     resetTransform(isImmediate?: boolean): void {
-        const transform = this.getResetTransform();
+        const transform = this.getResetTransform(this.targetTransform.isMirrored);
         this.setTargetTransform(transform, isImmediate);
         this.requestRender();
     }
@@ -857,6 +896,7 @@ export class Easel<GToolId extends string> {
             { x: this.project.width / 2, y: this.project.height / 2 },
             isFit ? maximumScale : 1,
             0,
+            this.targetTransform.isMirrored,
         );
         this.setTargetTransform(transform, isImmediate);
         this.requestRender();
@@ -880,8 +920,32 @@ export class Easel<GToolId extends string> {
             applyToPoint(inverse(viewportMat), viewportCenterP),
             viewportTransform.scale,
             newAngleDeg,
+            viewportTransform.isMirrored,
         );
         this.setTargetTransform(newViewportTransform);
+    }
+
+    setIsMirrored(isMirrored: boolean): void {
+        if (isMirrored === this.getIsMirrored()) {
+            return;
+        }
+        const transform = this.targetTransform;
+        const viewportCenterP = { x: this.width / 2, y: this.height / 2 };
+        this.setTargetTransform(
+            createTransform(
+                viewportCenterP,
+                applyToPoint(inverse(createMatrixFromTransform(transform)), viewportCenterP),
+                transform.scale,
+                minimizeAngleDeg(-transform.angleDeg),
+                isMirrored,
+            ),
+            true,
+        );
+        this.mirrorIndicatorEl.style.display = isMirrored ? '' : 'none';
+    }
+
+    getIsMirrored(): boolean {
+        return this.targetTransform.isMirrored;
     }
 
     getIsLocked(): boolean {

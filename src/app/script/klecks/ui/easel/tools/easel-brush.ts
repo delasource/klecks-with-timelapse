@@ -11,8 +11,9 @@ import { TChainElement } from '../../../../bb/input/event-chain/event-chain.type
 import { TViewportTransform } from '../../project-viewport/project-viewport';
 import { TEaselInterface, TEaselTool } from '../easel.types';
 import { TVector2D } from '../../../../bb/bb-types';
-import { BrushCursorPixelSquare } from './brush-cursor-pixel-square';
+import { BrushCursorPixel } from './brush-cursor-pixel';
 import { BrushCursorRound } from './brush-cursor-round';
+import { TPixelBrushTip } from '../../../brushes/pixel-brush';
 
 export type TEaselBrushEvent = {
     x: number;
@@ -45,8 +46,8 @@ export class EaselBrush implements TEaselTool {
     private isDragging: boolean = false;
     private eventChain: EventChain; // to explode events
     private readonly brushCursorRound: BrushCursorRound;
-    private readonly brushCursorPixelSquare: BrushCursorPixelSquare;
-    private currentCursor: BrushCursorRound | BrushCursorPixelSquare;
+    private readonly brushCursorPixel: BrushCursorPixel;
+    private currentCursor: BrushCursorRound | BrushCursorPixel;
     private lastPos: TVector2D = { x: 0, y: 0 };
     private lastLineEnd: TVector2D | undefined; // in canvas coords
     private lineToolDirection: TLineToolDirection | undefined;
@@ -92,13 +93,13 @@ export class EaselBrush implements TEaselTool {
         }
 
         if (e.type === 'pointerdown' && (e.button === 'left' || e.button == 'pen-eraser')) {
+            this.isDragging = true;
             if (shiftIsPressed) {
                 if (this.lastLineEnd) {
                     this.onLine(this.lastLineEnd, { x, y });
                 }
                 return;
             }
-
             this.onLineStart({
                 x,
                 y,
@@ -106,7 +107,6 @@ export class EaselBrush implements TEaselTool {
                 isCoalesced,
                 isEraserPen: e.button == 'pen-eraser',
             });
-            this.isDragging = true;
         }
         if (e.type === 'pointermove' && (e.button === 'left' || e.button == 'pen-eraser')) {
             if (shiftIsPressed) {
@@ -130,12 +130,12 @@ export class EaselBrush implements TEaselTool {
             }
         }
         if (e.type === 'pointerup' && e.button === undefined && this.isDragging) {
-            this.onLineEnd();
             this.isDragging = false;
             if (e.pointerType === 'touch') {
                 // due to delay of double-tap listener, pointerleave fires to early
                 this.onPointerLeave();
             }
+            this.onLineEnd();
         }
     }
 
@@ -156,7 +156,7 @@ export class EaselBrush implements TEaselTool {
             elementType: 'g',
         });
         this.brushCursorRound = new BrushCursorRound();
-        this.brushCursorPixelSquare = new BrushCursorPixelSquare();
+        this.brushCursorPixel = new BrushCursorPixel();
         this.currentCursor = this.brushCursorRound;
         this.svgEl.append(this.currentCursor.getElement());
 
@@ -194,7 +194,11 @@ export class EaselBrush implements TEaselTool {
         return this.isDragging;
     }
 
-    setBrush(p: { radius?: number; type?: 'round' | 'pixel-square' }): void {
+    setBrush(p: {
+        radius?: number;
+        type?: 'round' | 'pixel';
+        pixelTip?: TPixelBrushTip;
+    }): void {
         if (p.radius !== undefined) {
             this.radius = p.radius;
             if (!this.isOver) {
@@ -211,9 +215,12 @@ export class EaselBrush implements TEaselTool {
                 this.radius,
             );
         }
+        if (p.pixelTip !== undefined) {
+            this.brushCursorPixel.setTip(p.pixelTip);
+        }
         if (p.type !== undefined) {
             const newBrushCursor =
-                p.type === 'round' ? this.brushCursorRound : this.brushCursorPixelSquare;
+                p.type === 'round' ? this.brushCursorRound : this.brushCursorPixel;
             if (newBrushCursor !== this.currentCursor) {
                 this.currentCursor.getElement().remove();
                 this.currentCursor = newBrushCursor;

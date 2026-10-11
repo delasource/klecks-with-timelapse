@@ -1,26 +1,30 @@
+import { getIconSvg } from '../../icon/icon';
 import { BB } from '../../bb/bb';
 import { createPenPressureToggle } from '../ui/components/create-pen-pressure-toggle';
 import { EVENT_RES_MS } from './brushes-consts';
-import { Checkbox } from '../ui/components/checkbox';
+import { createLockAlphaToggle } from '../ui/components/create-brush-toggles';
+import { BoxToggle } from '../ui/components/box-toggle';
 import { BRUSHES } from '../brushes/brushes';
 import { KlSlider } from '../ui/components/kl-slider';
-import brushIconImg from '../../../img/ui/brush-blend.svg';
 import { TBrushUi } from '../kl-types';
 import { LANG, LANGUAGE_STRINGS } from '../../language/language';
 import { BlendBrush, TBlendBrushConfig } from '../brushes/blend-brush';
 
 export const blendBrushUi = (function () {
     const brushInterface = {
-        image: brushIconImg,
+        image: getIconSvg('brush-blend'),
         tooltip: LANG('brush-blend'),
         sizeSlider: {
             min: 0.5,
             max: 100,
-            curve: BB.powerSplineInput(0.5, 100, 0.1),
+            exponent: 2,
+            displayScale: 2, // radius displayed as diameter
+            decimals: 'adaptive',
         },
         opacitySlider: {
             min: 1 / 100,
             max: 1,
+            displayScale: 100,
         },
     } as TBrushUi<BlendBrush>;
 
@@ -39,7 +43,7 @@ export const blendBrushUi = (function () {
         let blendingSlider: KlSlider;
         let pressureSizeToggle: HTMLElement;
         let pressureOpacityToggle: HTMLElement;
-        let lockAlphaToggle: Checkbox;
+        let lockAlphaToggle: BoxToggle;
 
         function setSize(size: number): void {
             brush.setSize(size);
@@ -50,13 +54,9 @@ export const blendBrushUi = (function () {
                 label: LANG('brush-size'),
                 width: 225,
                 height: 30,
-                min: brushInterface.sizeSlider.min,
-                max: brushInterface.sizeSlider.max,
+                ...brushInterface.sizeSlider,
                 value: 58,
-                curve: brushInterface.sizeSlider.curve,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 2,
-                toValue: (displayValue) => displayValue / 2,
                 onChange: (val) => {
                     setSize(val);
                     p.onSizeChange(val);
@@ -66,13 +66,9 @@ export const blendBrushUi = (function () {
                 label: LANG('opacity'),
                 width: 225,
                 height: 30,
-                min: brushInterface.opacitySlider.min,
-                max: brushInterface.opacitySlider.max,
+                ...brushInterface.opacitySlider,
                 value: brush.getOpacity(),
-                curve: brushInterface.opacitySlider.curve,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 100,
-                toValue: (displayValue) => displayValue / 100,
                 onChange: (val) => {
                     brush.setOpacity(val);
                     p.onOpacityChange(val);
@@ -84,10 +80,9 @@ export const blendBrushUi = (function () {
                 height: 30,
                 min: 0,
                 max: 1,
+                displayScale: 100,
                 value: brush.getBlending(),
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 100,
-                toValue: (displayValue) => displayValue / 100,
                 onChange: function (val) {
                     brush.setBlending(val);
                 },
@@ -101,19 +96,8 @@ export const blendBrushUi = (function () {
                 brush.setOpacityPressure(b);
             });
 
-            lockAlphaToggle = new Checkbox({
-                init: brush.getLockAlpha(),
-                label: LANG('lock-alpha'),
-                callback: function (b) {
-                    brush.setLockAlpha(b);
-                },
-                doHighlight: true,
-                title: LANG('lock-alpha-title'),
-                css: {
-                    marginTop: '10px',
-                    display: 'inline-block',
-                },
-                name: 'lock-alpha',
+            lockAlphaToggle = createLockAlphaToggle(brush.getLockAlpha(), (b) => {
+                brush.setLockAlpha(b);
             });
 
             div.append(
@@ -123,7 +107,7 @@ export const blendBrushUi = (function () {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: '10px',
+                        marginBottom: 10,
                     },
                 }),
                 BB.el({
@@ -135,7 +119,13 @@ export const blendBrushUi = (function () {
                     },
                 }),
                 blendingSlider.getElement(),
-                lockAlphaToggle.getElement(),
+                BB.el({
+                    content: lockAlphaToggle.getElement(),
+                    css: {
+                        display: 'flex',
+                        marginTop: 10,
+                    },
+                }),
             );
         }
 

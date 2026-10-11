@@ -1,4 +1,4 @@
-import { TBounds, TVector2D } from '../../bb/bb-types';
+import { TCoordinateBounds, TVector2D } from '../../bb/bb-types';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
 import {
@@ -13,13 +13,14 @@ import {
 } from 'transformation-matrix';
 import { transformMultiPolygon } from '../../bb/multi-polygon/transform-multi-polygon';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
-import { TLayerComposite, TSelectionSample } from '../canvas/kl-canvas';
+import { TLayerComposite } from '../canvas/kl-canvas';
+import { TMatrixSelectionSample } from '../canvas/kl-canvas-selection-transform';
 import { BB } from '../../bb/bb';
-import { snapToPixel, TFreeTransform } from '../ui/components/free-transform-utils';
-import { integerBounds } from '../../bb/math/math';
+import { snapToPixel } from '../ui/components/free-transform-utils';
+import { TFreeTransform } from '../transform/transform-types';
 import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
 
-function matrixToFreeTransform(transform: Matrix, bounds: TBounds): TFreeTransform {
+function matrixToFreeTransform(transform: Matrix, bounds: TCoordinateBounds): TFreeTransform {
     const centerBefore = {
         x: bounds.x1 + (bounds.x2 - bounds.x1) / 2,
         y: bounds.y1 + (bounds.y2 - bounds.y1) / 2,
@@ -62,7 +63,7 @@ function matrixToFreeTransform(transform: Matrix, bounds: TBounds): TFreeTransfo
     };
 }
 
-function freeTransformToMatrix(transform: TFreeTransform, bounds: TBounds): Matrix {
+function freeTransformToMatrix(transform: TFreeTransform, bounds: TCoordinateBounds): Matrix {
     const centerBefore = {
         x: bounds.x1 + (bounds.x2 - bounds.x1) / 2,
         y: bounds.y1 + (bounds.y2 - bounds.y1) / 2,
@@ -85,14 +86,18 @@ function freeTransformToMatrix(transform: TFreeTransform, bounds: TBounds): Matr
 }
 
 /**
- * to facilitate KlCanvas.transformViaSelection and provide a preview (composite)
+ * to facilitate KlCanvasSelectionTransform.transformViaSelection and provide a preview (composite)
+ *
+ * Upstream removed this tool with Klecks 0.9.10, in favour of a free transform inside its own UI.
+ * It stays for the headless app's selection tool (kl-headless-select.ts), which moves a selection
+ * by a matrix — see kl-canvas-selection-transform.ts.
  */
 export class SelectTransformTool {
     private selection: MultiPolygon = [];
-    private selectionBounds: TBounds = {} as TBounds;
+    private selectionBounds: TCoordinateBounds = {} as TCoordinateBounds;
     private transform: Matrix = {} as Matrix;
     private doClone: boolean = false; // true -> draw selected area twice (original position, and transformed position)
-    private selectionSample: TSelectionSample | undefined;
+    private selectionSample: TMatrixSelectionSample | undefined;
     private backgroundIsTransparent: boolean = false;
 
     // ----------------------------------- public -----------------------------------
@@ -104,7 +109,15 @@ export class SelectTransformTool {
 
     setSelection(selection: MultiPolygon): void {
         this.selection = selection;
-        this.selectionBounds = integerBounds(getMultiPolyBounds(this.selection)); // floor & ceil to prevent blurriness
+        // floor & ceil to prevent blurriness
+        const bounds = getMultiPolyBounds(this.selection, 'coordinate');
+        this.selectionBounds = {
+            type: 'coordinate',
+            x1: Math.floor(bounds.x1),
+            y1: Math.floor(bounds.y1),
+            x2: Math.ceil(bounds.x2),
+            y2: Math.ceil(bounds.y2),
+        };
         this.transform = identity();
     }
 
@@ -124,6 +137,7 @@ export class SelectTransformTool {
         this.transform = identity();
         this.selection = [];
         this.selectionBounds = {
+            type: 'coordinate',
             x1: 0,
             y1: 0,
             x2: 0,
@@ -176,8 +190,9 @@ export class SelectTransformTool {
     }
 
     getTransform(): Matrix {
-        const freeTransform = matrixToFreeTransform(this.transform, this.selectionBounds);
-        snapToPixel(freeTransform);
+        const freeTransform = snapToPixel(
+            matrixToFreeTransform(this.transform, this.selectionBounds),
+        );
         return freeTransformToMatrix(freeTransform, this.selectionBounds);
     }
 
@@ -189,7 +204,7 @@ export class SelectTransformTool {
         return transformMultiPolygon(this.selection, this.getTransform());
     }
 
-    setSelectionSample(selectionSample: TSelectionSample | undefined): void {
+    setSelectionSample(selectionSample: TMatrixSelectionSample | undefined): void {
         this.selectionSample = selectionSample;
     }
 

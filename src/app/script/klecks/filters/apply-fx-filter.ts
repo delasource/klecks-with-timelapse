@@ -3,7 +3,6 @@ import { BB } from '../../bb/bb';
 import { drawSelectionMask } from '../../bb/base/canvas';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
-import { integerBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 import { MultiPolygon } from 'polygon-clipping';
 import { KlHistory } from '../history/kl-history';
@@ -37,13 +36,13 @@ export function runFxFilter(
     fxCanvas.draw(originalTexture);
     applyFn(fxCanvas);
     if (maskTexture) {
-        fxCanvas.multiplyAlpha().mask(maskTexture, originalTexture).unmultiplyAlpha();
+        fxCanvas.multiplyAlpha().mask(maskTexture, originalTexture, true).unmultiplyAlpha();
         maskTexture.destroy();
     }
     originalTexture.destroy();
     fxCanvas.update();
     target.clearRect(0, 0, target.canvas.width, target.canvas.height);
-    target.drawImage(fxCanvas, 0, 0);
+    target.drawImage(fxCanvas.canvas, 0, 0);
     return true;
 }
 
@@ -62,7 +61,7 @@ export function applyFxFilter(
             klHistory.getComposed(),
             canvasToLayerTiles(
                 context.canvas,
-                selection ? integerBounds(getMultiPolyBounds(selection)) : undefined,
+                selection ? getMultiPolyBounds(selection, 'index') : undefined,
             ),
         ),
     );

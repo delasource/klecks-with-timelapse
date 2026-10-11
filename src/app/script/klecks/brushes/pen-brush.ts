@@ -1,16 +1,16 @@
 import { BB } from '../../bb/bb';
 import { ALPHA_IM_ARR } from './brushes-common';
 import { TPressureInput, TRgb } from '../kl-types';
-import { BezierLine } from '../../bb/math/line';
+import { BezierLine, TBezierLineCallback } from '../../bb/math/line';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
-import { TBounds } from '../../bb/bb-types';
 import { canvasAndChangedTilesToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { getChangedTiles, updateChangedTiles } from '../history/push-helpers/changed-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 
 const ALPHA_CIRCLE = 0;
 const ALPHA_CHALK = 1;
@@ -75,10 +75,10 @@ export class PenBrush {
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
-    private updateChangedTiles(bounds: TBounds) {
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+    private updateChangedTiles(bounds: TIndexBounds) {
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return;
         }
@@ -197,10 +197,11 @@ export class PenBrush {
                 ? size
                 : size * Math.sqrt(2);
         this.updateChangedTiles({
+            type: 'index',
             x1: Math.floor(x - boundsSize),
             y1: Math.floor(y - boundsSize),
-            x2: Math.ceil(x + boundsSize),
-            y2: Math.ceil(y + boundsSize),
+            x2: Math.ceil(x + boundsSize - 1),
+            y2: Math.ceil(y + boundsSize - 1),
         });
 
         if (this.settingAlphaId === ALPHA_CIRCLE) {
@@ -248,13 +249,7 @@ export class PenBrush {
 
         const drawArr: [number, number, number, number, number, number | undefined][] = []; //draw instructions. will be all drawn at once
 
-        const dotCallback = (val: {
-            x: number;
-            y: number;
-            t: number;
-            angle?: number;
-            dAngle: number;
-        }): void => {
+        const dotCallback: TBezierLineCallback = (val): void => {
             const localPressure = BB.mix(this.lastInput2.pressure, pressure, val.t);
             const localOpacity = this.calcOpacity(localPressure);
             const localSize = Math.max(
@@ -292,7 +287,7 @@ export class PenBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
 
         this.changedTiles = [];
@@ -406,7 +401,7 @@ export class PenBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.changedTiles = [];
         this.lastInput.x = x2;
@@ -418,7 +413,7 @@ export class PenBrush {
         }
 
         const angle = BB.pointsToAngleDeg({ x: x1, y: y1 }, { x: x2, y: y2 });
-        const mouseDist = Math.sqrt(Math.pow(x2 - x1, 2.0) + Math.pow(y2 - y1, 2.0));
+        const mouseDist = Math.sqrt((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0);
         const eX = (x2 - x1) / mouseDist;
         const eY = (y2 - y1) / mouseDist;
         let loopDist;

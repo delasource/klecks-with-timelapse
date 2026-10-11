@@ -1,4 +1,4 @@
-import { TBounds } from '../../bb/bb-types';
+import { TIndexBounds } from '../../bb/bb-types';
 
 /**
  * Set values in data within rect to 254, unless they're 255
@@ -75,7 +75,7 @@ function floodFill(
     tolerance: number,
     grow: number,
     isContiguous: boolean,
-): TBounds {
+): TIndexBounds {
     const initR = srcArr[(py * width + px) * 4];
     const initG = srcArr[(py * width + px) * 4 + 1];
     const initB = srcArr[(py * width + px) * 4 + 2];
@@ -83,7 +83,7 @@ function floodFill(
     const view = new DataView(srcArr.buffer);
     const init = view.getUint32((py * width + px) * 4, true);
     const toleranceSquared = tolerance ** 2;
-    const bounds: TBounds = { x1: px, y1: py, x2: px, y2: py };
+    const bounds: TIndexBounds = { type: 'index', x1: px, y1: py, x2: px, y2: py };
 
     if (isContiguous) {
         const q: number[] = []; // queue of pixel indices. they are already filled.
@@ -167,10 +167,10 @@ function floodFill(
         for (let y = 0, i = 0; y < height; y++) {
             for (let x = 0; x < width; x++, i++) {
                 if (
-                    view.getUint32(i * 4, true) === init ||
-                    (selectionMaskTest(selectionMaskArr, i) &&
-                        tolerance > 0 &&
-                        toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, i))
+                    selectionMaskTest(selectionMaskArr, i) &&
+                    (view.getUint32(i * 4, true) === init ||
+                        (tolerance > 0 &&
+                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, i)))
                 ) {
                     targetArr[i] = 255;
                     if (x < bounds.x1) {
@@ -304,7 +304,7 @@ export function floodFillBits(
     isContiguous: boolean,
 ): {
     data: Uint8Array;
-    bounds: TBounds; // what area changed
+    bounds: TIndexBounds; // what area changed
 } {
     x = Math.round(x); // just in case
     y = Math.round(y);

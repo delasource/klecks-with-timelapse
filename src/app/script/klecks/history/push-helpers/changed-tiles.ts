@@ -1,24 +1,25 @@
-import { TBounds } from '../../../bb/bb-types';
 import { HISTORY_TILE_SIZE } from '../kl-history';
-import { boundsInArea, clamp } from '../../../bb/math/math';
+import { clamp, indexBoundsInArea } from '../../../bb/math/math';
 import { createArray } from '../../../bb/base/base';
+import { TIndexBounds } from '../../../bb/bb-types';
 
 // returns array, each entry represents a tile, as a boolean
 // true - intersected with bounds
 export function getChangedTiles(
-    bounds: TBounds, // canvas space
+    bounds: TIndexBounds, // canvas space
     width: number,
     height: number,
     tileSize: number = HISTORY_TILE_SIZE,
 ): boolean[] {
     // ensure: 1 top left, 2 bottom right
     bounds = {
+        type: 'index',
         x1: Math.min(bounds.x1, bounds.x2),
         y1: Math.min(bounds.y1, bounds.y2),
         x2: Math.max(bounds.x1, bounds.x2),
         y2: Math.max(bounds.y1, bounds.y2),
     };
-    const boundsInCanvas = boundsInArea(bounds, width, height);
+    const boundsInCanvas = indexBoundsInArea(bounds, width, height);
     const tilesX = Math.ceil(width / tileSize);
     const tilesY = Math.ceil(height / tileSize);
     if (!boundsInCanvas) {

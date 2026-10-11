@@ -1,31 +1,67 @@
+import { getIconSvg } from '../../icon/icon';
 import { BB } from '../../bb/bb';
 import { BRUSHES } from '../brushes/brushes';
 import { EVENT_RES_MS } from './brushes-consts';
-import { Checkbox } from '../ui/components/checkbox';
+import { createEraserToggle, createLockAlphaToggle } from '../ui/components/create-brush-toggles';
 import { KlSlider } from '../ui/components/kl-slider';
 import { createPenPressureToggle } from '../ui/components/create-pen-pressure-toggle';
-import brushIconImg from '../../../img/ui/brush-pixel.svg';
 import { TBrushUi } from '../kl-types';
 import { LANG, LANGUAGE_STRINGS } from '../../language/language';
-import { PixelBrush, TPixelBrushConfig } from '../brushes/pixel-brush';
+import { Options } from '../ui/components/options';
+import { PixelBrush, TPixelBrushConfig, TPixelBrushTip } from '../brushes/pixel-brush';
+import { getPixelDiscHalfWidths } from '../brushes/pixel-brush-disc';
+import {
+    DEFAULT_PIXEL_PATTERNS,
+    loadCustomPixelPatterns,
+    saveCustomPixelPatterns,
+    TPixelPattern,
+} from '../brushes/pixel-brush-patterns';
+import { PixelPatternPicker } from '../ui/components/pixel-pattern-picker';
+import { showPixelPatternDialog } from '../ui/modals/show-pixel-pattern-dialog';
+import { showError } from '../ui/modals/base/show-modal';
+
+function createTipPreview(tip: TPixelBrushTip): HTMLElement {
+    // drawn at 1x, displayed at 3x -> crisp pixels. odd scale, so it can be centered in odd sized option
+    const size = 7;
+    const scale = 3;
+    const canvas = BB.canvas(size, size);
+    const ctx = BB.ctx(canvas);
+    if (tip === 'round') {
+        getPixelDiscHalfWidths(size).forEach((halfWidth, y) => {
+            ctx.fillRect(size / 2 - halfWidth, y, halfWidth * 2, 1);
+        });
+    } else {
+        ctx.fillRect(0, 0, size, size);
+    }
+    return BB.el({
+        className: 'dark-invert',
+        css: {
+            // option size stays the same (35)
+            width: size * scale,
+            height: size * scale,
+            margin: 7,
+            backgroundImage: 'url(' + canvas.toDataURL('image/png') + ')',
+            backgroundSize: `${size * scale}px ${size * scale}px`,
+            imageRendering: 'pixelated',
+        },
+    });
+}
 
 export const pixelBrushUi = (function () {
     const brushInterface = {
-        image: brushIconImg,
+        image: getIconSvg('brush-pixel'),
         tooltip: LANG('brush-pixel'),
         sizeSlider: {
             min: 0.5,
             max: 100,
-            curve: BB.powerSplineInput(0.5, 100, 0.1),
+            exponent: 2,
+            displayScale: 2, // radius displayed as diameter
+            decimals: 'adaptive',
         },
         opacitySlider: {
             min: 1 / 100,
             max: 1,
-            curve: [
-                [0, 1 / 100],
-                [0.5, 0.3],
-                [1, 1],
-            ],
+            displayScale: 100,
         },
     } as TBrushUi<PixelBrush>;
 
@@ -44,33 +80,79 @@ export const pixelBrushUi = (function () {
         let pressureSizeToggle: HTMLElement;
         // let pressureOpacityToggle: HTMLElement; // TODO add this control?
 
-        const lockAlphaToggle = new Checkbox({
-            init: brush.getLockAlpha(),
-            label: LANG('lock-alpha'),
-            callback: function (b) {
-                brush.setLockAlpha(b);
+        const tipOptions = new Options<TPixelBrushTip>({
+            optionArr: (['round', 'square'] as const).map((tip) => ({
+                id: tip,
+                label: createTipPreview(tip),
+                title: LANG(tip === 'round' ? 'brush-pen-circle' : 'brush-pen-square'),
+            })),
+            initId: brush.getTip(),
+            onChange: (tip) => {
+                brush.setTip(tip);
+                p.onConfigChange();
             },
-            doHighlight: true,
-            title: LANG('lock-alpha-title'),
-            name: 'lock-alpha-toggle',
         });
 
-        const eraserToggle = new Checkbox({
-            init: brush.getIsEraser(),
-            label: LANG('eraser'),
-            callback: function (b) {
-                brush.setIsEraser(b);
-            },
-            name: 'eraser-toggle',
+        const lockAlphaToggle = createLockAlphaToggle(brush.getLockAlpha(), (b) => {
+            brush.setLockAlpha(b);
         });
 
-        const ditherToggle = new Checkbox({
-            init: brush.getUseDither(),
-            label: LANG('brush-pixel-dither'),
-            callback: function (b) {
-                brush.setUseDither(b);
+        const eraserToggle = createEraserToggle(brush.getIsEraser(), (b) => {
+            brush.setIsEraser(b);
+        });
+
+        // patterns: defaults + the user's own. Identified by index, custom ones come after defaults.
+        let customPatterns: TPixelPattern[] = loadCustomPixelPatterns();
+        const getPatterns = (): TPixelPattern[] => [...DEFAULT_PIXEL_PATTERNS, ...customPatterns];
+        const selectPattern = (index: number): void => {
+            brush.setPattern(getPatterns()[index]);
+        };
+        const updateCustomPatterns = (patterns: TPixelPattern[], selectedIndex: number): void => {
+            customPatterns = patterns;
+            saveCustomPixelPatterns(customPatterns);
+            patternPicker.setPatterns(getPatterns(), selectedIndex);
+            selectPattern(selectedIndex);
+        };
+        const patternPicker = new PixelPatternPicker({
+            patterns: getPatterns(),
+            selectedIndex: 0, // solid
+            onSelect: selectPattern,
+            onClickSelected: (index) => {
+                const customIndex = index - DEFAULT_PIXEL_PATTERNS.length;
+                if (customIndex < 0) {
+                    showError(LANG('brush-pixel-pattern-edit-default-error'));
+                    return;
+                }
+                showPixelPatternDialog({
+                    pattern: customPatterns[customIndex],
+                    onOk: (pattern) => {
+                        updateCustomPatterns(
+                            customPatterns.map((item, i) => (i === customIndex ? pattern : item)),
+                            index,
+                        );
+                    },
+                    onDelete: () => {
+                        updateCustomPatterns(
+                            customPatterns.filter((_, i) => i !== customIndex),
+                            0, // solid
+                        );
+                    },
+                });
             },
-            name: 'dither-toggle',
+            onAdd: () => {
+                showPixelPatternDialog({
+                    // new patterns start fully filled
+                    pattern: { width: 4, height: 4, data: new Array<number>(16).fill(1) },
+                    onOk: (pattern) => {
+                        const patterns = [...customPatterns, pattern];
+                        updateCustomPatterns(
+                            patterns,
+                            DEFAULT_PIXEL_PATTERNS.length + patterns.length - 1,
+                        );
+                    },
+                });
+            },
+            css: { marginTop: 10 },
         });
 
         const spacingSpline = new BB.SplineInterpolator([
@@ -88,13 +170,9 @@ export const pixelBrushUi = (function () {
                 label: LANG('brush-size'),
                 width: 225,
                 height: 30,
-                min: brushInterface.sizeSlider.min,
-                max: brushInterface.sizeSlider.max,
+                ...brushInterface.sizeSlider,
                 value: brush.getSize(),
-                curve: brushInterface.sizeSlider.curve,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 2,
-                toValue: (displayValue) => displayValue / 2,
                 onChange: (val) => {
                     setSize(val);
                     p.onSizeChange(val);
@@ -104,12 +182,9 @@ export const pixelBrushUi = (function () {
                 label: LANG('opacity'),
                 width: 225,
                 height: 30,
-                min: brushInterface.opacitySlider.min,
-                max: brushInterface.opacitySlider.max,
+                ...brushInterface.opacitySlider,
                 value: brushInterface.opacitySlider.max,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 100,
-                toValue: (displayValue) => displayValue / 100,
                 onChange: (val) => {
                     brush.setOpacity(val);
                     p.onOpacityChange(val);
@@ -127,26 +202,28 @@ export const pixelBrushUi = (function () {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: '10px',
+                        marginBottom: 10,
                     },
                 }),
                 opacitySlider.getElement(),
-            );
-
-            const toggleRow = BB.el({
-                parent: div,
-                css: {
-                    display: 'flex',
-                    marginTop: '10px',
-                    gap: '10px',
-                    flexWrap: 'wrap',
-                },
-            });
-
-            toggleRow.append(
-                lockAlphaToggle.getElement(),
-                eraserToggle.getElement(),
-                ditherToggle.getElement(),
+                BB.el({
+                    content: [
+                        tipOptions.getElement(),
+                        BB.el({
+                            content: [lockAlphaToggle.getElement(), eraserToggle.getElement()],
+                            css: {
+                                display: 'flex',
+                                gap: 4,
+                            },
+                        }),
+                    ],
+                    css: {
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginTop: 10,
+                    },
+                }),
+                patternPicker.getElement(),
             );
         }
 
@@ -199,6 +276,9 @@ export const pixelBrushUi = (function () {
         this.isDrawing = function () {
             return brush.isDrawing();
         };
+        this.freeResources = () => {
+            brush.freeResources();
+        };
         this.toggleEraser = () => {
             eraserToggle.setValue(!eraserToggle.getValue());
             brush.setIsEraser(eraserToggle.getValue());
@@ -225,9 +305,8 @@ export const pixelBrushUi = (function () {
             if (config.isEraser !== undefined) {
                 eraserToggle.setValue(config.isEraser);
             }
-            if (config.useDither !== undefined) {
-                ditherToggle.setValue(config.useDither);
-            }
+            // useDither (dithering by opacity, as before Klecks 0.11.3) has no control in this UI:
+            // the brush follows it, the pattern picker does not show it.
             // TODO: sizePressure, opacityPressure
             // Above variable is of type `HTMLElement` and should be of type `BoxToggle`
             // opacityPressure is missing in general.

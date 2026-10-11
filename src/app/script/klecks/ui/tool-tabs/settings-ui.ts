@@ -1,19 +1,21 @@
+import { SelectCustom } from '../components/select-custom';
+import { getIconSvg, getIconUrl } from '../../../icon/icon';
 import { BB } from '../../../bb/bb';
 import { LANG, LANGUAGE_STRINGS, LS_LANGUAGE_KEY } from '../../../language/language';
-import { KL } from '../../kl';
 import { languages } from '../../../../languages/languages';
-import bitbofLogoImg from '../../../../img/bitbof-logo.svg';
-import klecksLogoImg from '../../../../img/klecks-logo.png';
-import uiSwapImg from '../../../../img/ui/ui-swap-lr.svg';
+import klecksLogoImg from 'url:/src/app/img/klecks-logo.png';
 import { LocalStorage } from '../../../bb/base/local-storage';
 import { THEME, TTheme } from '../../../theme/theme';
 import { addIsDarkListener, css, nullToUndefined } from '../../../bb/base/base';
 import { showLicensesDialog } from '../modals/licenses-dialog/show-licenses-dialog';
 import { c } from '../../../bb/base/c';
 import { SaveReminder } from '../components/save-reminder';
-import { showModal } from '../modals/base/showModal';
+import { showModal } from '../modals/base/show-modal';
 import { createImage } from '../../../bb/base/ui';
+import { PixelatedZoomToggle } from '../components/pixelated-zoom-toggle';
 
+const bitbofLogoImg = getIconUrl('bitbof-logo');
+const uiSwapImg = getIconUrl('ui-swap-lr');
 export type TSettingsUiParams = {
     onLeftRight: () => void;
     saveReminder: SaveReminder | undefined;
@@ -27,7 +29,7 @@ export class SettingsUi {
     constructor({ onLeftRight, saveReminder, customAbout }: TSettingsUiParams) {
         this.rootEl = BB.el({
             css: {
-                margin: '10px',
+                margin: '10px 10px 0',
             },
         });
 
@@ -37,10 +39,13 @@ export class SettingsUi {
         const langWrapper = BB.el({
             parent: this.rootEl,
             content: BB.el({
-                content: LANG('settings-language') + ':',
+                content: [getIconSvg('language', { height: 20 }), LANG('settings-language') + ':'],
                 css: {
-                    marginRight: '5px',
-                    marginBottom: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    marginRight: 5,
+                    marginBottom: 2,
                 },
             }),
             css: {
@@ -59,7 +64,7 @@ export class SettingsUi {
                 return [item.code, item.name + ` (${item.code})`] as [string, string];
             }),
         ];
-        const languageSelect = new KL.Select({
+        const languageSelect = new SelectCustom({
             initValue: nullToUndefined(
                 LocalStorage.getItem(LS_LANGUAGE_KEY)
                     ? LocalStorage.getItem(LS_LANGUAGE_KEY)
@@ -77,15 +82,15 @@ export class SettingsUi {
             name: 'language',
         });
         css(languageSelect.getElement(), {
-            flexGrow: '1',
+            flexGrow: 1,
         });
         const languageHint = BB.el({
             className: 'kl-toolspace-note',
             content: LANG('settings-language-reload'),
             css: {
                 display: 'none',
-                marginTop: '5px',
-                flexGrow: '1',
+                marginTop: 5,
+                flexGrow: 1,
             },
         });
 
@@ -100,7 +105,7 @@ export class SettingsUi {
             }
             return '⬜ ' + LANG('theme-light');
         }
-        const themeSelect = new KL.Select({
+        const themeSelect = new SelectCustom({
             optionArr: [
                 ['auto', LANG('auto') + ' → ' + themeToLabel(THEME.getMediaQueryTheme())],
                 ['light', themeToLabel('light')],
@@ -114,7 +119,7 @@ export class SettingsUi {
             name: 'ui-theme',
         });
         css(themeSelect.getElement(), {
-            flexGrow: '1',
+            flexGrow: 1,
         });
         addIsDarkListener(() => {
             themeSelect.updateLabel(
@@ -128,23 +133,30 @@ export class SettingsUi {
                 BB.el({
                     content: LANG('settings-theme') + ':',
                     css: {
-                        marginRight: '5px',
-                        marginBottom: '2px',
+                        marginRight: 5,
+                        marginBottom: 2,
                     },
                 }),
                 themeSelect.getElement(),
             ],
             css: {
-                marginTop: '15px',
+                marginTop: 15,
                 display: 'flex',
                 alignItems: 'center',
                 flexWrap: 'wrap',
             },
         });
 
+        // ---- pixelated zoom ----
+        const pixelatedZoomToggle = new PixelatedZoomToggle();
+        css(pixelatedZoomToggle.getElement(), {
+            marginTop: 15,
+        });
+        this.rootEl.append(pixelatedZoomToggle.getElement());
+
         // ---- save reminder ----
         if (saveReminder) {
-            const reminderSelect = new KL.Select({
+            const reminderSelect = new SelectCustom({
                 optionArr: [
                     ['20min', LANG('x-minutes', { x: '20' })],
                     ['40min', LANG('x-minutes', { x: '40' })],
@@ -156,17 +168,21 @@ export class SettingsUi {
                         saveReminder.setSetting(val);
                         return;
                     }
-                    const disableStr = LANG('settings-save-reminder-confirm-disable');
                     showModal({
-                        target: document.body,
                         message: '⚠️' + LANG('settings-save-reminder-confirm-title'),
                         div: c('', [
                             c('.info-hint', LANG('settings-save-reminder-confirm-a')),
                             LANG('settings-save-reminder-confirm-b'),
                         ]),
-                        buttons: [disableStr, 'Cancel'],
+                        buttons: [
+                            {
+                                id: 'disable',
+                                label: LANG('settings-save-reminder-confirm-disable'),
+                            },
+                            'Cancel',
+                        ],
                         callback: (result) => {
-                            if (result === disableStr) {
+                            if (result === 'disable') {
                                 saveReminder.setSetting(val);
                             } else {
                                 reminderSelect.setValue(saveReminder.getSetting());
@@ -189,6 +205,7 @@ export class SettingsUi {
         // ---- flip ui ----
         BB.el({
             tagName: 'button',
+            className: 'kl-button',
             parent: this.rootEl,
             content: [
                 createImage({
@@ -197,17 +214,17 @@ export class SettingsUi {
                     width: 18,
                     height: 20,
                     css: {
-                        marginRight: '5px',
+                        marginRight: 5,
                     },
                 }),
                 LANG('switch-ui-left-right'),
             ],
             onClick: () => onLeftRight(),
             css: {
-                marginTop: '15px',
+                marginTop: 15,
             },
-            custom: {
-                tabIndex: '-1',
+            props: {
+                tabIndex: -1,
             },
         });
 
@@ -246,13 +263,13 @@ export class SettingsUi {
                             BB.el({
                                 tagName: 'a',
                                 content: 'bitbof',
-                                custom: {
+                                props: {
                                     href: 'https://bitbof.com',
                                     target: '_blank',
-                                    tabIndex: '-1',
+                                    tabIndex: -1,
                                 },
                             }),
-                            ' © 2025',
+                            ' © 2026',
                             BB.el({ tagName: 'br' }),
                         ],
                     }),
@@ -285,10 +302,10 @@ export class SettingsUi {
                     BB.el({
                         tagName: 'a',
                         content: 'bitbof',
-                        custom: {
+                        props: {
                             href: 'https://bitbof.com',
                             target: '_blank',
-                            tabIndex: '-1',
+                            tabIndex: -1,
                         },
                     }),
                     ' © 2025',
@@ -301,17 +318,8 @@ export class SettingsUi {
                 document.createTextNode(' | '),
                 BB.el({
                     tagName: 'a',
-                    content: LANG('donate'),
-                    custom: {
-                        href: 'https://kleki.com/donate/',
-                        target: '_blank',
-                    },
-                }),
-                document.createTextNode(' | '),
-                BB.el({
-                    tagName: 'a',
                     content: LANG('source-code'),
-                    custom: {
+                    props: {
                         href: 'https://klecks.org',
                         target: '_blank',
                     },

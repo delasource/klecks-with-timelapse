@@ -6,10 +6,16 @@ import { EventChain } from '../bb/input/event-chain/event-chain';
 import { KeyListener, sameKeys } from '../bb/input/key-listener';
 import { getSelectionPath2d } from '../bb/multi-polygon/get-selection-path-2d';
 import { BRUSHES, TBrushClassTypes, TBrushConfigTypes } from '../klecks/brushes/brushes';
+import { TPixelBrushConfig } from '../klecks/brushes/pixel-brush';
 import { ERASE_COLOR } from '../klecks/brushes/erase-color';
 import { EraserBrush } from '../klecks/brushes/eraser-brush';
 import { drawProject } from '../klecks/canvas/draw-project';
 import { KlCanvas, TKlCanvasLayer } from '../klecks/canvas/kl-canvas';
+import {
+  KlCanvasSelectionTransform,
+  TTransformCloneViaSelectionParams,
+  TTransformViaSelectionParams,
+} from '../klecks/canvas/kl-canvas-selection-transform';
 import { LineSanitizer } from '../klecks/events/line-sanitizer';
 import { LineSmoothing } from '../klecks/events/line-smoothing';
 import { FILTER_LIB } from '../klecks/filters/filters';
@@ -216,6 +222,8 @@ export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 export class KlHeadlessApp {
   private readonly rootEl: HTMLElement;
   private readonly klCanvas: KlCanvas;
+  // moving what is selected by a matrix: used by the select tool and by the replay of its events
+  private readonly selectionTransform: KlCanvasSelectionTransform;
   private readonly easel: Easel<TKlToolId>;
   private readonly easelProjectUpdater: EaselProjectUpdater<TKlToolId>;
   private readonly easelBrush: EaselBrush;
@@ -320,7 +328,7 @@ export class KlHeadlessApp {
     clipboardDialog(
       this.rootEl,
       maskSelection => {
-        return this.klCanvas.getCompleteCanvas(1, maskSelection);
+        return this.klCanvas.getCanvas(1, maskSelection);
       },
       inputObj => {
         if (inputObj.left === 0 && inputObj.right === 0 && inputObj.top === 0 && inputObj.bottom === 0) {
@@ -627,8 +635,13 @@ export class KlHeadlessApp {
     });
 
     // Selection
+    this.selectionTransform = new KlCanvasSelectionTransform({
+      klCanvas: this.klCanvas,
+      klRecorder: this.klRecorder,
+    });
     this.klAppSelect = new KlHeadlessSelect({
       klCanvas: this.klCanvas,
+      selectionTransform: this.selectionTransform,
       getCurrentLayerCtx: () => this.currentLayer.context,
       onUpdateProject: () => {
         this.easelProjectUpdater.update();
@@ -870,7 +883,8 @@ export class KlHeadlessApp {
         eyedropper: new EaselEyedropper({
           onPick: p => {
             // -> pointer move event
-            const color = this.klCanvas.getColorAt(p.x, p.y);
+            // undefined: the canvas could not tell (its history is in a state it cannot read)
+            const color = this.klCanvas.getColorAt(p.x, p.y) ?? this.uiState.primaryColorRgb;
             this.setColors(color, undefined);
             return color;
           },
@@ -976,6 +990,10 @@ export class KlHeadlessApp {
       },
       useWhiteBackdrop: USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0,
       isReadOnly: p.isReadOnly,
+      // Klecks' own indicators in the corner of the easel are not shown: the UI around this app
+      // has its own controls for the selection.
+      hideIndicators: true,
+      onResetSelection: () => {},
     });
 
     css(this.easel.getElement(), {
@@ -1224,8 +1242,9 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('resize-c', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.resizeCanvas>;
-        this.klCanvas.resizeCanvas(...data);
+        // 'resize-c' is what KlCanvas.cropExtend records; it was called resizeCanvas
+        const data = event.data as Parameters<typeof KlCanvas.prototype.cropExtend>;
+        this.klCanvas.cropExtend(...data);
         this.easelProjectUpdater.update();
         this.easel.resetOrFitTransform(true);
       });
@@ -1278,8 +1297,9 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('l-merge', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.mergeLayers>;
-        this.klCanvas.mergeLayers(...data);
+        // [bottom index, top index, mix mode] — see KlCanvas.mergeLayer
+        const [bottomIndex, topIndex, mixModeStr] = event.data as [number, number, TMixMode | undefined];
+        this.klCanvas.mergeLayer(Math.max(bottomIndex, topIndex), mixModeStr ?? 'source-over');
         this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });
@@ -1353,14 +1373,14 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('selection-transform', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.transformViaSelection>;
-        this.klCanvas.transformViaSelection(...data);
+        const data = event.data as [TTransformViaSelectionParams];
+        this.selectionTransform.transformViaSelection(...data);
         this.easelProjectUpdater.update();
       });
 
       replayer.addReplayHandler('selection-transform-clone', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.transformCloneViaSelection>;
-        this.klCanvas.transformCloneViaSelection(...data);
+        const data = event.data as [TTransformCloneViaSelectionParams];
+        this.selectionTransform.transformCloneViaSelection(...data);
         this.easelProjectUpdater.update();
       });
 
@@ -1444,10 +1464,11 @@ export class KlHeadlessApp {
           isHistoryEntryActiveLayerChange(topEntry) &&
           (!this.klRecorder || this.klRecorder.getPreviousEventType() === 'l-select');
 
-        const indexBefore = this.klHistory.getTotalIndex();
+        // (the number of entries up to the current one — getTotalIndex() only ever counts up)
+        const entriesBefore = this.klHistory.getEntries().length;
         this.klHistory.push({ activeLayerId: layer.id }, replaceTop);
         // Replacing may leave no entry at all: the selection went back to where it started.
-        const cancelledOut = replaceTop && this.klHistory.getTotalIndex() < indexBefore;
+        const cancelledOut = replaceTop && this.klHistory.getEntries().length < entriesBefore;
         this.klRecorder?.record(
           'l-select',
           [layerIndex],
@@ -1634,7 +1655,7 @@ export class KlHeadlessApp {
   }
 
   async getPNG(): Promise<Blob> {
-    return await canvasToBlob(this.klCanvas.getCompleteCanvas(1), 'image/png');
+    return await canvasToBlob(this.klCanvas.getCanvas(1), 'image/png');
   }
 
   async getJPG(): Promise<Blob> {
@@ -1696,7 +1717,9 @@ export class KlHeadlessApp {
     });
     this.easelBrush.setBrush({
       radius: this.uiState.brushConfig[this.uiState.currentBrushId].size,
-      type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel-square' : 'round',
+      type: this.uiState.currentBrushId === 'PixelBrush' ? 'pixel' : 'round',
+      // the cursor of the pixel brush has the shape of its tip (undefined for the other brushes)
+      pixelTip: (this.uiState.brushConfig[this.uiState.currentBrushId] as Partial<TPixelBrushConfig>).tip,
     });
   }
 
@@ -1722,6 +1745,10 @@ export class KlHeadlessApp {
       if (this.easelBrush) {
         this.easelBrush.setBrush({ radius: data.size });
       }
+    }
+    // if there is a "tip" prop (the pixel brush): its cursor has that shape
+    if ('tip' in data && data.tip !== undefined) {
+      this.easelBrush?.setBrush({ pixelTip: data.tip });
     }
     // if there is a "color" prop
     if ((data as any).color !== undefined && !!(data as any).color.r) {

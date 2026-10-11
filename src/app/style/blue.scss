@@ -3,7 +3,7 @@
   --blue-ocean-gradient: linear-gradient(to bottom, #87ceeb 0%, #1e5a8e 100%);
 }
 
-body.kl-theme-blue {
+:root.kl-theme-blue {
   --kl-checkerboard-background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'><path d='M0,0h2v2H0z' fill='%234a90a4'/><path d='M0,0h1v1H0zM1,1h1v1H1z' fill='%232c5f70'/></svg>")
     0 0 / 8px;
 

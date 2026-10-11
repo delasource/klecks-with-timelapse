@@ -1,7 +1,7 @@
 import { TKlCanvasLayer } from '../../canvas/kl-canvas';
-import { TBounds } from '../../../bb/bb-types';
 import { THistoryEntryLayer, THistoryEntryLayerTile, TLayerId } from '../history.types';
 import { canvasToLayerTiles } from './canvas-to-layer-tiles';
+import { TIndexBounds } from '../../../bb/bb-types';
 
 type TLayerKey = keyof THistoryEntryLayer;
 type TLayerMapGeneric = {
@@ -10,7 +10,7 @@ type TLayerMapGeneric = {
 type TLayerMapLayer = {
     layerId: string;
     attributes: 'all' | TLayerKey[];
-    bounds?: TBounds; // changed bounds
+    bounds?: TIndexBounds; // changed bounds
     tiles?: (THistoryEntryLayerTile | undefined)[]; // custom tiles. bounds ignored if tiles set.
 };
 export type TLayerMapConfigItem = TLayerMapGeneric | TLayerMapLayer;
@@ -19,7 +19,7 @@ export type TLayerMapConfigItem = TLayerMapGeneric | TLayerMapLayer;
 function createEntryLayer(
     layer: TKlCanvasLayer,
     attributes: 'all' | TLayerKey[],
-    bounds?: TBounds,
+    bounds?: TIndexBounds,
     tiles?: (THistoryEntryLayerTile | undefined)[],
 ): THistoryEntryLayer {
     const useAll = attributes === 'all';
@@ -36,6 +36,9 @@ function createEntryLayer(
     }
     if (useAll || attributes.includes('mixModeStr')) {
         result.mixModeStr = layer.mixModeStr;
+    }
+    if (useAll || attributes.includes('hasClipping')) {
+        result.hasClipping = layer.hasClipping;
     }
     if (useAll || attributes.includes('index')) {
         result.index = layer.index;

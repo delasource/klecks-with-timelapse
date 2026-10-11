@@ -1,16 +1,17 @@
-import { TBounds, TRect, TVector2D } from '../bb-types';
+import { TBoundsType, TCoordinateBounds, TIndexBounds, TRect, TVector2D } from '../bb-types';
+import { attempt, AttemptError } from '../base/base';
 
 export function mix(a: number, b: number, f: number): number {
     return a * (1 - f) + b * f;
 }
 
 export function dist(ax: number, ay: number, bx: number, by: number): number {
-    return Math.sqrt(Math.pow(ax - bx, 2) + Math.pow(ay - by, 2));
+    return Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2);
 }
 
 export function distSquared(ax: number, ay: number, bx: number, by: number): number {
     // faster because no square-root
-    return Math.pow(ax - bx, 2) + Math.pow(ay - by, 2);
+    return (ax - bx) ** 2 + (ay - by) ** 2;
 }
 
 export function lenSquared(x: number, y: number): number {
@@ -97,7 +98,6 @@ export function intDxy(remainder: TVector2D, fDx: number, fDy: number): { dX: nu
 
 /**
  * return closest even number
- * @param f
  */
 export function roundEven(f: number): number {
     if (f % 1 === 0) {
@@ -117,7 +117,6 @@ export function roundEven(f: number): number {
 
 /**
  * return closest uneven number
- * @param f
  */
 export function roundUneven(f: number): number {
     if (f % 1 === 0) {
@@ -137,24 +136,59 @@ export function roundUneven(f: number): number {
 
 /**
  * round number to certain precision.
- * round(1.2345, 2) = 1.23
- * round(1.2345, 0) = 0
- * round(123, -1) = 120
- *
- * @param f
- * @param digits
+ * - round(1.2345, 2) = 1.23
+ * - round(1.2345, 0) = 0
+ * - round(123, -1) = 120
  */
 export function round(f: number, digits: number): number {
-    const digitMult = Math.pow(10, digits);
-    return Math.round(f /* + Number.EPSILON*/ * digitMult) / digitMult;
+    const digitMult = 10 ** digits;
+    // adding epsilon is not much better
+    return Math.round(f * digitMult) / digitMult;
+}
+
+const roundFormatterCache = new Map<number, Intl.NumberFormat>();
+// can be multiple orders of magnitude slower, but is correct
+export function roundSlow(f: number, digits: number): number {
+    const result = attempt(() => {
+        let formatter = roundFormatterCache.get(digits);
+        if (!formatter) {
+            formatter = new Intl.NumberFormat('en-US-u-nu-latn', {
+                useGrouping: false,
+                maximumFractionDigits: digits,
+            });
+            roundFormatterCache.set(digits, formatter);
+        }
+        return Number(formatter.format(f));
+    });
+
+    return result instanceof AttemptError ? round(f, digits) : result;
+}
+
+export function getDecimalDigits(value: number): number {
+    const [coefficient, exponent = '0'] = value.toString().toLowerCase().split('e');
+    const fractionLength = coefficient.split('.')[1]?.length ?? 0;
+    return Math.max(0, fractionLength - Number(exponent));
+}
+
+export function fixBounds<GBoundsType extends TCoordinateBounds | TIndexBounds>(
+    bounds: GBoundsType,
+): GBoundsType {
+    return {
+        ...bounds,
+        x1: Math.min(bounds.x1, bounds.x2),
+        y1: Math.min(bounds.y1, bounds.y2),
+        x2: Math.max(bounds.x1, bounds.x2),
+        y2: Math.max(bounds.y1, bounds.y2),
+    };
 }
 
 /**
- * update target so it includes bounds
- * @param target
- * @param bounds
+ * update (mutate) `target` so it includes `bounds`
  */
-export function updateBounds(target: TBounds | undefined, bounds: TBounds | undefined): TBounds {
+export function updateBounds<GBoundsType extends TCoordinateBounds | TIndexBounds>(
+    target: GBoundsType | undefined,
+    bounds: GBoundsType | undefined,
+): GBoundsType {
     if (!bounds && !target) {
         throw new Error('at least one param needs to be defined');
     }
@@ -162,7 +196,13 @@ export function updateBounds(target: TBounds | undefined, bounds: TBounds | unde
         return target!;
     }
     if (!target) {
-        target = { x1: bounds.x1, y1: bounds.y1, x2: bounds.x2, y2: bounds.y2 };
+        target = {
+            type: bounds.type,
+            x1: bounds.x1,
+            y1: bounds.y1,
+            x2: bounds.x2,
+            y2: bounds.y2,
+        } as GBoundsType;
     } else {
         target.x1 = Math.min(target.x1, bounds.x1);
         target.y1 = Math.min(target.y1, bounds.y1);
@@ -172,10 +212,10 @@ export function updateBounds(target: TBounds | undefined, bounds: TBounds | unde
     return target;
 }
 
-export function boundsOverlap(
-    bounds: TBounds | undefined,
-    limit: TBounds | undefined,
-): TBounds | undefined {
+export function intersectBounds<GBoundsType extends TCoordinateBounds | TIndexBounds>(
+    bounds: GBoundsType | undefined,
+    limit: GBoundsType | undefined,
+): GBoundsType | undefined {
     if (!bounds) {
         return undefined;
     }
@@ -190,53 +230,73 @@ export function boundsOverlap(
     if (x1 > x2 || y1 > y2) {
         return undefined;
     }
-    return { x1, y1, x2, y2 };
+    return { type: bounds?.type ?? limit?.type, x1, y1, x2, y2 } as GBoundsType;
 }
 
 /**
  * determine overlap of bounds with width&height
  */
-export function boundsInArea(
-    bounds: TBounds | undefined,
+export function indexBoundsInArea(
+    bounds: TIndexBounds | undefined,
     width: number,
     height: number,
-): TBounds | undefined {
+): TIndexBounds | undefined {
     if (!bounds) {
         return undefined;
     }
-    return boundsOverlap(bounds, { x1: 0, y1: 0, x2: width - 1, y2: height - 1 });
+    return intersectBounds(bounds, {
+        type: 'index',
+        x1: 0,
+        y1: 0,
+        x2: width - 1,
+        y2: height - 1,
+    });
 }
 
-export function intBoundsWithinArea(
-    bounds: TBounds,
-    width: number,
-    height: number,
-    areIndices?: boolean,
-): TBounds | undefined {
-    const x1 = Math.max(0, Math.floor(bounds.x1));
-    const y1 = Math.max(0, Math.floor(bounds.y1));
-    const x2 = Math.min(width - (areIndices ? 1 : 0), Math.ceil(bounds.x2));
-    const y2 = Math.min(height - (areIndices ? 1 : 0), Math.ceil(bounds.y2));
-    if (x1 > x2 || y1 > y2) {
-        return undefined;
-    }
-    return { x1, y1, x2, y2 };
+export function coordinateBoundsToIndexBounds(bounds: TCoordinateBounds): TIndexBounds {
+    const x1 = Math.floor(bounds.x1);
+    const y1 = Math.floor(bounds.y1);
+    const x2 = Math.ceil(bounds.x2 - 1);
+    const y2 = Math.ceil(bounds.y2 - 1);
+    return { type: 'index', x1, y1, x2, y2 };
 }
 
-export function boundsToRect(bounds: TBounds, areIndices?: boolean): TRect {
+export function indexBoundsToCoordinateBounds(bounds: TIndexBounds): TCoordinateBounds {
+    const x1 = bounds.x1;
+    const y1 = bounds.y1;
+    const x2 = bounds.x2 + 1;
+    const y2 = bounds.y2 + 1;
+    return { type: 'coordinate', x1, y1, x2, y2 };
+}
+
+export function indexBoundsToRect(bounds: TIndexBounds): TRect {
     return {
         x: bounds.x1,
         y: bounds.y1,
-        width: bounds.x2 - bounds.x1 + (areIndices ? 1 : 0),
-        height: bounds.y2 - bounds.y1 + (areIndices ? 1 : 0),
+        width: bounds.x2 - bounds.x1 + 1,
+        height: bounds.y2 - bounds.y1 + 1,
     };
 }
 
-export function integerBounds(bounds: TBounds): TBounds {
+export function rectToBounds<T extends TBoundsType>(
+    rect: TRect,
+    type: T,
+): T extends 'index' ? TIndexBounds : TCoordinateBounds {
+    const x2 = rect.x + rect.width;
+    const y2 = rect.y + rect.height;
+    return (
+        type === 'index'
+            ? { type: 'index', x1: rect.x, y1: rect.y, x2: x2 - 1, y2: y2 - 1 }
+            : { type: 'coordinate', x1: rect.x, y1: rect.y, x2, y2 }
+    ) as T extends 'index' ? TIndexBounds : TCoordinateBounds;
+}
+
+export function boundsToRect(bounds: TIndexBounds | TCoordinateBounds): TRect {
+    const isIndex = bounds.type === 'index';
     return {
-        x1: Math.floor(bounds.x1),
-        y1: Math.floor(bounds.y1),
-        x2: Math.ceil(bounds.x2),
-        y2: Math.ceil(bounds.y2),
+        x: bounds.x1,
+        y: bounds.y1,
+        width: bounds.x2 - bounds.x1 + (isIndex ? 1 : 0),
+        height: bounds.y2 - bounds.y1 + (isIndex ? 1 : 0),
     };
 }

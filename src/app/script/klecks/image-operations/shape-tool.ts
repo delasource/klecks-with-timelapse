@@ -1,9 +1,10 @@
 import { BB } from '../../bb/bb';
 import { TRgb, TShapeToolObject } from '../kl-types';
-import { TBounds, TRect, TVector2D } from '../../bb/bb-types';
-import { transformBounds } from '../../bb/transform/transform-bounds';
+import { TCoordinateBounds, TIndexBounds, TRect, TVector2D } from '../../bb/bb-types';
+import { transformCoordinateBounds } from '../../bb/transform/transform-coordinate-bounds';
 import { compose, rotate } from 'transformation-matrix';
 import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
+import { coordinateBoundsToIndexBounds } from '../../bb/math/math';
 
 /**
  * Input processor for shape tool.
@@ -59,7 +60,7 @@ export function drawShape(
     ctx: CanvasRenderingContext2D,
     shapeObj: TShapeToolObject,
     selectionPath?: Path2D,
-): TBounds {
+): TIndexBounds {
     shapeObj = {
         // defaults
         angleRad: 0,
@@ -70,7 +71,7 @@ export function drawShape(
 
         ...BB.copyObj(shapeObj),
     };
-    let bounds: TBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
+    let bounds: TCoordinateBounds = { type: 'coordinate', x1: 0, y1: 0, x2: 0, y2: 0 };
 
     if (['rect', 'ellipse', 'line'].includes(shapeObj.type)) {
         if (shapeObj.angleRad === undefined) {
@@ -289,6 +290,7 @@ export function drawShape(
             }
 
             bounds = {
+                type: 'coordinate',
                 x1: Math.min(p1.x, p2.x) - lineWidth / 2,
                 y1: Math.min(p1.y, p2.y) - lineWidth / 2,
                 x2: Math.max(p1.x, p2.x) + lineWidth / 2,
@@ -378,8 +380,9 @@ export function drawShape(
             };
 
             const padding = shapeObj.fillRgb ? 0 : lineWidth / 2;
-            bounds = transformBounds(
+            bounds = transformCoordinateBounds(
                 {
+                    type: 'coordinate',
                     x1: Math.min(p1.x, p2.x) - padding,
                     y1: Math.min(p1.y, p2.y) - padding,
                     x2: Math.max(p1.x, p2.x) + padding,
@@ -417,8 +420,9 @@ export function drawShape(
             }
             const padding = shapeObj.fillRgb ? 0 : lineWidth / 2;
             // bounds are bigger than they need to be when it's rotated and rX ~ rY. should be good enough though.
-            bounds = transformBounds(
+            bounds = transformCoordinateBounds(
                 {
+                    type: 'coordinate',
                     x1: center.x - rX - padding,
                     y1: center.y - rY - padding,
                     x2: center.x + rX + padding,
@@ -433,5 +437,5 @@ export function drawShape(
         throw new Error('unknown shape');
     }
 
-    return bounds;
+    return coordinateBoundsToIndexBounds(bounds);
 }

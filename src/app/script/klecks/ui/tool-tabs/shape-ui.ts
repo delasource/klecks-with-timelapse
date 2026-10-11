@@ -34,7 +34,7 @@ export class ShapeUi {
     }) {
         this.rootEl = BB.el({
             css: {
-                margin: '10px',
+                margin: '10px 10px 0',
             },
         });
         this.isVisible = true;
@@ -42,7 +42,7 @@ export class ShapeUi {
         this.colorDiv = BB.el({
             parent: this.rootEl,
             css: {
-                marginBottom: '10px',
+                marginBottom: 10,
             },
         });
 
@@ -134,8 +134,7 @@ export class ShapeUi {
         });
 
         const updatePreviews = () => {
-            const strokeWidth =
-                BB.clamp(Math.round(this.lineWidthSlider.getValue() / 10), 1, 10) + 'px';
+            const strokeWidth = BB.clamp(Math.round(this.lineWidthSlider.getValue() / 10), 1, 10);
 
             const squish = 1.35;
 
@@ -235,7 +234,7 @@ export class ShapeUi {
                     title: LANG('shape-ellipse') + ' ' + LANG('shape-fill'),
                 },
             ],
-            initId: this.shape + ' ' + this.mode,
+            initId: this.shape + '-' + this.mode,
             onChange: (id) => {
                 const split = id.split('-');
                 this.shape = split[0] as TShapeToolType;
@@ -253,7 +252,7 @@ export class ShapeUi {
             },
             changeOnInit: true,
             css: {
-                width: '120px',
+                width: 120,
             },
         });
         row1.append(shapeOptions.getElement());
@@ -302,13 +301,13 @@ export class ShapeUi {
             min: 1,
             max: 200,
             value: 4,
-            curve: 'quadratic',
+            exponent: 2,
             onChange: () => {
                 updatePreviews();
             },
         });
         css(this.lineWidthSlider.getElement(), {
-            marginTop: '10px',
+            marginTop: 10,
         });
         this.rootEl.append(this.lineWidthSlider.getElement());
 
@@ -319,11 +318,10 @@ export class ShapeUi {
             min: 1 / 100,
             max: 1,
             value: 1,
-            toValue: (displayValue) => displayValue / 100,
-            toDisplayValue: (value) => value * 100,
+            displayScale: 100,
         });
         css(this.opacitySlider.getElement(), {
-            marginTop: '10px',
+            marginTop: 10,
         });
         this.rootEl.append(this.opacitySlider.getElement());
 
@@ -332,8 +330,8 @@ export class ShapeUi {
             css: {
                 display: 'flex',
                 alignItems: 'center',
-                marginTop: '10px',
-                gap: '10px',
+                marginTop: 10,
+                gap: 10,
             },
         });
 

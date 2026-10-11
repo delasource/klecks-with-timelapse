@@ -5,13 +5,13 @@ import { ERASE_COLOR } from './erase-color';
 import { TKlCanvasLayer } from '../canvas/kl-canvas';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
-import { TBounds } from '../../bb/bb-types';
 import { canvasAndChangedTilesToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { getChangedTiles, updateChangedTiles } from '../history/push-helpers/changed-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 
 export type TEraserBrushConfig = {
     size: number;
@@ -44,10 +44,10 @@ export class EraserBrush {
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
-    private updateChangedTiles(bounds: TBounds) {
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+    private updateChangedTiles(bounds: TIndexBounds) {
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return;
         }
@@ -69,7 +69,7 @@ export class EraserBrush {
             this.context.globalCompositeOperation = 'destination-out';
         }
         const radgrad = this.context.createRadialGradient(size, size, 0, size, size, size);
-        let sharpness = Math.pow(opacity, 2);
+        let sharpness = opacity ** 2;
         sharpness = Math.max(0, Math.min((size - 1) / size, sharpness));
         const oFac = Math.max(0, Math.min(1, opacity));
         const localOpacity = 2 * oFac - oFac * oFac;
@@ -84,10 +84,11 @@ export class EraserBrush {
         this.context.restore();
 
         this.updateChangedTiles({
+            type: 'index',
             x1: Math.floor(x - size),
             y1: Math.floor(y - size),
-            x2: Math.ceil(x + size),
-            y2: Math.ceil(y + size),
+            x2: Math.ceil(x + size - 1),
+            y2: Math.ceil(y + size - 1),
         });
     }
 
@@ -138,7 +139,7 @@ export class EraserBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.changedTiles = [];
         this.isBaseLayer = 0 === this.layer.index;
@@ -201,7 +202,7 @@ export class EraserBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.changedTiles = [];
         this.isBaseLayer = 0 === this.layer.index;
@@ -213,7 +214,7 @@ export class EraserBrush {
             return;
         }
 
-        const mouseDist = Math.sqrt(Math.pow(x2 - x1, 2.0) + Math.pow(y2 - y1, 2.0));
+        const mouseDist = Math.sqrt((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0);
         const eX = (x2 - x1) / mouseDist;
         const eY = (y2 - y1) / mouseDist;
         let loopDist;

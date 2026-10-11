@@ -1,14 +1,10 @@
+import { SelectCustom } from '../components/select-custom';
+import { getIconUrl } from '../../../icon/icon';
 import { BB } from '../../../bb/bb';
-import { KL } from '../../kl';
 import { BrowserStorageUi } from '../components/browser-storage-ui';
 import { TDropOption, TExportType, TKlProject } from '../../kl-types';
 import { ProjectStore } from '../../storage/project-store';
 import { LANG } from '../../../language/language';
-import newImageImg from '../../../../img/ui/new-image.svg';
-import exportImg from '../../../../img/ui/export.svg';
-import shareImg from '../../../../img/ui/share.svg';
-import uploadImg from '../../../../img/ui/upload.svg';
-import importImg from '../../../../img/ui/import.svg';
 import { Checkbox } from '../components/checkbox';
 import { LocalStorage } from '../../../bb/base/local-storage';
 import { KlRecoveryManager, TKlRecoveryListener } from '../../storage/kl-recovery-manager';
@@ -19,6 +15,11 @@ import { css } from '../../../bb/base/base';
 import { KlEventRecorder } from '../../history/kl-event-recorder';
 import { TRecordedEvent } from '../../history/kl-event-types';
 
+const newImageImg = getIconUrl('new-image');
+const exportImg = getIconUrl('export');
+const shareImg = getIconUrl('share');
+const uploadImg = getIconUrl('upload');
+const importImg = getIconUrl('import');
 const LS_SHOW_SAVE_DIALOG = 'kl-save-dialog';
 
 const createSpacer = (): HTMLElement => {
@@ -40,6 +41,7 @@ const createButtonContent = (text: string, icon: string, noInvert?: boolean): st
 
 export type TFileUiParams = {
     klRootEl: HTMLElement;
+    helpPath: string;
     projectStore?: ProjectStore;
     getProject: () => TKlProject;
     exportType: TExportType;
@@ -117,27 +119,27 @@ export class FileUi {
             // --- new, import, save ---
             const newButton = BB.el({
                 tagName: 'button',
-                className: 'grid-button',
+                className: 'kl-button grid-button',
                 content: createButtonContent(LANG('file-new'), newImageImg, true),
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
                 css: {
-                    cssFloat: 'left',
+                    float: 'left',
                 },
                 onClick: () => p.onNewImage(),
             });
             const importButton = BB.el({
                 tagName: 'button',
-                className: 'grid-button',
+                className: 'kl-button grid-button',
                 content: createButtonContent(LANG('file-import'), importImg, true),
                 css: {
                     position: 'relative',
                     cursor: 'pointer',
-                    cssFloat: 'left',
+                    float: 'left',
                 },
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
                 onClick: () => this.importInput!.click(),
             });
@@ -151,8 +153,8 @@ export class FileUi {
                     this.importInput!.files && p.onFileSelect(this.importInput!.files, 'default');
                     this.importInput!.value = '';
                 },
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
             });
             this.importInput.type = 'file';
@@ -160,15 +162,10 @@ export class FileUi {
             this.importInput.accept = 'image/*,.psd'; // .psd needed for chrome, although it's image/vnd.adobe.photoshop
             const saveButton = BB.el({
                 tagName: 'button',
-                className: 'grid-button grid-button--filter',
+                className: 'kl-button',
                 content: createButtonContent(LANG('file-save'), exportImg),
-                custom: {
-                    tabIndex: '-1',
-                },
-                css: {
-                    cssFloat: 'left',
-                    flex: '1 0 0',
-                    margin: '0',
+                props: {
+                    tabIndex: -1,
                 },
                 onClick: () => p.onSaveImageToComputer(),
             });
@@ -195,9 +192,10 @@ export class FileUi {
             p.onChangeShowSaveDialog(initialShowSaveDialog);
 
             // export filetype dropdown
-            const exportTypeSelect = new KL.Select({
+            const exportTypeSelect = new SelectCustom({
                 optionArr: [
                     ['png', 'PNG'],
+                    ['jpg', 'JPG'],
                     ['psd', 'PSD'],
                     ['layers', LANG('layers') + ' (PNG)'],
                 ],
@@ -210,35 +208,30 @@ export class FileUi {
                 title: LANG('file-format'),
                 name: 'export-type',
             });
-            css(exportTypeSelect.getElement(), {
-                height: '30px',
-                width: 'calc(50% - 10px)',
-                flex: '1 0 0',
-            });
 
             // --- browser storage ---
             let browserStorageFallbackEl: HTMLElement | undefined;
             if (p.projectStore) {
                 this.browserStorageUi = new BrowserStorageUi({
+                    helpPath: p.helpPath,
                     projectStore: p.projectStore,
                     getProject: p.getProject,
-                    klRootEl: p.klRootEl,
                     applyUncommitted: this.applyUncommitted,
                     onOpen: p.onOpenBrowserStorage,
                     onStored: () => p.onStoredToBrowserStorage(),
                 });
                 css(this.browserStorageUi.getElement(), {
-                    margin: '10px',
+                    margin: 10,
                 });
             } else {
-                const header = new BrowserStorageHeaderUi();
+                const header = new BrowserStorageHeaderUi(p.helpPath);
                 browserStorageFallbackEl = BB.el({
                     content: [
                         header.getElement(),
                         BB.el({
                             content: '🔴 ' + LANG('file-storage-cant-access'),
                             css: {
-                                marginTop: '10px',
+                                marginTop: 10,
                             },
                         }),
                     ],
@@ -253,8 +246,9 @@ export class FileUi {
                     BB.el({
                         content: [saveButton, exportTypeSelect.getElement()],
                         css: {
-                            display: 'flex',
-                            gap: '10px',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                            gap: 10,
                         },
                     }),
                     ...(canShowSaveDialog ? [saveDialogCheckbox.getElement()] : []),
@@ -262,7 +256,7 @@ export class FileUi {
                 css: {
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px',
+                    gap: 10,
                     margin: '10px 10px 0 10px',
                 },
             });
@@ -276,10 +270,11 @@ export class FileUi {
 
             const recoveryBrowserButton = BB.el({
                 tagName: 'button',
+                className: 'kl-button',
                 content: [LANG('tab-recovery-recover-tabs'), this.recoveryCountBubble],
                 onClick: () => showRecoveryManagerPanel(this.klRecoveryManager),
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
                 css: {
                     margin: '10px 0 0 10px',
@@ -301,13 +296,13 @@ export class FileUi {
             // --- upload, share ---
             const shareButton = BB.el({
                 tagName: 'button',
-                className: 'grid-button',
+                className: 'kl-button grid-button',
                 content: createButtonContent(LANG('file-share'), shareImg),
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
                 css: {
-                    cssFloat: 'left',
+                    float: 'left',
                 },
                 onClick: () => {
                     shareButton.disabled = true;
@@ -318,13 +313,13 @@ export class FileUi {
             });
             const uploadImgurButton = BB.el({
                 tagName: 'button',
-                className: 'grid-button',
+                className: 'kl-button grid-button',
                 content: createButtonContent(LANG('file-upload'), uploadImg),
-                custom: {
-                    tabIndex: '-1',
+                props: {
+                    tabIndex: -1,
                 },
                 css: {
-                    cssFloat: 'left',
+                    float: 'left',
                 },
                 onClick: () => {
                     p.onUpload();
@@ -378,9 +373,6 @@ export class FileUi {
                             'Replay completed. Took ' + (performance.now() - startTime) + ' ms',
                         );
                     },
-                    custom: {
-                        tabIndex: '-1',
-                    },
                     css: {
                         margin: '10px 0 0 10px',
                         width: 'calc(100% - 20px)',
@@ -404,9 +396,6 @@ export class FileUi {
                         // Clear canvas (aka reload)
                         window.location.reload();
                         console.log('Recorded events cleared');
-                    },
-                    custom: {
-                        tabIndex: '-1',
                     },
                     css: {
                         margin: '10px 0 0 10px',

@@ -1,14 +1,7 @@
 import { TVector2D } from '../../../bb/bb-types';
 import { BB } from '../../../bb/bb';
 import { PointerListener } from '../../../bb/input/pointer-listener';
-
-export type TFreeTransform = {
-    x: number; // center of transform region. image space
-    y: number;
-    width: number; // size of transform region. image space
-    height: number;
-    angleDeg: number; // angle of transform region. degrees
-};
+import { TFreeTransform } from '../../transform/transform-types';
 
 export type TFreeTransformCorner = {
     i: number; // index in corners array
@@ -28,17 +21,16 @@ export type TFreeTransformEdge = {
 };
 
 /**
- * snap entire transform to pixel grid. changes transform
+ * snap entire transform to pixel grid.
  *
  * for x y:
  * If a dimension has an even size, it will be an integer.
  * If it's uneven, it sits exactly half-way between two pixels.
- *
- * @param transform
  */
-export function snapToPixel(transform: TFreeTransform): void {
+export function snapToPixel(transform: TFreeTransform): TFreeTransform {
+    transform = BB.copyObj(transform);
     if (Math.abs(transform.angleDeg) % 90 !== 0) {
-        return;
+        return transform;
     }
 
     transform.width = Math.round(transform.width);
@@ -54,16 +46,7 @@ export function snapToPixel(transform: TFreeTransform): void {
         (whSwapped ? transform.width : transform.height) % 2 === 0
             ? Math.round(transform.y)
             : Math.round(transform.y - 0.5) + 0.5;
-}
-
-export function copyTransform(transform: TFreeTransform): TFreeTransform {
-    return {
-        x: transform.x,
-        y: transform.y,
-        width: transform.width,
-        height: transform.height,
-        angleDeg: transform.angleDeg,
-    };
+    return transform;
 }
 
 /**

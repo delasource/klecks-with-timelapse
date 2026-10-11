@@ -2,12 +2,14 @@
 @use 'vars';
 @use './dark';
 @use './blue';
+@use '../icons/icons';
 
 :root {
     --active-highlight-color: #{vars.$activeHighlightColor};
     --body-bg-color: #{vars.$bodyBgColor};
     --kl-color: #{vars.$klColor};
     --ui-bg-color: #{vars.$uiBgColor};
+    --ui-on-bg-full-contrast: #000;
 
     --kl-note-1: #{vars.$klNote1};
     --kl-note-2: #{vars.$klNote2};
@@ -15,6 +17,10 @@
 
     --kl-checkerboard-background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'><path d='M0,0h2v2H0z' fill='%23fff'/><path d='M0,0h1v1H0zM1,1h1v1H1z' fill='%23c8c8c8'/></svg>")
         0 0 / 8px;
+
+    --modal-backdrop-background: rgba(0, 0, 0, 0.45);
+    --canvas-overlay-bg: rgba(100, 100, 100, 0.9); // ui elements floating on top of the canvas
+    --modal-shadow: 0 5px 30px rgba(0, 0, 0, 0.25);
 }
 
 @keyframes consoleIn {
@@ -50,11 +56,14 @@
     box-sizing: border-box;
 }
 
+:root {
+    color-scheme: light;
+}
+
 body {
     overflow: hidden;
     font-size: 16px;
     overscroll-behavior-x: none; // prevent back gesture in Chrome
-    color-scheme: light;
 }
 
 body,
@@ -112,11 +121,11 @@ a:not([href]):hover {
 }
 
 .kl-toolspace--left {
-    border-right: 1px solid rgb(135, 135, 135);
+    border-right: 1px solid #bbb;
 }
 
 .kl-toolspace--right {
-    border-left: 1px solid rgb(135, 135, 135);
+    border-left: 1px solid #bbb;
 }
 
 .kl-toolspace-row {
@@ -133,6 +142,7 @@ a:not([href]):hover {
 .toolspace-row-button {
     cursor: pointer;
     flex-grow: 1;
+    color: #727272;
 }
 
 .toolspace-triangle-button {
@@ -197,10 +207,10 @@ a:not([href]):hover {
 }
 .kl-tooldropdown-caret > div {
     height: 100%;
-    background-image: url(../img/ui/caret-down.svg);
+    background-image: icons.icon('caret-down');
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 60%;
+    background-size: 65%;
 }
 
 .toolspace-row-button-activated.kl-tool-button--hover > .kl-tooldropdown-caret {
@@ -311,7 +321,6 @@ a:not([href]):hover {
     }
 }
 
-button,
 .kl-button {
     padding: 5px;
     min-width: 30px;
@@ -338,21 +347,18 @@ button,
     -webkit-user-select: none;
 }
 
-button:hover,
 .kl-button:hover {
     background-color: #fff;
     color: #777;
 }
 
-button:active,
 .kl-button:active {
     background-color: #ddd;
     box-shadow:
         inset 2px 2px 10px rgba(0, 0, 0, 0.2),
-        0 2px 2px #ddd;
+        0 2px 2px rgba(255, 255, 255, 0.2);
 }
 
-button:disabled,
 .kl-button:disabled {
     padding: 5px;
     min-width: 30px;
@@ -371,14 +377,12 @@ button:disabled,
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
-button:disabled img,
-,
 .kl-button:disabled img {
     opacity: 0.2;
 }
 
-button img,
-.kl-button img {
+.kl-button img,
+.kl-button svg {
     float: left;
     pointer-events: none;
 }
@@ -441,7 +445,7 @@ button img,
     height: 100%;
     overflow: hidden;
     overflow-y: auto;
-    background: rgba(50, 50, 50, 0.5);
+    background: var(--modal-backdrop-background);
     animation-name: consoleIn;
     animation-duration: 0.3s;
     animation-timing-function: ease-out;
@@ -454,7 +458,7 @@ button img,
     border-radius: 10px;
     padding: 20px;
     margin: 10px 0;
-    box-shadow: rgba(0, 0, 0, 0.45) 0 5px 60px;
+    box-shadow: var(--modal-shadow);
 }
 
 .kl-popup-box--sm {
@@ -493,25 +497,25 @@ button img,
     margin-right: 5px;
 }
 .kl-popup__icon-error {
-    background-image: url(../img/ui/error.svg);
+    background-image: icons.icon('error');
 }
 .kl-popup__icon-ok {
-    background-image: url(../img/ui/ok.svg);
+    background-image: icons.icon('ok');
 }
 .kl-popup__icon-warning {
-    background-image: url(../img/ui/warning.svg);
+    background-image: icons.icon('warning');
 }
 .kl-popup__icon-upload {
-    background-image: url(../img/ui/upload-large.svg);
+    background-image: icons.icon('upload-large');
 }
 
 .kl-d-modal-root {
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--modal-backdrop-background);
 }
 
 .kl-d-modal {
     background: #eee;
-    box-shadow: rgba(0, 0, 0, 0.25) 0px 5px 60px;
+    box-shadow: var(--modal-shadow);
 }
 
 @keyframes topOverlayPulse {
@@ -547,7 +551,7 @@ button img,
 .top-overlay--inner {
     text-align: center;
     padding: 7px 10px;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--canvas-overlay-bg);
     color: #fff;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
@@ -560,6 +564,10 @@ button img,
     user-select: none;
     -webkit-user-select: none; // safari
 }
+.kl-checkbox--disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
 .kl-checkbox--highlight {
     background: #bed5ff;
 }
@@ -567,10 +575,16 @@ button img,
 .kl-checkbox__inner {
     cursor: pointer;
     color: rgba(0, 0, 0, 0.6);
+    img {
+        opacity: 0.8;
+    }
 }
 
 .kl-checkbox__inner:hover {
     color: rgba(0, 0, 0, 1);
+    img {
+        opacity: 1;
+    }
 }
 
 .kl-layer {
@@ -616,7 +630,8 @@ button img,
 
 textarea,
 input {
-    border: 1px solid #b2b2b2;
+    border: 1px solid #888;
+    border-radius: 3px;
     box-sizing: border-box;
     background: #fff;
     padding: 5px;
@@ -636,6 +651,9 @@ input:focus {
 }
 
 .popup-x {
+    appearance: none;
+    border: none;
+
     display: flex;
     justify-content: center;
     align-items: center;
@@ -779,55 +797,6 @@ clip-path seems the cleanest.
     transform-origin: 1px 10px;
 }
 
-.kl-option-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.kl-option {
-    cursor: pointer;
-    padding: 6px 10px;
-    font-size: 16px;
-    border-radius: 4px;
-    // transition: all 0.1s ease-in-out;
-
-    background: var(--ui-bg-color);
-    color: rgba(0, 0, 0, 0.6);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
-
-    user-select: none;
-    -webkit-user-select: none; // safari
-
-    &:not(.kl-option-selected) {
-        &:hover {
-            background: #eee;
-        }
-        &:active {
-            box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.3);
-        }
-    }
-}
-
-.kl-option--small {
-    font-size: 14px;
-}
-
-.kl-option--custom-el {
-    padding: 0;
-}
-
-.kl-option--custom-el:not(.kl-option-selected) > * {
-    opacity: 0.6;
-}
-
-.kl-option-selected {
-    background: #fff;
-    color: #000;
-    box-shadow: inset 0 0 0 2px var(--active-highlight-color);
-    cursor: default;
-}
-
 .kl-box-toggle {
     cursor: pointer;
     padding: 6px 10px;
@@ -865,25 +834,6 @@ clip-path seems the cleanest.
 
 .kl-box-toggle--custom-el:not(.kl-box-toggle--active) > * {
     opacity: 0.5;
-}
-
-.kl-color-option {
-    box-shadow: 0 0 0 1px #aaa;
-    cursor: pointer;
-    user-select: none;
-    text-align: center;
-    color: #aaa;
-    border-radius: 4px;
-
-    &:not(.kl-color-option--active):active {
-        box-shadow: 0 0 0 2px #aaa;
-    }
-}
-
-.kl-color-option--active {
-    box-shadow:
-        0 0 0 2px var(--active-highlight-color),
-        0 0 5px 0 var(--active-highlight-color);
 }
 
 .tool-dropdown-wrapper {
@@ -970,7 +920,7 @@ clip-path seems the cleanest.
     filter: invert(1);
     width: 36px;
     height: 36px;
-    background-image: url(../img/ui/caret-down.svg);
+    background-image: icons.icon('chevron-down');
     background-size: 60%;
     background-position: center;
     background-repeat: no-repeat;
@@ -1034,6 +984,7 @@ clip-path seems the cleanest.
 .kl-layer-preview {
     color: #555;
     canvas {
+        background: var(--kl-checkerboard-background);
         box-shadow: 0 0 0 1px #9e9e9e;
     }
 }
@@ -1190,16 +1141,35 @@ clip-path seems the cleanest.
     background: var(--kl-checkerboard-background);
 }
 
-.kl-info-btn {
+.kl-help-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0;
+    min-width: 0;
     cursor: pointer;
     width: 19px;
     height: 19px;
-    border-radius: 100%;
-    text-align: center;
-    line-height: 19px;
-    font-weight: bold;
-    box-shadow: inset 0 0 0 1px #000;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #000;
     user-select: none;
+
+    &:hover,
+    &:active {
+        color: #333;
+        background: none;
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--active-highlight-color);
+        outline-offset: 2px;
+    }
 }
 
 .kl-overlay-toolspace {
@@ -1224,17 +1194,25 @@ clip-path seems the cleanest.
     display: flex;
     flex-direction: column;
     z-index: 1;
+
+    button {
+        text-align: left;
+    }
 }
 
 .kl-pinch-overlay {
     background: rgba(255, 255, 255, 0.5);
 }
 
-.kl-floating-window-header {
+.kl-floating-window {
     background: var(--ui-bg-color);
+    box-shadow:
+        0 0 0 1px #bbb,
+        0 3px 16px rgba(0, 0, 0, 0.28);
+}
+
+.kl-floating-window-header {
     display: flex;
     justify-content: flex-end;
     cursor: move;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
 }

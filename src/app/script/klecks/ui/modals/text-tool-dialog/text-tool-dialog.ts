@@ -1,6 +1,6 @@
 import { BB } from '../../../../bb/bb';
 import { TRenderTextParam } from '../../../image-operations/render-text';
-import { showModal } from '../base/showModal';
+import { showModal } from '../base/show-modal';
 import { TRgb } from '../../../kl-types';
 import { KlCanvas } from '../../../canvas/kl-canvas';
 import { LANG } from '../../../../language/language';
@@ -26,7 +26,7 @@ export function textToolDialog(p: {
     let text = BB.copyObj(p.text);
 
     const viewportWrapper = BB.el({
-        className: (classes as any).viewportWrapper,
+        className: classes.viewportWrapper,
     });
 
     const viewportUI = new TextToolViewportUI({
@@ -55,7 +55,7 @@ export function textToolDialog(p: {
     const colorWrapper = BB.el({
         css: {
             display: 'flex',
-            gap: '10px',
+            gap: 10,
             flexDirection: 'column',
         },
     });
@@ -120,14 +120,14 @@ export function textToolDialog(p: {
             },
         ],
     });
-    tabs.getElement().classList.add((classes as any).tab);
+    tabs.getElement().classList.add(classes.tab);
     rootEl.append(
         c('', [
             c(viewportWrapper, [viewportUI.getElement()]),
-            c('.' + (classes as any).viewportInputs, [viewportUI.getInputsElement()]),
-            c('.tabrow.' + (classes as any).tabWrapper, [c(',w-240,h-40'), tabs.getElement()]),
+            c('.' + classes.viewportInputs, [viewportUI.getInputsElement()]),
+            c('.tabrow.' + classes.tabWrapper, [c(',w-240,h-40'), tabs.getElement()]),
 
-            c('.' + (classes as any).inputs, [
+            c('.' + classes.inputs, [
                 c(colorWrapper, [fillUI.getElement(), strokeUI.getElement()]),
                 fontUI.getElement(),
                 textUI.getElement(),
@@ -177,7 +177,6 @@ export function textToolDialog(p: {
     };
 
     const modal = showModal({
-        target: document.body,
         message: `<b>${LANG('text-title')}</b>`,
         div: rootEl,
         buttons: ['Ok', 'Cancel'],
@@ -185,8 +184,8 @@ export function textToolDialog(p: {
         callback: onModalExit,
         style: {
             width: 'calc(100% - 50px)',
-            maxWidth: '1000px',
-            minWidth: '300px',
+            maxWidth: 1000,
+            minWidth: 300,
             boxSizing: 'border-box',
         },
         clickOnEnter: 'Ok',

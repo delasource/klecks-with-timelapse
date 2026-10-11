@@ -2,12 +2,12 @@ import { BB } from '../../bb/bb';
 import { TPressureInput, TRgb } from '../kl-types';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
-import { TBounds } from '../../bb/bb-types';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 
 const sampleCanvas = BB.canvas(32, 32);
 const sampleCtx = BB.ctx(sampleCanvas);
@@ -49,11 +49,11 @@ export class SketchyBrush {
         },
     ];
 
-    private changedBounds: TBounds | undefined;
+    private changedBounds: TIndexBounds | undefined;
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
     private rand(): number {
         this.sketchySeed++;
@@ -159,7 +159,7 @@ export class SketchyBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.changedBounds = undefined;
         if (shift && this.lastInput.x) {
@@ -274,6 +274,7 @@ export class SketchyBrush {
         this.lastInput.y = y;
 
         this.changedBounds = BB.updateBounds(this.changedBounds, {
+            type: 'index',
             x1: Math.floor(x - this.settingSize / 2),
             y1: Math.floor(y - this.settingSize / 2),
             x2: Math.ceil(x + this.settingSize / 2),
@@ -287,7 +288,7 @@ export class SketchyBrush {
         this.points = [];
 
         if (this.changedBounds) {
-            const boundsWithinSelection = boundsOverlap(this.changedBounds, this.selectionBounds);
+            const boundsWithinSelection = intersectBounds(this.changedBounds, this.selectionBounds);
             const layerData = canvasToLayerTiles(this.context.canvas, boundsWithinSelection);
             if (layerData.some((item) => item)) {
                 this.klHistory.push(
@@ -310,7 +311,7 @@ export class SketchyBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
 
         this.context.save();
@@ -398,12 +399,14 @@ export class SketchyBrush {
         this.context.restore();
 
         this.changedBounds = BB.updateBounds(this.changedBounds, {
+            type: 'index',
             x1: Math.floor(x1 - this.settingSize / 2),
             y1: Math.floor(y1 - this.settingSize / 2),
             x2: Math.ceil(x1 + this.settingSize / 2),
             y2: Math.ceil(y1 + this.settingSize / 2),
         });
         this.changedBounds = BB.updateBounds(this.changedBounds, {
+            type: 'index',
             x1: Math.floor(x2 - this.settingSize / 2),
             y1: Math.floor(y2 - this.settingSize / 2),
             x2: Math.ceil(x2 + this.settingSize / 2),
@@ -411,7 +414,7 @@ export class SketchyBrush {
         });
 
         if (this.changedBounds) {
-            const boundsWithinSelection = boundsOverlap(this.changedBounds, this.selectionBounds);
+            const boundsWithinSelection = intersectBounds(this.changedBounds, this.selectionBounds);
             const layerData = canvasToLayerTiles(this.context.canvas, boundsWithinSelection);
             if (layerData.some((item) => item)) {
                 this.klHistory.push(

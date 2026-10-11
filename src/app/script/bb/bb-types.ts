@@ -1,3 +1,7 @@
+import type * as CSS from 'csstype';
+
+export type TCss = CSS.Properties<number>;
+
 export type TVector2D = {
     x: number;
     y: number;
@@ -29,7 +33,7 @@ export type TSvg = {
     height?: string;
     fill?: string;
     stroke?: string;
-    css?: Partial<CSSStyleDeclaration>;
+    css?: TCss;
     d?: string;
     x?: string;
     y?: string;
@@ -65,13 +69,36 @@ export type TSvg = {
     // add more when needed
 };
 
-// x1 <= x2, y1 <= y2
-export type TBounds = {
+/**
+ * Describes the outer bounds of a rectangle in coordinate space (think vector graphics)
+ * x1 <= x2, y1 <= y2
+ */
+export type TCoordinateBounds = {
+    type: 'coordinate';
     x1: number;
     y1: number;
     x2: number;
     y2: number;
 };
+
+/**
+ * Describes a rectangle for pixel arrays - from which index (1), until including which pixel (2).
+ * x1 <= x2, y1 <= y2
+ *
+ * example - these are equivalent:
+ * - { type: 'index', x1: 0, y1: 0, x2: 4, y2: 10 }
+ * - { type: 'coordinate', x: 0, y: 0, width: 5, height: 11 }
+ * - { x1: 0, y1: 0, x2: 5, y2: 11 }
+ */
+export type TIndexBounds = {
+    type: 'index';
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+};
+
+export type TBoundsType = 'coordinate' | 'index';
 
 export type TRect = {
     x: number;

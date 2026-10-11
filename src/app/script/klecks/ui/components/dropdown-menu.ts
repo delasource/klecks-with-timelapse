@@ -1,10 +1,10 @@
 import { c } from '../../../bb/base/c';
-import { makeUnfocusable } from '../../../bb/base/ui';
+import { el } from '../../../bb/base/ui';
 
 export type TDropdownMenuParams<IdType extends string> = {
     button: string | HTMLElement;
     buttonTitle?: string;
-    items: [IdType, string][]; // id, label
+    items: ([IdType, string] | [IdType, string, string])[]; // id, label, shortcut
     onItemClick: (id: IdType) => void;
 };
 
@@ -15,20 +15,35 @@ export class DropdownMenu<IdType extends string> {
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TDropdownMenuParams<IdType>) {
-        const button = c('button,w-full,h-full', [p.button]) as HTMLButtonElement;
+        const button = c('button.kl-button,w-full,h-full', [p.button]) as HTMLButtonElement;
+        button.tabIndex = -1;
         button.onclick = () => {
             toggle(!this.isExpanded);
         };
         if (p.buttonTitle) {
             button.title = p.buttonTitle;
         }
-        makeUnfocusable(button);
 
         const items: HTMLButtonElement[] = [];
         const itemMap: Record<IdType, HTMLButtonElement> = {} as Record<IdType, HTMLButtonElement>;
         p.items.forEach((item) => {
-            const itemButton = c('button', item[1]) as HTMLButtonElement;
-            makeUnfocusable(itemButton);
+            const itemButton = el({
+                tagName: 'button',
+                className: 'kl-button',
+                css: {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: 10,
+                },
+            });
+            itemButton.tabIndex = -1;
+            itemButton.append(el({ content: item[1] }));
+            if (item[2]) {
+                itemButton.append(
+                    el({ content: item[2], css: { fontSize: '0.8em', opacity: '0.8' } }),
+                );
+            }
             itemButton.onclick = () => {
                 toggle(false);
                 p.onItemClick(item[0]);

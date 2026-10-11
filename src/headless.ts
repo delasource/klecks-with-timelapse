@@ -24,7 +24,9 @@ export type { TBrushConfigTypes } from './app/script/klecks/brushes/brushes';
 export type { TPenBrushConfig } from './app/script/klecks/brushes/pen-brush';
 export type { TBlendBrushConfig } from './app/script/klecks/brushes/blend-brush';
 export type { TSketchyBrushConfig } from './app/script/klecks/brushes/sketchy-brush';
-export type { TPixelBrushConfig } from './app/script/klecks/brushes/pixel-brush';
+export type { TPixelBrushConfig, TPixelBrushTip } from './app/script/klecks/brushes/pixel-brush';
+export type { TPixelPattern } from './app/script/klecks/brushes/pixel-brush-patterns';
+export { DEFAULT_PIXEL_PATTERNS } from './app/script/klecks/brushes/pixel-brush-patterns';
 export type { TChemyBrushConfig } from './app/script/klecks/brushes/chemy-brush';
 export type { TSmudgeBrushConfig } from './app/script/klecks/brushes/smudge-brush';
 export type { TEraserBrushConfig } from './app/script/klecks/brushes/eraser-brush';
@@ -65,7 +67,8 @@ export type {
   THeadlessFilterPreview,
 } from './app/script/app/kl-headless-filter';
 
-export { SplineInterpolator, powerSplineInput } from './app/script/bb/math/line';
+export { SplineInterpolator } from './app/script/bb/math/line';
+export { powerSplineInput } from './app/script/bb/math/power-spline-input';
 
 export type {
   TRecordedEvent,

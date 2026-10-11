@@ -1,27 +1,32 @@
 import { BB } from '../../bb/bb';
 import { TKlCanvasLayer } from '../canvas/kl-canvas';
+import { changeCanvasDimensions } from '../../bb/base/change-canvas-dimensions';
 import { isLayerFill, TRgb, TRgba } from '../kl-types';
-import { TBounds, TPressureInput } from '../../bb/bb-types';
-import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
+import { TIndexBounds, TPressureInput } from '../../bb/bb-types';
+import { clamp, intersectBounds } from '../../bb/math/math';
 import { BezierLine, TBezierLineCallback } from '../../bb/math/line';
 import { HISTORY_TILE_SIZE, KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { copyImageData } from '../utils/copy-image-data';
 import { createArray } from '../../bb/base/base';
-import { createImageDataTile } from '../history/image-data-tile';
+import { createImageDataTile, getTileSizeFromIndex } from '../history/image-data-tile';
 import { getBinaryMask } from '../select-tool/get-binary-mask';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 import { getChangedTiles } from '../history/push-helpers/changed-tiles';
+import { freeCanvas } from '../../bb/base/canvas';
 
 type TDrawBufferItem = {
     x: number;
     y: number;
     size: number;
     opacity: number;
+
+    // indices
     x1: number;
     y1: number;
     x2: number;
     y2: number;
+
     r: number;
     g: number;
     b: number;
@@ -38,9 +43,6 @@ export type TBlendBrushConfig = {
 };
 
 export class BlendBrush {
-    // testing mode - context only gets updated when line is finished
-    private isTesting: boolean = false;
-
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
     private layerId: string = 'NOT_SET';
     private color: TRgb = {} as TRgb;
@@ -63,15 +65,15 @@ export class BlendBrush {
     private bezierLine: undefined | BezierLine;
 
     private klHistory: KlHistory = {} as KlHistory;
-    private redrawBounds: TBounds | undefined;
+    private redrawBounds: TIndexBounds | undefined;
     private cells: (ImageData | undefined)[] = [];
     private drawBuffer: TDrawBufferItem[] = [];
 
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
     private mask: Uint8Array | undefined;
 
-    private updateRedrawBounds(bounds: TBounds): void {
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+    private updateRedrawBounds(bounds: TIndexBounds): void {
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return;
         }
@@ -118,10 +120,11 @@ export class BlendBrush {
         this.redrawBounds = undefined;
     }
 
-    private getTouchedCells(bounds: TBounds): boolean[] {
+    private getTouchedCells(bounds: TIndexBounds): boolean[] {
         const touchedCells = this.cells.map(() => false);
         const cellsW = this.getCellsWidth();
         bounds = {
+            type: 'index',
             x1: Math.floor(bounds.x1 / HISTORY_TILE_SIZE),
             y1: Math.floor(bounds.y1 / HISTORY_TILE_SIZE),
             x2: Math.floor(bounds.x2 / HISTORY_TILE_SIZE),
@@ -140,13 +143,13 @@ export class BlendBrush {
      * @param bounds
      * @private
      */
-    private sliceBounds(bounds: TBounds): { index: number; bounds: TBounds }[] {
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+    private sliceBounds(bounds: TIndexBounds): { index: number; bounds: TIndexBounds }[] {
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return [];
         }
         const cellsW = this.getCellsWidth();
-        const result: { index: number; bounds: TBounds }[] = [];
+        const result: { index: number; bounds: TIndexBounds }[] = [];
         const touchedCells = this.getTouchedCells(boundsWithinSelection);
 
         touchedCells.forEach((cell, i) => {
@@ -159,7 +162,8 @@ export class BlendBrush {
             const cellWidth = this.cells[i]!.width;
             const cellHeight = this.cells[i]!.height;
 
-            const inCellBounds = {
+            const inCellBounds: TIndexBounds = {
+                type: 'index',
                 x1: Math.max(0, boundsWithinSelection.x1 - cellOffsetX),
                 y1: Math.max(0, boundsWithinSelection.y1 - cellOffsetY),
                 x2: Math.min(cellWidth - 1, boundsWithinSelection.x2 - cellOffsetX),
@@ -180,7 +184,7 @@ export class BlendBrush {
     /**
      * update copyImageData. copy over new regions if needed
      */
-    private copyFromCanvas(bounds: TBounds | undefined): void {
+    private copyFromCanvas(bounds: TIndexBounds | undefined): void {
         if (!bounds) {
             return;
         }
@@ -188,22 +192,33 @@ export class BlendBrush {
         const touchedCells = this.getTouchedCells(bounds);
         const composedLayer = this.klHistory.getComposed().layerMap[this.layerId];
 
+        let canvas: HTMLCanvasElement | undefined;
         touchedCells.forEach((item, i) => {
             if (!item || this.cells[i]) {
                 // not touched, or already copied
                 return;
             }
+            // Uncaught TypeError: Cannot read properties of undefined (reading 'tiles')
             const composedTile = composedLayer.tiles[i];
             if (isLayerFill(composedTile)) {
-                const canvas = BB.canvas(HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
+                const { width, height } = getTileSizeFromIndex(i, this.context.canvas);
+                if (!canvas) {
+                    canvas = BB.canvas(width, height);
+                } else {
+                    changeCanvasDimensions(canvas, width, height, { ensureCleared: true });
+                }
                 const ctx = BB.ctx(canvas);
                 ctx.fillStyle = composedTile.fill;
-                ctx.fillRect(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
-                this.cells[i] = ctx.getImageData(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
+                ctx.fillRect(0, 0, width, height);
+                // InvalidStateError: The object is in an invalid state.
+                this.cells[i] = ctx.getImageData(0, 0, width, height);
             } else {
                 this.cells[i] = copyImageData(composedTile.data);
             }
         });
+        if (canvas) {
+            freeCanvas(canvas);
+        }
     }
 
     private getAverage(x: number, y: number, size: number): TRgba {
@@ -221,7 +236,7 @@ export class BlendBrush {
             ab = 0,
             aa = 0;
 
-        const slicedBounds = this.sliceBounds({ x1, y1, x2, y2 });
+        const slicedBounds = this.sliceBounds({ type: 'index', x1, y1, x2, y2 });
         const cellsW = this.getCellsWidth();
 
         slicedBounds.forEach((slice) => {
@@ -267,7 +282,7 @@ export class BlendBrush {
         return { r: ar, g: ag, b: ab, a: aa };
     }
 
-    private getDotBounds(x: number, y: number, size: number): TBounds | undefined {
+    private getDotBounds(x: number, y: number, size: number): TIndexBounds | undefined {
         size = Math.max(0.5, size);
         const x1 = Math.max(0, Math.floor(x - size));
         const y1 = Math.max(0, Math.floor(y - size));
@@ -276,7 +291,7 @@ export class BlendBrush {
         if (x1 > x2 || y1 > y2) {
             return undefined;
         }
-        return { x1, y1, x2, y2 };
+        return { type: 'index', x1, y1, x2, y2 };
     }
 
     private drawDot(params: TDrawBufferItem): void {
@@ -303,7 +318,7 @@ export class BlendBrush {
             }
         }
 
-        const sharpness = Math.pow(params.opacity, 2) * 0.8;
+        const sharpness = params.opacity ** 2 * 0.8;
         // to optimize calculations
         const invSharpness = 1 - sharpness;
         const sharpnessSubtrahend = sharpness / invSharpness;
@@ -312,6 +327,7 @@ export class BlendBrush {
         const alphaMinuend = (1 + sharpnessSubtrahend) * params.opacity;
 
         const slicedBounds = this.sliceBounds({
+            type: 'index',
             x1: params.x1,
             y1: params.y1,
             x2: params.x2,
@@ -374,7 +390,7 @@ export class BlendBrush {
                         alphaO /= samplesSquared;
                     } else {
                         // technically needs + 0.5 offset, but not noticeable with large brush
-                        const dist = Math.pow(re, 2) + Math.pow(ri, 2);
+                        const dist = re ** 2 + ri ** 2;
                         if (dist >= sizeSquared) {
                             continue;
                         }
@@ -510,7 +526,7 @@ export class BlendBrush {
             }
         }
 
-        const bezierCallback: TBezierLineCallback = (val) => {
+        const dotCallback: TBezierLineCallback = (val) => {
             if (this.blending >= 1 && this.blendCol.a <= 0) {
                 return;
             }
@@ -522,7 +538,7 @@ export class BlendBrush {
             localSize = this.settingSizePressure
                 ? Math.max(0.1, localPressure * this.size)
                 : Math.max(0.1, this.size);
-            if (this.blending != 0) {
+            if (this.blending !== 0) {
                 this.mixCol.r = BB.mix(this.localColOld.r, localColNew.r, factor);
                 this.mixCol.g = BB.mix(this.localColOld.g, localColNew.g, factor);
                 this.mixCol.b = BB.mix(this.localColOld.b, localColNew.b, factor);
@@ -552,9 +568,9 @@ export class BlendBrush {
         };
 
         if (x === undefined || y === undefined) {
-            this.bezierLine!.addFinal(bDist, bezierCallback);
+            this.bezierLine!.addFinal(bDist, dotCallback);
         } else {
-            this.bezierLine!.add(x, y, bDist, bezierCallback);
+            this.bezierLine!.add(x, y, bDist, dotCallback);
         }
 
         this.copyFromCanvas(this.redrawBounds);
@@ -563,7 +579,9 @@ export class BlendBrush {
         });
         this.drawBuffer = [];
 
-        this.localColOld = localColNew!;
+        if (this.blending !== 0) {
+            this.localColOld = localColNew!;
+        }
     }
 
     // ----------------------------------- public -----------------------------------
@@ -682,13 +700,9 @@ export class BlendBrush {
         return this.isDrawing;
     }
 
-    setIsTesting(b: boolean): void {
-        this.isTesting = b;
-    }
-
     startLine(x: number, y: number, p: number): void {
         const selection = this.klHistory.getComposed().selection.value;
-        this.selectionBounds = selection ? integerBounds(getMultiPolyBounds(selection)) : undefined;
+        this.selectionBounds = selection ? getMultiPolyBounds(selection, 'index') : undefined;
         this.mask = selection
             ? getBinaryMask(selection, this.context.canvas.width, this.context.canvas.height)
             : undefined;
@@ -780,10 +794,6 @@ export class BlendBrush {
         this.lastInput.y = y;
         this.lastInput.pressure = p;
         this.lastInput2 = BB.copyObj(this.lastInput);
-
-        if (!this.isTesting) {
-            this.drawChangedCells();
-        }
     }
 
     goLine(x: number, y: number, p: number, isCoalesced?: boolean): void {
@@ -796,10 +806,6 @@ export class BlendBrush {
         this.lastInput.x = x;
         this.lastInput.y = y;
         this.lastInput.pressure = p;
-
-        if (!this.isTesting) {
-            this.drawChangedCells();
-        }
     }
 
     endLine(): void {
@@ -835,6 +841,10 @@ export class BlendBrush {
             );
         }
         this.cells = [];
+    }
+
+    transferToCanvas(): void {
+        this.drawChangedCells();
     }
 
     drawLineSegment(x1: number, y1: number, x2: number, y2: number): void {

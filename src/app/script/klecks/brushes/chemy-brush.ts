@@ -1,14 +1,14 @@
 import { BB } from '../../bb/bb';
 import { TRgb } from '../kl-types';
-import { TBounds } from '../../bb/bb-types';
 import { ERASE_COLOR } from './erase-color';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 
 type TChemyMode = 'fill' | 'stroke';
 
@@ -39,6 +39,7 @@ export class ChemyBrush {
     private settingGradient: boolean = false;
 
     private isDrawing: boolean = false;
+    private needsRedraw: boolean = false;
 
     private klHistory: KlHistory = {} as KlHistory;
 
@@ -46,16 +47,17 @@ export class ChemyBrush {
     private path: { x: number; y: number }[] = [];
     private minY: number = 0;
     private maxY: number = 0;
-    private completeRedrawBounds: TBounds | undefined;
+    private completeRedrawBounds: TIndexBounds | undefined;
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
     private updateCompleteRedrawBounds(x: number, y: number): void {
-        let bounds = { x1: x, y1: y, x2: x, y2: y };
+        let bounds: TIndexBounds = { type: 'index', x1: x, y1: y, x2: x, y2: y };
         if (this.settingXSymmetry) {
             bounds = BB.updateBounds(bounds, {
+                type: 'index',
                 x1: -x + this.copyCanvas.width,
                 y1: y,
                 x2: -x + this.copyCanvas.width,
@@ -64,6 +66,7 @@ export class ChemyBrush {
         }
         if (this.settingYSymmetry) {
             bounds = BB.updateBounds(bounds, {
+                type: 'index',
                 x1: x,
                 y1: -y + this.copyCanvas.height,
                 x2: x,
@@ -76,16 +79,7 @@ export class ChemyBrush {
         bounds.x2 = Math.ceil(bounds.x2 + buffer);
         bounds.y2 = Math.ceil(bounds.y2 + buffer);
 
-        const boundsWithinSelection = this.selectionBounds
-            ? boundsOverlap(bounds, this.selectionBounds)
-            : bounds;
-        if (!boundsWithinSelection) {
-            return;
-        }
-        this.completeRedrawBounds = BB.updateBounds(
-            this.completeRedrawBounds,
-            boundsWithinSelection,
-        );
+        this.completeRedrawBounds = BB.updateBounds(this.completeRedrawBounds, bounds);
     }
 
     private drawShape(): void {
@@ -128,7 +122,7 @@ export class ChemyBrush {
                 a: this.settingOpacity,
             });
             if (this.settingGradient) {
-                const startAtTop = this.path[0].x > this.path[this.path.length - 1].x;
+                const startAtTop = this.path[0].x > this.path.at(-1)!.x;
                 const gradient = this.context.createLinearGradient(
                     0,
                     startAtTop ? this.minY : this.maxY,
@@ -365,10 +359,11 @@ export class ChemyBrush {
     }
 
     startLine(x: number, y: number): void {
+        this.needsRedraw = false;
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.isDrawing = true;
         this.path = [{ x, y }];
@@ -395,22 +390,37 @@ export class ChemyBrush {
         this.maxY = Math.max(this.maxY, pos.y);
         this.path.push(pos);
         this.updateCompleteRedrawBounds(x, y);
-        this.drawShape();
+        this.needsRedraw = true;
     }
 
     endLine(): void {
+        this.transferToCanvas();
         this.isDrawing = false;
-        this.completeRedrawBounds = BB.boundsInArea(
+        this.completeRedrawBounds = BB.indexBoundsInArea(
             this.completeRedrawBounds,
             this.copyCanvas.width,
             this.copyCanvas.height,
         );
+        if (this.selectionBounds) {
+            this.completeRedrawBounds = intersectBounds(
+                this.completeRedrawBounds,
+                this.selectionBounds,
+            );
+        }
         if (this.path.length > 1 && this.completeRedrawBounds) {
             const layerData = canvasToLayerTiles(this.context.canvas, this.completeRedrawBounds);
             this.klHistory.push(getPushableLayerChange(this.klHistory.getComposed(), layerData));
         }
         this.path = [];
         this.copyCanvas = {} as HTMLCanvasElement;
+    }
+
+    transferToCanvas(): void {
+        if (!this.needsRedraw) {
+            return;
+        }
+        this.drawShape();
+        this.needsRedraw = false;
     }
 
     drawLineSegment(x1: number, y1: number, x2: number, y2: number): void {

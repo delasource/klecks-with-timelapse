@@ -20,8 +20,8 @@ class Theme {
         if (this.theme === oldTheme) {
             return;
         }
-        document.body.classList.toggle('kl-theme-dark', this.theme === 'dark');
-        document.body.classList.toggle('kl-theme-blue', this.theme === 'blue');
+        document.documentElement.classList.toggle('kl-theme-dark', this.theme === 'dark');
+        document.documentElement.classList.toggle('kl-theme-blue', this.theme === 'blue');
         this.listeners.forEach((item) => item());
     }
 

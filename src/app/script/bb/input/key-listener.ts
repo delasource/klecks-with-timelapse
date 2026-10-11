@@ -29,7 +29,7 @@ const globalKey = ((): TGlobalKey => {
 
     const keyStrToKeyObj = {
         // keyStr not to contain a '+', because that's used for the comboStr
-        space: [' ', 'Spacebar'], // Spacebar in IE
+        space: [' '],
         alt: ['Alt', 'AltGraph'],
         shift: 'Shift',
         ctrl: 'Control',
@@ -46,7 +46,9 @@ const globalKey = ((): TGlobalKey => {
         e: ['e', 'E'],
         f: ['f', 'F'],
         g: ['g', 'G'],
+        h: ['h', 'H'],
         l: ['l', 'L'],
+        m: ['m', 'M'],
         r: ['r', 'R'], // when holding shift
         s: ['s', 'S'],
         t: ['t', 'T'],
@@ -69,25 +71,16 @@ const globalKey = ((): TGlobalKey => {
 
     // ['space', 'alt', ... ]
     const keyStrArr = Object.keys(keyStrToKeyObj);
-
     // { space: false, ... }
-    const isDownObj: TIsDown = Object.entries(keyStrToKeyObj).reduce((acc, [key]) => {
-        acc[key] = false;
-        return acc;
-    }, {} as TIsDown);
-
-    // event.key to keyStr
+    const isDownObj: TIsDown = {};
     // { ArrowLeft: 'left', ... }
-    const keyToKeyStrObj = Object.entries(keyStrToKeyObj).reduce((acc, [key, code]) => {
-        if (typeof code === 'string') {
-            acc[code] = key;
-        } else {
-            code.forEach((item) => {
-                acc[item] = key;
-            });
+    const keyToKeyStrObj: TKeyString = {};
+    for (const [keyStr, keys] of Object.entries(keyStrToKeyObj)) {
+        isDownObj[keyStr] = false;
+        for (const key of typeof keys === 'string' ? [keys] : keys) {
+            keyToKeyStrObj[key] = keyStr;
         }
-        return acc;
-    }, {} as TKeyString);
+    }
 
     let comboArr: string[] = [];
 
@@ -114,7 +107,7 @@ const globalKey = ((): TGlobalKey => {
             codeIsDownObj[code] = undefined;
             // remove from combo
             for (let i = 0; i < comboArr.length; i++) {
-                if (comboArr[i] == keyStr) {
+                if (comboArr[i] === keyStr) {
                     comboArr.splice(i, 1);
                     i--;
                 }
@@ -133,28 +126,19 @@ const globalKey = ((): TGlobalKey => {
 
     const emitDown: TOnKeyDown = function (a, b, c, d?): void {
         listenerArr.forEach((item) => {
-            if (!item[0]) {
-                return;
-            }
-            item[0](a, b, c, d);
+            item[0]?.(a, b, c, d);
         });
     };
 
     const emitUp: TOnKeyUp = function (a, b, c): void {
         listenerArr.forEach((item) => {
-            if (!item[1]) {
-                return;
-            }
-            item[1](a, b, c);
+            item[1]?.(a, b, c);
         });
     };
 
     const emitBlur: TOnBlur = function (): void {
         listenerArr.forEach((item) => {
-            if (!item[2]) {
-                return;
-            }
-            item[2]();
+            item[2]?.();
         });
     };
 
@@ -241,7 +225,7 @@ const globalKey = ((): TGlobalKey => {
 
             // remove from combo
             for (let i = 0; i < comboArr.length; i++) {
-                if (comboArr[i] == keyStr) {
+                if (comboArr[i] === keyStr) {
                     comboArr.splice(i, 1);
                     i--;
                 }
@@ -291,20 +275,26 @@ const globalKey = ((): TGlobalKey => {
             }
         },
         remove: (keyListenerRef: TKeyListenerRef): void => {
-            if (!listenerArr.includes(keyListenerRef)) {
+            const index = listenerArr.indexOf(keyListenerRef);
+            if (index === -1) {
                 return;
             }
-            const last = listenerArr.length === 1;
-            for (let i = 0; i < listenerArr.length; i++) {
-                if (listenerArr[i] === keyListenerRef) {
-                    listenerArr.splice(i, 1);
-                    break;
-                }
-            }
-            if (last) {
+            listenerArr.splice(index, 1);
+            if (listenerArr.length === 0) {
                 document.removeEventListener('keydown', keyDown);
                 document.removeEventListener('keyup', keyUp);
                 window.removeEventListener('blur', blur);
+
+                // cleanup
+                clearTimeout(metaClearTimeout);
+                metaClearTimeout = undefined;
+                comboArr = [];
+                codeIsDownObj = {};
+                keyStrArr.forEach((keyStr) => {
+                    if (isDownObj[keyStr]) {
+                        isDownObj[keyStr] = false;
+                    }
+                });
             }
         },
         getIsDown: (): TIsDown => isDownObj,
@@ -328,17 +318,11 @@ export type TKeyListenerParams = {
  *
  */
 export class KeyListener {
-    private readonly onDown: TOnKeyDown | undefined;
-    private readonly onUp: TOnKeyUp | undefined;
-    private readonly onBlur: TOnBlur | undefined;
     private readonly ref: TKeyListenerRef;
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TKeyListenerParams) {
-        this.onDown = p.onDown;
-        this.onUp = p.onUp;
-        this.onBlur = p.onBlur;
-        this.ref = [this.onDown, this.onUp, this.onBlur];
+        this.ref = [p.onDown, p.onUp, p.onBlur];
         globalKey.add(this.ref);
     }
 
@@ -354,17 +338,11 @@ export class KeyListener {
     }
 
     comboOnlyContains(keyStrArr: string[]): boolean {
-        for (let i = 0; i < globalKey.getCombo().length; i++) {
-            if (!keyStrArr.includes(globalKey.getCombo()[i])) {
-                return false;
-            }
-        }
-        return true;
+        return globalKey.getCombo().every((keyStr) => keyStrArr.includes(keyStr));
     }
 
     destroy(): void {
         globalKey.remove(this.ref);
-        globalKey.blur();
     }
 }
 

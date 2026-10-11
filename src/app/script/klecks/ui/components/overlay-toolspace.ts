@@ -60,8 +60,8 @@ export class OverlayToolspace {
         });
         const selectedColorEl = BB.el({
             css: {
-                width: sizeObj.width + 'px',
-                height: sizeObj.hHeight + 'px',
+                width: sizeObj.width,
+                height: sizeObj.hHeight,
                 pointerEvents: 'none',
             },
         });
@@ -87,24 +87,16 @@ export class OverlayToolspace {
             height: sizeObj.sliderHeight,
             min: 0,
             max: 500,
+            displayScale: 2,
+            decimals: 'adaptive',
             value: 50,
-            resolution: 225,
             eventResMs: 1000 / 30,
-            toDisplayValue: (val) => val * 2,
-            toValue: (displayValue) => displayValue / 2,
             onChange: (v) => {
                 p.brushSettingService.setSize(v);
             },
-            formatFunc: (displayValue) => {
-                if (displayValue < 10) {
-                    return BB.round(displayValue, 1);
-                } else {
-                    return Math.round(displayValue);
-                }
-            },
         });
         css(sizeSlider.getElement(), {
-            marginTop: '2px',
+            marginTop: 2,
         });
 
         const opacitySlider = new KlSlider({
@@ -113,11 +105,9 @@ export class OverlayToolspace {
             height: sizeObj.sliderHeight,
             min: 0,
             max: 1,
+            displayScale: 100,
             value: 1,
-            resolution: 225,
             eventResMs: 1000 / 30,
-            toDisplayValue: (val) => val * 100,
-            toValue: (displayValue) => displayValue / 100,
             onChange: (v) => {
                 p.brushSettingService.setOpacity(v);
             },
@@ -172,11 +162,8 @@ export class OverlayToolspace {
             this.rootEl.style.display = isVisible ? 'block' : 'none';
             if (isVisible && mousePos) {
                 css(this.rootEl, {
-                    left: mousePos.x - Math.round(sizeObj.width / 2) + 'px',
-                    top:
-                        mousePos.y -
-                        Math.round(sizeObj.svHeight + (sizeObj.hHeight * 3) / 2) +
-                        'px',
+                    left: mousePos.x - Math.round(sizeObj.width / 2),
+                    top: mousePos.y - Math.round(sizeObj.svHeight + (sizeObj.hHeight * 3) / 2),
                 });
             }
         };

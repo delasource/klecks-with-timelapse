@@ -1,22 +1,21 @@
+import { getIconSvg } from '../../../icon/icon';
 import { BB } from '../../../bb/bb';
 
-import removeLayerImg from '../../../../img/ui/remove-layer.svg';
 import { TKlProject } from '../../kl-types';
 import { ProjectStore, TProjectStoreListener } from '../../storage/project-store';
-import { KL } from '../../kl';
 import { LANG } from '../../../language/language';
-import { showModal } from '../modals/base/showModal';
+import { showError, showModal } from '../modals/base/show-modal';
 import { timestampToAge } from '../utils/timestamp-to-age';
 import { BrowserStorageHeaderUi } from './browser-storage-header-ui';
 import * as classes from './browser-storage-ui.module.scss';
-import { makeUnfocusable } from '../../../bb/base/ui';
 import { requestPersistentStorage } from '../../storage/request-persistent-storage';
-import { copyCanvas } from '../../../bb/base/canvas';
+import { copyToCanvas } from '../../../bb/base/canvas';
+import { asyncThrow, Destroyer } from '../../../bb/base/base';
 
 export type TBrowserStorageUiParams = {
+    helpPath: string;
     projectStore: ProjectStore;
     getProject: () => TKlProject;
-    klRootEl: HTMLElement;
     applyUncommitted: () => void;
     options?: { hideClearButton?: boolean; isFocusable?: boolean }; // isFocusable default = false
     onOpen?: () => void;
@@ -41,11 +40,11 @@ export class BrowserStorageUi {
     private projectStore: ProjectStore;
     private readonly getProject: () => TKlProject;
     private readonly onStored: () => void;
-    private readonly klRootEl: HTMLElement;
     private readonly applyUncommitted: () => void;
     private options: { hideClearButton?: boolean; isFocusable?: boolean } | undefined;
     private readonly onOpen: (() => void) | undefined;
     private readonly updateAgeInterval: ReturnType<typeof setInterval>;
+    private readonly destroyer = new Destroyer();
 
     private updateAge(): void {
         if (!this.timestamp) {
@@ -79,7 +78,7 @@ export class BrowserStorageUi {
     ): void {
         this.timestamp = timestamp;
         this.thumbnail?.remove();
-        this.thumbnail = thumbnail ? copyCanvas(thumbnail) : undefined;
+        this.thumbnail = thumbnail ? copyToCanvas(thumbnail) : undefined;
 
         const thumbnailCanvas = this.thumbnail; // typescript being weird
         if (thumbnailCanvas && timestamp) {
@@ -93,7 +92,7 @@ export class BrowserStorageUi {
             if (typeof performance !== 'undefined' && timestamp > performance.timeOrigin) {
                 const animEl = BB.el({
                     parent: this.previewEl,
-                    className: (classes as any).animEl,
+                    className: classes.animEl,
                 });
                 setTimeout(() => {
                     animEl.remove();
@@ -108,16 +107,16 @@ export class BrowserStorageUi {
     }
 
     private async store(): Promise<void> {
+        this.applyUncommitted();
         const meta = this.projectStore.getCurrentMeta();
         const project = this.getProject();
 
         if (meta && meta.projectId !== project.projectId) {
             const doOverwrite = await new Promise<boolean>((resolve, reject) => {
                 showModal({
-                    target: document.body,
                     type: 'warning',
                     message: LANG('file-storage-overwrite-confirm'),
-                    buttons: [LANG('file-storage-overwrite'), 'Cancel'],
+                    buttons: [{ id: 'overwrite', label: LANG('file-storage-overwrite') }, 'Cancel'],
                     callback: async (result) => {
                         if (result === 'Cancel') {
                             resolve(false);
@@ -132,7 +131,6 @@ export class BrowserStorageUi {
             }
         }
 
-        this.applyUncommitted();
         await requestPersistentStorage();
         if (this.openButtonEl) {
             this.openButtonEl.disabled = true;
@@ -149,31 +147,25 @@ export class BrowserStorageUi {
             this.onStored();
         } catch (e) {
             this.resetButtons();
-            KL.popup({
-                target: this.klRootEl,
-                type: 'error',
-                message: [
+            showError(
+                [
                     `${LANG('file-storage-failed-1')}<ul>`,
                     `<li>${LANG('file-storage-failed-2')}</li>`,
                     `<li>${LANG('file-storage-failed-3')}</li>`,
                     `<li>${LANG('file-storage-failed-4')}</li>`,
                     '</ul>',
                 ].join(''),
-                buttons: ['Ok'],
-            });
-            setTimeout(() => {
-                throw new Error('storage-ui: failed to store browser storage, ' + e);
-            }, 0);
+            );
+            asyncThrow(new Error('storage-ui: failed to store browser storage, ' + e));
         }
     }
 
     private async clear(): Promise<void> {
         showModal({
-            target: document.body,
             type: 'warning',
             message: LANG('file-storage-clear-prompt'),
-            buttons: [LANG('file-storage-clear'), 'Cancel'],
-            deleteButtonName: LANG('file-storage-clear'),
+            buttons: [{ id: 'clear', label: LANG('file-storage-clear') }, 'Cancel'],
+            deleteButton: 'clear',
             callback: async (result) => {
                 if (result === 'Cancel') {
                     return;
@@ -188,15 +180,8 @@ export class BrowserStorageUi {
                     await this.projectStore.clear();
                 } catch (e) {
                     this.resetButtons();
-                    KL.popup({
-                        target: this.klRootEl,
-                        type: 'error',
-                        message: LANG('file-storage-failed-clear'),
-                        buttons: ['Ok'],
-                    });
-                    setTimeout(() => {
-                        throw new Error('storage-ui: failed to clear browser storage, ' + e);
-                    }, 0);
+                    showError(LANG('file-storage-failed-clear'));
+                    asyncThrow(new Error('storage-ui: failed to clear browser storage, ' + e));
                 }
             },
         });
@@ -208,7 +193,7 @@ export class BrowserStorageUi {
             parent: this.contentEl,
             content: '🔴 ' + LANG('file-storage-cant-access'),
             css: {
-                marginTop: '10px',
+                marginTop: 10,
             },
         });
     }
@@ -219,14 +204,13 @@ export class BrowserStorageUi {
         this.projectStore = p.projectStore;
         this.getProject = p.getProject;
         this.onStored = p.onStored;
-        this.klRootEl = p.klRootEl;
         this.applyUncommitted = p.applyUncommitted;
         this.options = p.options;
         this.onOpen = p.onOpen;
 
         this.rootEl = BB.el({});
 
-        this.header = new BrowserStorageHeaderUi();
+        this.header = new BrowserStorageHeaderUi(p.helpPath);
         this.rootEl.append(this.header.getElement());
 
         this.contentEl = BB.el({
@@ -240,9 +224,9 @@ export class BrowserStorageUi {
 
         this.previewEl = BB.el({
             className: 'kl-storage-preview',
+            destroyer: this.destroyer,
             onClick: () => this.onOpen?.(),
             title: LANG('file-storage-open'),
-            noRef: true,
         });
         this.emptyEl = BB.el({
             content: LANG('file-storage-empty'),
@@ -250,52 +234,55 @@ export class BrowserStorageUi {
         this.ageEl = BB.el({
             css: {
                 position: 'absolute',
-                right: '0',
-                bottom: '0',
+                right: 0,
+                bottom: 0,
                 width: '100%',
                 textAlign: 'center',
                 background: 'rgba(0,0,0,0.7)',
                 color: '#fff',
-                fontSize: '13px',
+                fontSize: 13,
             },
         });
         if (this.onOpen) {
             this.openButtonEl = BB.el({
                 tagName: 'button',
-                className: 'grid-button',
+                className: 'kl-button grid-button',
                 content: LANG('file-storage-open'),
+                destroyer: this.destroyer,
                 css: {
-                    margin: '0',
+                    margin: 0,
                 },
                 onClick: () => this.onOpen?.(),
-                noRef: true,
+                props: !this.options?.isFocusable
+                    ? {
+                          tabIndex: -1,
+                      }
+                    : undefined,
             });
         }
         this.storeButtonEl = BB.el({
             tagName: 'button',
-            className: 'grid-button',
+            className: 'kl-button grid-button',
             content: LANG('file-storage-store'),
+            destroyer: this.destroyer,
             css: {
-                margin: '0',
+                margin: 0,
             },
             onClick: () => this.store(),
-            noRef: true,
         });
         this.clearButtonEl = BB.el({
             tagName: 'button',
-            className: 'grid-button kl-button-delete',
-            content:
-                '<img src="' + removeLayerImg + '" height="20"/> ' + LANG('file-storage-clear'),
+            className: 'kl-button grid-button kl-button-delete',
+            content: [getIconSvg('remove-layer', { height: 20 }), LANG('file-storage-clear')],
+            destroyer: this.destroyer,
             css: {
-                margin: '0',
+                margin: 0,
             },
             onClick: () => this.clear(),
-            noRef: true,
         });
         if (!this.options?.isFocusable) {
-            this.openButtonEl && makeUnfocusable(this.openButtonEl);
-            makeUnfocusable(this.storeButtonEl);
-            makeUnfocusable(this.clearButtonEl);
+            this.storeButtonEl.tabIndex = -1;
+            this.clearButtonEl.tabIndex = -1;
         }
 
         if (this.options?.hideClearButton) {
@@ -309,22 +296,22 @@ export class BrowserStorageUi {
                         content: this.previewEl,
                         css: {
                             alignSelf: 'stretch',
-                            flexGrow: '1',
+                            flexGrow: 1,
                         },
                     }),
                     BB.el({
                         content: [this.openButtonEl, this.storeButtonEl, this.clearButtonEl],
                         css: {
                             display: 'flex',
-                            gap: '10px',
+                            gap: 10,
                             flexDirection: 'column',
                         },
                     }),
                 ],
                 css: {
-                    marginTop: '10px',
+                    marginTop: 10,
                     display: 'flex',
-                    gap: '10px',
+                    gap: 10,
                 },
             }),
         );
@@ -374,8 +361,7 @@ export class BrowserStorageUi {
 
     destroy(): void {
         this.header.destroy();
-        BB.destroyEl(this.storeButtonEl);
-        BB.destroyEl(this.clearButtonEl);
+        this.destroyer.destroy();
         clearInterval(this.updateAgeInterval);
         this.projectStore.unsubscribe(this.storeListener);
     }

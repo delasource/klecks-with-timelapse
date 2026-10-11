@@ -1,10 +1,11 @@
+import { getIconSvg } from '../../icon/icon';
 import { BB } from '../../bb/bb';
 import { BRUSHES } from '../brushes/brushes';
 import { EVENT_RES_MS } from './brushes-consts';
-import { Checkbox } from '../ui/components/checkbox';
+import { createLockAlphaToggle } from '../ui/components/create-brush-toggles';
+import { BoxToggle } from '../ui/components/box-toggle';
 import { KlSlider } from '../ui/components/kl-slider';
 import { createPenPressureToggle } from '../ui/components/create-pen-pressure-toggle';
-import brushIconImg from '../../../img/ui/brush-pen.svg';
 import { genBrushAlpha01, genBrushAlpha02 } from '../brushes/alphas/brush-alphas';
 import { TBrushUi } from '../kl-types';
 import { LANG, LANGUAGE_STRINGS } from '../../language/language';
@@ -13,28 +14,29 @@ import { PenBrush, TPenBrushConfig } from '../brushes/pen-brush';
 
 export const penBrushUi = (function () {
     const brushInterface = {
-        image: brushIconImg,
+        image: getIconSvg('brush-pen'),
         tooltip: LANG('brush-pen'),
         sizeSlider: {
             min: 0.5,
             max: 100,
-            curve: BB.powerSplineInput(0.5, 100, 0.1),
+            exponent: 2,
+            displayScale: 2, // radius displayed as diameter
+            decimals: 'adaptive',
         },
         opacitySlider: {
             min: 1 / 100,
             max: 1,
-            curve: [
-                [0, 1 / 100],
-                [0.5, 30 / 100],
-                [1, 1],
-            ],
-        },
-        scatterSlider: {
-            min: 0,
-            max: 100,
-            curve: BB.powerSplineInput(0, 100, 0.1, 2.5),
+            exponent: 1.7,
+            displayScale: 100,
         },
     } as TBrushUi<PenBrush>;
+
+    const scatterSliderConfig = {
+        min: 0,
+        max: 100,
+        exponent: 2.5,
+        decimals: 'adaptive' as const,
+    };
 
     let alphaNames = [
         LANG('brush-pen-circle'),
@@ -60,7 +62,7 @@ export const penBrushUi = (function () {
         let sizeSlider: KlSlider;
         let opacitySlider: KlSlider;
         let scatterSlider: KlSlider;
-        let lockAlphaToggle: Checkbox;
+        let lockAlphaToggle: BoxToggle;
         let alphaOptions: Options<number>;
         let pressureSizeToggle: HTMLElement;
         let pressureOpacityToggle: HTMLElement;
@@ -71,10 +73,10 @@ export const penBrushUi = (function () {
                 const alpha = BB.el({
                     className: 'dark-invert',
                     css: {
-                        width: '31px',
-                        height: '31px',
+                        width: 31,
+                        height: 31,
                         backgroundSize: 'contain',
-                        margin: '2px',
+                        margin: 2,
                     },
                 });
                 const canvas = BB.canvas(70, 70);
@@ -107,18 +109,8 @@ export const penBrushUi = (function () {
             },
         });
 
-        lockAlphaToggle = new Checkbox({
-            init: brush.getLockAlpha(),
-            label: LANG('lock-alpha'),
-            callback: function (b) {
-                brush.setLockAlpha(b);
-            },
-            doHighlight: true,
-            title: LANG('lock-alpha-title'),
-            css: {
-                display: 'inline-block',
-            },
-            name: 'lock-alpha-toggle',
+        lockAlphaToggle = createLockAlphaToggle(brush.getLockAlpha(), (b) => {
+            brush.setLockAlpha(b);
         });
 
         const spacingSpline = new BB.SplineInterpolator([
@@ -140,37 +132,21 @@ export const penBrushUi = (function () {
                 label: LANG('brush-size'),
                 width: 225,
                 height: 30,
-                min: brushInterface.sizeSlider.min,
-                max: brushInterface.sizeSlider.max,
+                ...brushInterface.sizeSlider,
                 value: brush.getSize(),
-                curve: brushInterface.sizeSlider.curve,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 2,
-                toValue: (displayValue) => displayValue / 2,
                 onChange: (val) => {
                     setSize(val);
                     p.onSizeChange(val);
                 },
-                formatFunc: (displayValue) => {
-                    if (displayValue < 10) {
-                        return BB.round(displayValue, 1);
-                    } else {
-                        return Math.round(displayValue);
-                    }
-                },
-                manualInputRoundDigits: 1,
             });
             opacitySlider = new KlSlider({
                 label: LANG('opacity'),
                 width: 225,
                 height: 30,
-                min: brushInterface.opacitySlider.min,
-                max: brushInterface.opacitySlider.max,
+                ...brushInterface.opacitySlider,
                 value: brushInterface.opacitySlider.max,
-                curve: brushInterface.opacitySlider.curve,
                 eventResMs: EVENT_RES_MS,
-                toDisplayValue: (val) => val * 100,
-                toValue: (displayValue) => displayValue / 100,
                 onChange: (val) => {
                     brush.setOpacity(val);
                     p.onOpacityChange(val);
@@ -180,23 +156,12 @@ export const penBrushUi = (function () {
                 label: LANG('scatter'),
                 width: 225,
                 height: 30,
-                min: brushInterface.scatterSlider.min,
-                max: brushInterface.scatterSlider.max,
-                value: brushInterface.scatterSlider.min,
-                curve: brushInterface.scatterSlider.curve,
+                ...scatterSliderConfig,
+                value: scatterSliderConfig.min,
                 eventResMs: EVENT_RES_MS,
                 onChange: (val) => {
                     brush.setScatter(val);
-                    p.onScatterChange(val);
                 },
-                formatFunc: (displayValue) => {
-                    if (displayValue < 10) {
-                        return BB.round(displayValue, 1);
-                    } else {
-                        return Math.round(displayValue);
-                    }
-                },
-                manualInputRoundDigits: 1,
             });
 
             pressureSizeToggle = createPenPressureToggle(true, function (b) {
@@ -216,7 +181,7 @@ export const penBrushUi = (function () {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: '10px',
+                        marginBottom: 10,
                     },
                 }),
                 BB.el({
@@ -225,7 +190,7 @@ export const penBrushUi = (function () {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: '10px',
+                        marginBottom: 10,
                     },
                 }),
                 BB.el({
@@ -237,15 +202,11 @@ export const penBrushUi = (function () {
                     },
                 }),
                 BB.el({
-                    content: alphaOptions.getElement(),
+                    content: [alphaOptions.getElement(), lockAlphaToggle.getElement()],
                     css: {
-                        marginTop: '10px',
-                    },
-                }),
-                BB.el({
-                    content: lockAlphaToggle.getElement(),
-                    css: {
-                        marginTop: '10px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginTop: 10,
                     },
                 }),
             );
@@ -277,13 +238,6 @@ export const penBrushUi = (function () {
         this.setOpacity = function (opacity) {
             brush.setOpacity(opacity);
             opacitySlider.setValue(opacity);
-        };
-        this.getScatter = function () {
-            return brush.getScatter();
-        };
-        this.setScatter = function (scatter) {
-            brush.setScatter(scatter);
-            scatterSlider.setValue(scatter);
         };
 
         this.setColor = function (c) {

@@ -8,10 +8,6 @@ declare module '*.jpg' {
     const path: string;
     export default path;
 }
-declare module '*.jpeg' {
-    const path: string;
-    export default path;
-}
 declare module '*.svg' {
     const path: string;
     export default path;
@@ -25,21 +21,8 @@ declare module '*.glsl' {
     export default value;
 }
 declare module '*.json';
-declare module '*.scss' {
-    const styles: { [key: string]: string };
-    export default styles;
-}
-
-// Allow importing any string as CSS class name
-declare module '*.module.scss' {
-    const styles: { [key: string]: string };
-    export default styles;
-}
+declare module '*.scss';
 declare module '*.ttf' {
-    const path: string;
-    export default path;
-}
-declare module '*.woff' {
     const path: string;
     export default path;
 }

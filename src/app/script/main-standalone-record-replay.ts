@@ -3,20 +3,15 @@
  * and dela (colormari.art)
  */
 
-import './polyfills/polyfills';
+import './bb/base/polyfills';
 import { getDefaultProjectOptions } from './app/default-project';
 import { KlApp } from './app/kl-app';
 import { randomUuid } from './bb/base/base';
 import { TKlProject } from './klecks/kl-types';
-import {
-  getKlIndexedDbName,
-  KL_INDEXED_DB,
-  KL_INDEXED_DB_STORES,
-  KL_INDEXED_DB_UPGRADER,
-  KL_INDEXED_DB_VERSION,
-} from './klecks/storage/kl-indexed-db';
+import { getKlIndexedDbName, KL_INDEXED_DB } from './klecks/storage/kl-indexed-db';
 import { initLANG, LANG } from './language/language';
-import '../script/theme/theme';
+import './theme/theme';
+import { initIconCss } from './icon/icon';
 import { BrowserEventStorageProvider } from './klecks/history/kl-event-storage-provider';
 
 function showInitError(e: Error): void {
@@ -44,10 +39,11 @@ async function getEventsFromBrowserStorage(projectId: string) {
 
 (async () => {
   try {
+    initIconCss();
     const outQueue: string[] = [];
     await initLANG();
 
-    KL_INDEXED_DB.init(getKlIndexedDbName(), KL_INDEXED_DB_STORES, KL_INDEXED_DB_VERSION, KL_INDEXED_DB_UPGRADER);
+    KL_INDEXED_DB.init(getKlIndexedDbName());
     if (!(await KL_INDEXED_DB.testConnection())) {
       outQueue.push(LANG('file-storage-cant-access'));
     }

@@ -1,5 +1,6 @@
-import { EaselSelect } from '../klecks/ui/easel/tools/easel-select';
+import { EaselSelectMove } from '../klecks/ui/easel/tools/easel-select-move';
 import { KlCanvas } from '../klecks/canvas/kl-canvas';
+import { KlCanvasSelectionTransform } from '../klecks/canvas/kl-canvas-selection-transform';
 import { throwIfNull } from '../bb/base/base';
 import { SelectTool, TSelectShape, TBooleanOperation } from '../klecks/select-tool/select-tool';
 import { SelectTransformTool } from '../klecks/select-tool/select-transform-tool';
@@ -26,6 +27,8 @@ function isSelectTransformTempEntry(entry: TTempHistoryEntry): entry is TSelectT
 
 export type TKlHeadlessSelectParams = {
   klCanvas: KlCanvas;
+  // moves what is selected, and records it. Shared with the replay, which needs its selection sample.
+  selectionTransform: KlCanvasSelectionTransform;
   getCurrentLayerCtx: () => CanvasRenderingContext2D;
   klHistory: KlHistory;
   tempHistory: KlTempHistory;
@@ -45,6 +48,7 @@ export type TKlHeadlessSelectParams = {
 export class KlHeadlessSelect implements IHeadlessSelectActions {
   // from params
   private readonly klCanvas: KlCanvas;
+  private readonly selectionTransform: KlCanvasSelectionTransform;
   private readonly getCurrentLayerCtx: () => CanvasRenderingContext2D;
   private readonly klHistory: KlHistory;
   private readonly tempHistory: KlTempHistory;
@@ -56,7 +60,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   private readonly onError: (message: string) => void;
 
   // core tools
-  private readonly easelSelect: EaselSelect;
+  private readonly easelSelect: EaselSelectMove;
   private readonly selectTool: SelectTool;
   private readonly transformTool: SelectTransformTool;
 
@@ -77,6 +81,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   constructor(p: TKlHeadlessSelectParams) {
     this.klCanvas = p.klCanvas;
+    this.selectionTransform = p.selectionTransform;
     this.onUpdateProject = p.onUpdateProject;
     this.getCurrentLayerCtx = p.getCurrentLayerCtx;
     this.klHistory = p.klHistory;
@@ -92,7 +97,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     });
     this.transformTool = new SelectTransformTool();
 
-    this.easelSelect = new EaselSelect({
+    this.easelSelect = new EaselSelectMove({
       selectMode: this.mode,
       onStartSelect: (p, operation) => this.selectTool.startSelect(p, operation),
       onGoSelect: p => {
@@ -147,9 +152,14 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   // ----------------------------------- private helpers -----------------------------------
 
+  // index of the layer that `canvas` is the canvas of. null if it is none (any more).
+  private getLayerIndex(canvas: HTMLCanvasElement): number | null {
+    return this.klCanvas.getLayers().find(layer => layer.canvas === canvas)?.index ?? null;
+  }
+
   private isSourceLayerBackgroundTransparent(): boolean {
     const srcLayerCtx = this.getCurrentLayerCtx();
-    const srcLayerIndex = this.klCanvas.getLayerIndex(srcLayerCtx.canvas, true);
+    const srcLayerIndex = this.getLayerIndex(srcLayerCtx.canvas);
     if (srcLayerIndex == null) return true; // layer not existent
     if (srcLayerIndex > 0) {
       // not background layer
@@ -160,7 +170,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private resetComposites(): void {
     const srcLayerCtx = this.getCurrentLayerCtx();
-    const srcLayerIndex = this.klCanvas.getLayerIndex(srcLayerCtx.canvas, true);
+    const srcLayerIndex = this.getLayerIndex(srcLayerCtx.canvas);
     if (srcLayerIndex == null) return;
     this.klCanvas.setComposite(srcLayerIndex, undefined);
     if (this.targetLayerIndex !== srcLayerIndex) {
@@ -170,7 +180,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private updateComposites(): void {
     const srcLayerCanvas = this.getCurrentLayerCtx().canvas;
-    const srcLayerIndex = throwIfNull(this.klCanvas.getLayerIndex(srcLayerCanvas));
+    const srcLayerIndex = throwIfNull(this.getLayerIndex(srcLayerCanvas));
 
     if (srcLayerIndex === this.targetLayerIndex) {
       this.klCanvas.setComposite(srcLayerIndex, this.transformTool.createComposite(srcLayerCanvas));
@@ -209,9 +219,9 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   }
 
   private canTransform(): boolean {
-    const layerIndex = this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas, true);
+    const layerIndex = this.getLayerIndex(this.getCurrentLayerCtx().canvas);
     if (layerIndex === null) return false;
-    return !!this.klCanvas.getSelectionArea(layerIndex);
+    return !!this.selectionTransform.getSelectionArea(layerIndex);
   }
 
   private notifyUi(): void {
@@ -223,15 +233,15 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   }
 
   private applyTransform(): void {
-    const layerIndex = throwIfNull(this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas));
+    const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
     if (this.transformTool.getDoClone()) {
-      this.klCanvas.transformCloneViaSelection({
+      this.selectionTransform.transformCloneViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform()
       });
     } else {
-      this.klCanvas.transformViaSelection({
+      this.selectionTransform.transformViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform(),
@@ -262,9 +272,9 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
     this.transformTool.setSelection(selection);
     this.transformTool.setDoClone(false);
-    this.transformTool.setSelectionSample(this.klCanvas.getSelectionSample());
+    this.transformTool.setSelectionSample(this.selectionTransform.getSelectionSample());
     const currentLayerCanvas = this.getCurrentLayerCtx().canvas;
-    const layerIndex = throwIfNull(this.klCanvas.getLayerIndex(currentLayerCanvas));
+    const layerIndex = throwIfNull(this.getLayerIndex(currentLayerCanvas));
     this.initialTransform.targetLayerIndex = layerIndex;
     this.initialTransform.backgroundIsTransparent = this.backgroundIsTransparent;
     this.targetLayerIndex = layerIndex;
@@ -278,7 +288,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   private enterSelectMode(): void {
     this.tempHistory.clear();
     this.tempHistory.setIsActive(false);
-    const layerIndex = throwIfNull(this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas));
+    const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
     if (
       this.transformTool.isTransformationChanged() ||
       this.transformTool.getDoClone() ||
@@ -287,7 +297,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       // something changed -> apply
       this.applyTransform();
     }
-    this.klCanvas.clearSelectionSample();
+    this.selectionTransform.clearSelectionSample();
     this.klCanvas.setComposite(layerIndex, undefined);
     this.klCanvas.setComposite(this.targetLayerIndex, undefined);
     this.easelSelect.clearRenderedSelection(true);
@@ -377,17 +387,17 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   clone(): void {
     // commit
     this.tempHistory.clear();
-    const layerIndex = throwIfNull(this.klCanvas.getLayerIndex(this.getCurrentLayerCtx().canvas));
+    const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
     // apply
     // should always apply. user might want to make something more opaque.
     if (this.transformTool.getDoClone()) {
-      this.klCanvas.transformCloneViaSelection({
+      this.selectionTransform.transformCloneViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform()
       });
     } else if (this.transformTool.isTransformationChanged()) {
-      this.klCanvas.transformViaSelection({
+      this.selectionTransform.transformViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
         transformation: this.transformTool.getTransform(),
@@ -401,7 +411,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.initialTransform.backgroundIsTransparent = this.backgroundIsTransparent;
     this.transformTool.setSelection(selection);
     this.transformTool.setDoClone(true);
-    this.transformTool.setSelectionSample(this.klCanvas.getSelectionSample());
+    this.transformTool.setSelectionSample(this.selectionTransform.getSelectionSample());
     this.updateComposites();
     this.easelSelect.setRenderedSelection(this.transformTool.getTransformedSelection());
     this.onUpdateProject();
@@ -454,7 +464,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       this.transformTool.reset();
       this.transformTool.setDoClone(false);
       const currentCanvas = this.getCurrentLayerCtx().canvas;
-      this.targetLayerIndex = throwIfNull(this.klCanvas.getLayerIndex(currentCanvas));
+      this.targetLayerIndex = throwIfNull(this.getLayerIndex(currentCanvas));
       this.mode = 'select';
       this.easelSelect.setMode(this.mode);
       this.notifyUi();
@@ -480,7 +490,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     };
   }
 
-  getEaselSelect(): EaselSelect {
+  getEaselSelect(): EaselSelectMove {
     return this.easelSelect;
   }
 

@@ -1,6 +1,7 @@
 import { KlCanvas } from '../../canvas/kl-canvas';
 import { Easel } from './easel';
 import { BB } from '../../../bb/bb';
+import { changeCanvasDimensions } from '../../../bb/base/change-canvas-dimensions';
 import { throwIfNull } from '../../../bb/base/base';
 import { ReferenceOverlay } from './reference-overlay';
 import { TProjectViewportProject } from '../project-viewport/project-viewport';
@@ -19,7 +20,7 @@ export class EaselProjectUpdater<T extends string> {
     private readonly klCanvas: KlCanvas;
     private readonly easel: Easel<T>;
     private readonly overlay: ReferenceOverlay | undefined;
-    private readonly compositeCanvas = BB.canvas(1, 1);
+    private compositeCanvas: HTMLCanvasElement | undefined;
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TEaselProjectUpdaterParams<T>) {
@@ -32,57 +33,67 @@ export class EaselProjectUpdater<T extends string> {
     update(): void {
         const width = this.klCanvas.getWidth();
         const height = this.klCanvas.getHeight();
-        const layers: TProjectViewportProject['layers'] = this.klCanvas
-            .getLayersFast()
-            .map((layer) => {
-                return {
-                    image: layer.compositeObj
+        const layers = this.klCanvas.getLayers();
+
+        // free resources if no compositing being done
+        if (layers.some((layer) => layer.compositeObj)) {
+            if (!this.compositeCanvas) {
+                this.compositeCanvas = BB.canvas(width, height);
+            }
+        } else {
+            if (this.compositeCanvas) {
+                BB.freeCanvas(this.compositeCanvas);
+                this.compositeCanvas = undefined;
+            }
+        }
+        const compositeCanvas = this.compositeCanvas;
+        const viewportLayers: TProjectViewportProject['layers'] = layers.map((layer) => {
+            return {
+                image:
+                    layer.compositeObj && compositeCanvas
                         ? () => {
-                              if (
-                                  this.compositeCanvas.width != width ||
-                                  this.compositeCanvas.height != height
-                              ) {
-                                  this.compositeCanvas.width = width;
-                                  this.compositeCanvas.height = height;
-                              }
-                              const ctx = this.compositeCanvas.getContext('2d')!;
-                              ctx.clearRect(0, 0, width, height);
+                              changeCanvasDimensions(compositeCanvas, width, height, {
+                                  ensureCleared: true,
+                              });
+                              const ctx = compositeCanvas.getContext('2d')!;
                               ctx.drawImage(layer.canvas, 0, 0);
                               layer.compositeObj?.draw(
-                                  throwIfNull(this.compositeCanvas.getContext('2d')),
+                                  throwIfNull(compositeCanvas.getContext('2d')),
                               );
-                              return this.compositeCanvas;
+                              return compositeCanvas;
                           }
                         : layer.canvas,
-                    isVisible: layer.isVisible,
-                    opacity: layer.opacity,
-                    mixModeStr: layer.mixModeStr,
-                    hasClipping: false,
-                };
-            });
+                isVisible: layer.isVisible,
+                opacity: layer.opacity,
+                mixModeStr: layer.mixModeStr,
+                hasClipping: layer.hasClipping,
+            };
+        });
 
         // The reference overlay exists in this list only — KlCanvas, the history and the recorder never
         // see it, which is what keeps it out of every replay, video and export.
         const overlayLayer = this.overlay?.getViewportLayer();
         if (overlayLayer) {
             if (this.overlay!.getState().placement === 'front') {
-                layers.push(overlayLayer);
+                viewportLayers.push(overlayLayer);
             } else {
-                layers.unshift(overlayLayer);
+                viewportLayers.unshift(overlayLayer);
             }
         }
 
         this.easel.setProject({
             width,
             height,
-            layers,
+            layers: viewportLayers,
             selection: this.klCanvas.getSelection(),
         });
     }
 
     // if you're not rendering easel for a while
     freeCompositeCanvas(): void {
-        this.compositeCanvas.width = 1;
-        this.compositeCanvas.height = 1;
+        if (this.compositeCanvas) {
+            BB.freeCanvas(this.compositeCanvas);
+            this.compositeCanvas = undefined;
+        }
     }
 }

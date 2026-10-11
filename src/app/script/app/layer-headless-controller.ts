@@ -288,7 +288,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
     }
 
     // Default merge mode is normal
-    const result = this.klCanvas.mergeLayers(targetIndex, targetIndex - 1, 'source-over');
+    const result = this.klCanvas.mergeLayer(targetIndex, 'source-over');
 
     if (result === undefined) {
       return false;
@@ -311,7 +311,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
     }
 
     // Merge the layer above into the current layer
-    const result = this.klCanvas.mergeLayers(targetIndex + 1, targetIndex, 'source-over');
+    const result = this.klCanvas.mergeLayer(targetIndex + 1, 'source-over');
 
     if (result === undefined) {
       return false;
