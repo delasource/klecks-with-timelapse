@@ -8,7 +8,8 @@ export const getDefaultProjectOptions = (
   width?: number,
   height?: number,
   fillFirstLayerWhite?: boolean
-) => {
+): TKlProject => {
+  // (typed by the return type, not by a cast: a cast hid that layers need `hasClipping` since Klecks 0.11)
   return {
     projectId: projectId,
     width: width ?? 100,
@@ -19,6 +20,7 @@ export const getDefaultProjectOptions = (
         opacity: 1,
         isVisible: true,
         mixModeStr: 'source-over',
+        hasClipping: false,
         image: {
           fill:
             fillFirstLayerWhite !== false
@@ -31,5 +33,5 @@ export const getDefaultProjectOptions = (
         },
       },
     ],
-  } as TKlProject;
+  };
 };

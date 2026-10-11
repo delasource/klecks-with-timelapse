@@ -1,0 +1,17 @@
+{
+    // Type check of what an application gets when it imports the headless entry point:
+    // `bun run type-check`. Klecks itself has no such step (Parcel does not check types), and the
+    // application around this repository cannot do it with its own settings — its bundler's
+    // ambient types (CSS modules, assets) are not the ones these sources are written against.
+    //
+    // "types": [] keeps @types/node out, which would turn setTimeout's number into a Timeout.
+    "extends": "./src/tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "types": [],
+        "lib": ["ESNext", "DOM", "DOM.Iterable"]
+    },
+    "files": ["src/headless.ts", "src/app/declaration.d.ts", "src/app/types.d.ts"],
+    "include": [],
+    "exclude": []
+}

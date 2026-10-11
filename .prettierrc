@@ -1,0 +1,28 @@
+{
+  "printWidth": 100,
+  "tabWidth": 4,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "overrides": [
+    {
+      "files": [
+        "src/headless.ts",
+        "src/app/script/main-standalone-record-replay.ts",
+        "src/app/script/app/default-project.ts",
+        "src/app/script/app/kl-headless-*.ts",
+        "src/app/script/app/layer-headless-controller.ts",
+        "src/app/script/klecks/history/kl-chain-recorder.ts",
+        "src/app/script/klecks/history/kl-event-*.ts",
+        "src/app/script/klecks/ui/easel/reference-overlay.ts",
+        "src/app/script/klecks/ui/easel/tools/easel-overlay.ts"
+      ],
+      "options": {
+        "printWidth": 120,
+        "tabWidth": 2,
+        "trailingComma": "es5",
+        "arrowParens": "avoid"
+      }
+    }
+  ]
+}

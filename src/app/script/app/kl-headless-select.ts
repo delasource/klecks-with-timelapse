@@ -197,8 +197,22 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.notifyUi();
   }
 
+  /**
+   * The temp history of a transformation has two entries at most: a placeholder for "nothing
+   * changed yet", and above it the transformation as it is now. An undo inside a transformation
+   * therefore goes back to its beginning in one step (onHistory finds the placeholder on top and
+   * falls back to initialTransform).
+   *
+   * The placeholder is needed since Klecks 0.9.10: KlTempHistory no longer steps below its first
+   * entry (canDecreaseIndex), so the first entry cannot be the change itself.
+   */
+  private tempHistoryStart(): void {
+    this.tempHistory.clear();
+    this.tempHistory.push({ type: 'select-transform-start', data: null });
+  }
+
   private tempHistoryReplaceTop(): void {
-    this.tempHistory.replaceTop({
+    const entry = {
       type: 'select-transform',
       data: {
         transform: this.transformTool.getTransform(),
@@ -206,7 +220,13 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         targetLayerIndex: this.targetLayerIndex,
         backgroundIsTransparent: this.backgroundIsTransparent
       }
-    } satisfies TSelectTransformTempEntry);
+    } satisfies TSelectTransformTempEntry;
+    if (this.tempHistory.getEntries().length <= 1) {
+      // only the placeholder (or nothing): the change goes above it
+      this.tempHistory.push(entry);
+    } else {
+      this.tempHistory.replaceTop(entry);
+    }
   }
 
   private propagateTransformationChange(): void {
@@ -253,6 +273,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private enterTransformMode(): void {
     this.tempHistory.setIsActive(true);
+    this.tempHistoryStart();
     let selection = this.selectTool.getSelection() || [];
     if (selection.length === 0) {
       const width = this.klCanvas.getWidth();
@@ -386,7 +407,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   clone(): void {
     // commit
-    this.tempHistory.clear();
+    this.tempHistoryStart();
     const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
     // apply
     // should always apply. user might want to make something more opaque.
@@ -478,6 +499,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   }
 
   getState(): IHeadlessSelectState {
+    const canTransform = () => this.canTransform();
     return {
       mode: this.mode,
       hasSelection: !!this.klCanvas.getSelection(),
@@ -485,7 +507,13 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       booleanOperation: this.booleanOperation,
       targetLayerIndex: this.targetLayerIndex,
       backgroundIsTransparent: this.backgroundIsTransparent,
-      canTransform: this.canTransform(),
+      // Worked out when it is read, not when the state is made: the answer takes a scan of every
+      // pixel of the layer (is there anything in the selection at all?), and the state is made
+      // on every change of the history — after every stroke, and once per event of a replay,
+      // where it cost a renderer 7 ms each at 1440 × 900 without anybody asking for the answer.
+      get canTransform() {
+        return canTransform();
+      },
       isCloning: this.transformTool.getDoClone()
     };
   }

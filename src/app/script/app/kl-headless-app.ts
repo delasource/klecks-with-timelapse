@@ -7,6 +7,7 @@ import { KeyListener, sameKeys } from '../bb/input/key-listener';
 import { getSelectionPath2d } from '../bb/multi-polygon/get-selection-path-2d';
 import { BRUSHES, TBrushClassTypes, TBrushConfigTypes } from '../klecks/brushes/brushes';
 import { TPixelBrushConfig } from '../klecks/brushes/pixel-brush';
+import { DEFAULT_PIXEL_PATTERNS } from '../klecks/brushes/pixel-brush-patterns';
 import { ERASE_COLOR } from '../klecks/brushes/erase-color';
 import { EraserBrush } from '../klecks/brushes/eraser-brush';
 import { drawProject } from '../klecks/canvas/draw-project';
@@ -1189,7 +1190,16 @@ export class KlHeadlessApp {
 
         // Set the brush configuration
         if (brushData && this.brushes[brushData.id]) {
-          this.setCurrentBrush(brushData.id, brushData.cfg);
+          let cfg = brushData.cfg;
+          if (brushData.id === 'PixelBrush' && cfg && cfg.tip === undefined) {
+            // Recorded before Klecks 0.11.3, when the pixel brush had neither tips nor patterns:
+            // it drew squares, solid (or dithered by opacity, `useDither`), and its opacity was
+            // that of each dot. The brush of today starts with a round tip and takes the opacity
+            // for the whole stroke; a config that says nothing about either would leave it at
+            // that, and the drawing would come out rounder and paler than it was drawn.
+            cfg = { ...cfg, tip: 'square', pattern: DEFAULT_PIXEL_PATTERNS[0], opacityPerDot: true };
+          }
+          this.setCurrentBrush(brushData.id, cfg);
           // if (brushData.cfg) {
           // console.log("PUSH ", brushData.cfg, "to", brushData.id);
           // this.brushes[brushData.id].setBrushConfig(brushData.cfg);

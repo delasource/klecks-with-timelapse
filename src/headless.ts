@@ -1,5 +1,12 @@
 // Headless entry point - only exports the KlHeadlessApp and essential types
 
+// First of all, and before anything that it collects: `bb.ts` is a barrel that the modules it
+// re-exports import back (`BB.…`). As native ES modules (Vite's dev server, Vitest) that circle
+// only closes if the barrel is where it is entered — entered through one of its members, the
+// barrel is evaluated while that member is not initialised yet ("Cannot access … before
+// initialization"). Parcel's bundles do not care, which is why upstream does not either.
+import './app/script/bb/bb';
+
 export { ColorConverter } from './app/script/bb/color/color';
 
 export * from './app/script/app/kl-headless-app';

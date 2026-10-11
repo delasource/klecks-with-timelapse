@@ -38,7 +38,10 @@ export function projectToComposed(project: TKlProject): THistoryEntryDataCompose
                     opacity: layer.opacity,
                     isVisible: layer.isVisible,
                     mixModeStr: layer.mixModeStr,
-                    hasClipping: layer.hasClipping,
+                    // `?? false`: a project made by code that is not type-checked against this
+                    // one, or stored before layers had clipping. Undefined here is an exception
+                    // at the first history push (composeLayer).
+                    hasClipping: layer.hasClipping ?? false,
                     index,
                     tiles,
                 },

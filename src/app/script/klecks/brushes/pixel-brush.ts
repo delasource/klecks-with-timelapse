@@ -18,11 +18,7 @@ import {
     updateBounds,
 } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
-import {
-    createDitherPattern,
-    DEFAULT_PIXEL_PATTERNS,
-    TPixelPattern,
-} from './pixel-brush-patterns';
+import { createDitherPattern, DEFAULT_PIXEL_PATTERNS, TPixelPattern } from './pixel-brush-patterns';
 import { PixelDiscUnion } from './pixel-brush-disc';
 
 export type TPixelBrushTip = 'square' | 'round';
@@ -43,6 +39,10 @@ export type TPixelBrushConfig = {
     // the 16 dither levels and the stroke itself is opaque. Recorded drawings rely on it. While it is
     // on, `pattern` is not used.
     useDither: boolean;
+    // The opacity is that of every single dot of a stroke, not of the stroke: where dots overlap
+    // they add up, and a stroke of dense dots comes out almost solid. This is how the pixel brush
+    // drew before Klecks 0.11.3; only the replay of drawings recorded then turns it on.
+    opacityPerDot: boolean;
     tip: TPixelBrushTip;
     pattern: TPixelPattern;
     color: TRgb;
@@ -64,6 +64,7 @@ export class PixelBrush {
     private settingPattern: TPixelPattern = DEFAULT_PIXEL_PATTERNS[0]; // solid
     private settingTip: TPixelBrushTip = 'round';
     private settingUseDither: boolean = false; // see TPixelBrushConfig
+    private settingOpacityPerDot: boolean = false; // see TPixelBrushConfig
     private inputIsDrawing: boolean = false;
     private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 };
     private lastInput2: TPressureInput = { x: 0, y: 0, pressure: 0 };
@@ -151,12 +152,18 @@ export class PixelBrush {
         this.strokeCtx.clearRect(0, 0, this.strokeCtx.canvas.width, this.strokeCtx.canvas.height);
     }
 
+    // alpha of what is drawn into the stroke: 1, unless the opacity is per dot (see TPixelBrushConfig)
+    private getDotAlpha(): number {
+        return this.settingOpacityPerDot && !this.settingUseDither ? this.settingOpacity : 1;
+    }
+
     /**
      * Composites stroke onto ctx within rect.
      */
     private drawStroke(ctx: CanvasRenderingContext2D, rect: TRect): void {
         ctx.save();
-        ctx.globalAlpha = this.settingUseDither ? 1 : this.settingOpacity;
+        ctx.globalAlpha =
+            this.settingUseDither || this.settingOpacityPerDot ? 1 : this.settingOpacity;
         if (this.settingLockLayerAlpha) {
             ctx.globalCompositeOperation = 'source-atop';
         } else if (this.settingIsEraser) {
@@ -309,6 +316,7 @@ export class PixelBrush {
         } else {
             this.strokeCtx.save();
             this.strokeCtx.fillStyle = this.fillStyle;
+            this.strokeCtx.globalAlpha = this.getDotAlpha();
             this.strokeCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
             this.strokeCtx.restore();
         }
@@ -370,6 +378,7 @@ export class PixelBrush {
                 this.bezierLine.add(x, y, 4, undefined, controlCallback);
             }
             this.strokeCtx.fillStyle = this.fillStyle;
+            this.strokeCtx.globalAlpha = this.getDotAlpha();
             this.strokeCtx.fill(this.bresenheimPath!);
             this.bresenheimPath = undefined;
         } else {
@@ -659,6 +668,7 @@ export class PixelBrush {
             lockLayerAlpha: this.settingLockLayerAlpha,
             isEraser: this.settingIsEraser,
             useDither: this.settingUseDither,
+            opacityPerDot: this.settingOpacityPerDot,
             tip: this.settingTip,
             pattern: this.settingPattern,
             color: this.settingColor,
@@ -688,6 +698,9 @@ export class PixelBrush {
         if (config.sizePressure !== undefined) {
             this.sizePressure(config.sizePressure);
         }
+        if (config.opacityPerDot !== undefined) {
+            this.settingOpacityPerDot = config.opacityPerDot;
+        }
         if (config.tip !== undefined) {
             this.setTip(config.tip);
         }
@@ -711,6 +724,7 @@ export class PixelBrush {
             lockLayerAlpha: false,
             isEraser: false,
             useDither: false,
+            opacityPerDot: false,
             // The square tip is what the pixel brush drew with before it had tips, and what drawings
             // recorded before Klecks 0.11.3 (which name no tip) have to be replayed with.
             tip: 'square',

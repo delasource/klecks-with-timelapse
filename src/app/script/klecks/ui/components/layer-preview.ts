@@ -298,7 +298,7 @@ export class LayerPreview {
                 timeout = undefined;
             } else {
                 // layer didn't change, can update slowly
-                timeout ??= setTimeout(() => {
+                timeout ??= window.setTimeout(() => {
                     timeout = undefined;
                     this.draw();
                 }, 500);
