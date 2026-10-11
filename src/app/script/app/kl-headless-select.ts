@@ -78,6 +78,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     backgroundIsTransparent: true
   };
   private backgroundIsTransparent: boolean = true;
+  // a corner handle keeps the proportions of what is transformed
+  private isConstrained: boolean = true;
 
   constructor(p: TKlHeadlessSelectParams) {
     this.klCanvas = p.klCanvas;
@@ -137,6 +139,11 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       onTranslateTransform: d => {
         this.transformTool.translate(d);
         this.propagateTransformationChange();
+      },
+      onFreeTransform: freeTransform => {
+        this.transformTool.setFreeTransform(freeTransform);
+        // The handles are where this comes from: setting them again would fight the drag.
+        this.propagateTransformationChange(false);
       },
       onResetSelection: () => this.internalResetSelection()
     });
@@ -229,13 +236,25 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     }
   }
 
-  private propagateTransformationChange(): void {
+  /**
+   * The transformation changed: the outline, the preview and the temp history follow — and the
+   * handles, unless they are what changed it.
+   */
+  private propagateTransformationChange(updateHandles: boolean = true): void {
     const selection = this.transformTool.getTransformedSelection();
     this.easelSelect.setRenderedSelection(selection);
+    if (updateHandles) {
+      this.updateHandles();
+    }
     this.updateComposites();
     this.onUpdateProject();
     // this.notifyUi();
     this.tempHistoryReplaceTop();
+  }
+
+  // the handles show the rectangle around the selection where the transformation has it now
+  private updateHandles(): void {
+    this.easelSelect.setFreeTransform(this.transformTool.getFreeTransform());
   }
 
   private canTransform(): boolean {
@@ -303,6 +322,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.updateComposites();
     const transformedSelection = this.transformTool.getTransformedSelection();
     this.easelSelect.setRenderedSelection(transformedSelection);
+    this.updateHandles();
     this.onUpdateProject();
   }
 
@@ -435,10 +455,17 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.transformTool.setSelectionSample(this.selectionTransform.getSelectionSample());
     this.updateComposites();
     this.easelSelect.setRenderedSelection(this.transformTool.getTransformedSelection());
+    this.updateHandles();
     this.onUpdateProject();
     this.notifyUi();
 
     this.statusOverlay.out(LANG('select-transform-clone-applied'), true);
+  }
+
+  setConstrained(isConstrained: boolean): void {
+    this.isConstrained = isConstrained;
+    this.easelSelect.setIsConstrained(isConstrained);
+    this.notifyUi();
   }
 
   // Layer operations
@@ -514,7 +541,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       get canTransform() {
         return canTransform();
       },
-      isCloning: this.transformTool.getDoClone()
+      isCloning: this.transformTool.getDoClone(),
+      isConstrained: this.isConstrained
     };
   }
 
@@ -561,6 +589,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
       const selection = this.transformTool.getTransformedSelection();
       this.easelSelect.setRenderedSelection(selection);
+      this.updateHandles();
       this.updateComposites();
       this.onUpdateProject();
     }

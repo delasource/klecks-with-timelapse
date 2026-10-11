@@ -4,7 +4,6 @@ import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d
 import {
     applyToPoint,
     compose,
-    decomposeTSR,
     identity,
     Matrix,
     rotate,
@@ -20,40 +19,43 @@ import { snapToPixel } from '../ui/components/free-transform-utils';
 import { TFreeTransform } from '../transform/transform-types';
 import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
 
+/**
+ * The matrix as "this rectangle, at this place, of this size, turned by this angle" — the form
+ * the handles of FreeTransform work on. It is the inverse of freeTransformToMatrix, which composes
+ * translate · rotate · scale: the angle is therefore the direction the rectangle's x-axis points
+ * in after the transformation, not the rotation of transformation-matrix's decomposeTSR, which
+ * takes a matrix apart as scale · rotate and names another angle as soon as the two scales
+ * differ (and named a wrong one for a rotation followed by a flip).
+ *
+ * A mirrored matrix is told the way upstream's flipTransformation tells it: a negative width.
+ */
 function matrixToFreeTransform(transform: Matrix, bounds: TCoordinateBounds): TFreeTransform {
     const centerBefore = {
         x: bounds.x1 + (bounds.x2 - bounds.x1) / 2,
         y: bounds.y1 + (bounds.y2 - bounds.y1) / 2,
     };
     const centerAfter = applyToPoint(transform, centerBefore);
-    const decomposed = decomposeTSR(transform);
-    const angleDeg = BB.round((decomposed.rotation.angle / Math.PI) * 180, 7);
 
-    const tlBefore = {
-        x: bounds.x1,
-        y: bounds.y1,
-    };
-    const trBefore = {
-        x: bounds.x2,
-        y: bounds.y1,
-    };
-    const blBefore = {
-        x: bounds.x1,
-        y: bounds.y2,
-    };
+    const scaleX = Math.hypot(transform.a, transform.b);
+    const determinant = transform.a * transform.d - transform.b * transform.c;
+    const scaleY = scaleX === 0 ? 0 : determinant / scaleX;
+    const isMirrored = scaleY < 0;
 
-    const [tlAfter, trAfter, blAfter] = [tlBefore, trBefore, blBefore].map((p) => {
-        return applyToPoint(transform, p);
-    });
-    let width = BB.Vec2.dist(trAfter, tlAfter);
-    let height = BB.Vec2.dist(blAfter, tlAfter);
-
-    if (decomposed.scale.sx < 0) {
-        width = -width;
+    let angleDeg = (Math.atan2(transform.b, transform.a) / Math.PI) * 180;
+    if (isMirrored) {
+        // rotate(a) · scale(x, -y) = rotate(a + 180°) · scale(-x, y)
+        angleDeg += 180;
     }
-    if (decomposed.scale.sy < 0) {
-        height = -height;
+    // (-180, 180]
+    if (angleDeg > 180) {
+        angleDeg -= 360;
+    } else if (angleDeg <= -180) {
+        angleDeg += 360;
     }
+    angleDeg = BB.round(angleDeg, 7) + 0; // + 0: no -0
+
+    const width = (bounds.x2 - bounds.x1) * scaleX * (isMirrored ? -1 : 1);
+    const height = (bounds.y2 - bounds.y1) * Math.abs(scaleY);
 
     return {
         ...centerAfter,
@@ -90,7 +92,9 @@ function freeTransformToMatrix(transform: TFreeTransform, bounds: TCoordinateBou
  *
  * Upstream removed this tool with Klecks 0.9.10, in favour of a free transform inside its own UI.
  * It stays for the headless app's selection tool (kl-headless-select.ts), which moves a selection
- * by a matrix — see kl-canvas-selection-transform.ts.
+ * by a matrix — see kl-canvas-selection-transform.ts. The handles of upstream's free transform
+ * work on it too (get/setFreeTransform): what they do to the rectangle around the selection is
+ * a matrix again, so it is recorded and replayed as the same event as before.
  */
 export class SelectTransformTool {
     private selection: MultiPolygon = [];
@@ -190,14 +194,35 @@ export class SelectTransformTool {
     }
 
     getTransform(): Matrix {
-        const freeTransform = snapToPixel(
-            matrixToFreeTransform(this.transform, this.selectionBounds),
-        );
-        return freeTransformToMatrix(freeTransform, this.selectionBounds);
+        return freeTransformToMatrix(this.getFreeTransform(), this.selectionBounds);
     }
 
     setTransform(transform: Matrix): void {
         this.transform = transform;
+    }
+
+    /**
+     * The transformation as the handles show it: the rectangle around the selection, where it is
+     * now. What getTransform() returns is this, as a matrix.
+     */
+    getFreeTransform(): TFreeTransform {
+        return snapToPixel(matrixToFreeTransform(this.transform, this.selectionBounds));
+    }
+
+    /**
+     * The transformation as the handles left it. A rectangle dragged shut would be a matrix that
+     * cannot be inverted and a selection without an area: it keeps one pixel.
+     */
+    setFreeTransform(freeTransform: TFreeTransform): void {
+        const atLeastOne = (size: number) => (Math.abs(size) < 1 ? (size < 0 ? -1 : 1) : size);
+        this.transform = freeTransformToMatrix(
+            {
+                ...freeTransform,
+                width: atLeastOne(freeTransform.width),
+                height: atLeastOne(freeTransform.height),
+            },
+            this.selectionBounds,
+        );
     }
 
     getTransformedSelection(): MultiPolygon {

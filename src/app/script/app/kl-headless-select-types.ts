@@ -21,6 +21,8 @@ export interface IHeadlessSelectActions {
   flipVertical(): void;
   rotate(degrees: number): void;
   clone(): void;
+  // true (the default): dragging a corner handle keeps the proportions
+  setConstrained(isConstrained: boolean): void;
 
   // Layer operations
   moveToLayer(layerIndex: number): void;
@@ -53,4 +55,5 @@ export interface IHeadlessSelectState {
   backgroundIsTransparent: boolean;
   canTransform: boolean;
   isCloning: boolean;
+  isConstrained: boolean;
 }

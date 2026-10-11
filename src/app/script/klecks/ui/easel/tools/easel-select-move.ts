@@ -14,6 +14,8 @@ import { EventChain } from '../../../../bb/input/event-chain/event-chain';
 import { DoubleTapper } from '../../../../bb/input/event-chain/double-tapper';
 import { TChainElement } from '../../../../bb/input/event-chain/event-chain.types';
 import { CornerPanning } from '../corner-panning';
+import { FreeTransform } from '../../components/free-transform';
+import { TFreeTransform } from '../../../transform/transform-types';
 
 const modeToCursor: Record<TSelectToolMode, string> = {
     select: 'default',
@@ -36,6 +38,8 @@ export type TEaselSelectMoveParams = {
     onEndMoveSelect: () => void;
     onSelectAddPoly: (path: TVector2D[], operation: TBooleanOperation) => void;
     onTranslateTransform: (d: TVector2D) => void;
+    // the handles moved, resized or turned the rectangle around the selection
+    onFreeTransform: (transform: TFreeTransform) => void;
     onResetSelection: () => void;
 };
 
@@ -46,6 +50,13 @@ export type TEaselSelectMoveParams = {
  * dragging and tells by how much (onTranslateTransform). Upstream's EaselSelect has since got a
  * free transform with handles and warping, which belongs to its own UI. The headless app's
  * selection tool (kl-headless-select.ts) is built on this one.
+ *
+ * The handles are upstream's (FreeTransform, as its EaselSelect uses it — DOM elements in the
+ * easel's HTML overlay, styled inline, nothing of Klecks' stylesheet): a rectangle around the
+ * selection with a grip in each corner and on each edge to resize it, and one above it to turn
+ * it. They tell the rectangle they were dragged to (onFreeTransform) and are told the one to
+ * show (setFreeTransform) whenever it changes without them: a drag on the canvas, the arrow
+ * keys, a flip, an undo. The warp of upstream's tool is not here.
  */
 export class EaselSelectMove implements TEaselTool {
     // from params
@@ -57,9 +68,11 @@ export class EaselSelectMove implements TEaselTool {
     private readonly onEndMoveSelect: () => void;
     private readonly onSelectAddPoly: (path: TVector2D[], operation: TBooleanOperation) => void;
     private readonly onTranslateTransform: TEaselSelectMoveParams['onTranslateTransform'];
+    private readonly onFreeTransform: TEaselSelectMoveParams['onFreeTransform'];
     private readonly onResetSelection: () => void;
 
     private readonly svgEl: SVGElement;
+    private readonly htmlEl: HTMLElement;
     private easel: TEaselInterface = {} as TEaselInterface;
     private viewportTransform: TViewportTransform = {} as TViewportTransform;
     private tempCtx: CanvasRenderingContext2D = BB.ctx(BB.canvas(1, 1)); // used for isPointInPath()
@@ -83,6 +96,9 @@ export class EaselSelectMove implements TEaselTool {
     // transform-mode state
     private transformPointerStart: TVector2D = { x: 0, y: 0 }; // initial position, canvas coordinate
     private transformPreviousPointer: TVector2D = { x: 0, y: 0 };
+    private freeTransform: FreeTransform | undefined; // the handles. exists in transform mode
+    private freeTransformValue: TFreeTransform | undefined; // what they show, or are to show
+    private freeTransformIsConstrained: boolean = true;
 
     private viewportToCanvas(p: TVector2D): TVector2D {
         const matrix = inverse(createMatrixFromTransform(this.easel.getTransform()));
@@ -275,6 +291,46 @@ export class EaselSelectMove implements TEaselTool {
         }
     }
 
+    private createFreeTransform(): void {
+        if (this.freeTransform) {
+            return;
+        }
+        const value = this.freeTransformValue ?? { x: 1, y: 1, width: 1, height: 1, angleDeg: 0 };
+        const { width, height } = this.easel.getProjectSize();
+        this.freeTransform = new FreeTransform({
+            ...value,
+            isConstrained: this.freeTransformIsConstrained,
+            // the edges of the drawing
+            snapX: [0, width],
+            snapY: [0, height],
+            viewportTransform: this.easel.getTransform(),
+            callback: (transform) => {
+                if (
+                    this.mode !== 'transform' ||
+                    isNaN(transform.x) ||
+                    isNaN(transform.y) ||
+                    isNaN(transform.width) ||
+                    isNaN(transform.height)
+                ) {
+                    // NaN: upstream's note — repeatedly halved, then dragged by a corner
+                    return;
+                }
+                this.freeTransformValue = { ...transform };
+                this.onFreeTransform(transform);
+            },
+            onWheel: this.easel.onWheel,
+            wheelParent: this.easel.getElement(),
+        });
+        this.htmlEl.append(this.freeTransform.getElement());
+    }
+
+    private destroyFreeTransform(): void {
+        this.freeTransform?.getElement().remove();
+        this.freeTransform?.destroy();
+        this.freeTransform = undefined;
+        this.freeTransformValue = undefined;
+    }
+
     private onPointerChainOut(event: TPointerEvent): void {
         this.cornerPanning.onPointer(event);
 
@@ -291,6 +347,7 @@ export class EaselSelectMove implements TEaselTool {
 
     constructor(p: TEaselSelectMoveParams) {
         this.onTranslateTransform = p.onTranslateTransform;
+        this.onFreeTransform = p.onFreeTransform;
         this.mode = p.selectMode;
         this.onStartSelect = p.onStartSelect;
         this.onGoSelect = p.onGoSelect;
@@ -342,10 +399,15 @@ export class EaselSelectMove implements TEaselTool {
         this.svgEl = BB.createSvg({
             elementType: 'g',
         });
+        this.htmlEl = BB.el();
     }
 
     getSvgElement(): SVGElement {
         return this.svgEl;
+    }
+
+    getHtmlOverlayElement(): HTMLElement {
+        return this.htmlEl;
     }
 
     onPointer(event: TPointerEvent): void {
@@ -361,6 +423,30 @@ export class EaselSelectMove implements TEaselTool {
     setMode(mode: TSelectToolMode): void {
         this.mode = mode;
         this.resetPolyShape();
+        if (this.mode === 'transform') {
+            this.createFreeTransform();
+        } else {
+            this.destroyFreeTransform();
+        }
+    }
+
+    // the handles are the select tool's: another tool on the easel must not find them in its way
+    onTool(toolId: string): void {
+        this.htmlEl.style.display = toolId === 'select' ? 'block' : 'none';
+    }
+
+    /**
+     * The rectangle the handles are to show. Does not come back through onFreeTransform.
+     */
+    setFreeTransform(transform: TFreeTransform): void {
+        this.freeTransformValue = { ...transform };
+        this.freeTransform?.initialise(transform);
+    }
+
+    /** true: a corner keeps the proportions of the rectangle. */
+    setIsConstrained(isConstrained: boolean): void {
+        this.freeTransformIsConstrained = isConstrained;
+        this.freeTransform?.setIsConstrained(isConstrained);
     }
 
     activate(cursorPos?: TVector2D, poppedTemp?: boolean): void {
@@ -375,6 +461,7 @@ export class EaselSelectMove implements TEaselTool {
     onUpdateTransform(transform: TViewportTransform): void {
         this.viewportTransform = transform;
         this.updateSelectionPath();
+        this.freeTransform?.setViewportTransform(transform);
     }
 
     onUpdateSelection(selection: MultiPolygon | undefined): void {
