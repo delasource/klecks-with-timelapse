@@ -610,6 +610,7 @@ export class KlCanvas {
         }
 
         if (!this.klHistory.isPaused()) {
+            this.klRecorder?.record('l-clip', [layerIndex, hasClipping]);
             // todo could this also do replace top like setLayerIsVisible? - might require extra effort
             this.klHistory.push({
                 layerMap: createLayerMap(this.layers, {

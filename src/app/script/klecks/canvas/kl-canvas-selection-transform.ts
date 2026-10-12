@@ -11,6 +11,19 @@ import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
 import { getSelectionBounds } from '../select-tool/get-selection-bounds';
 import { createLayerMap } from '../history/push-helpers/create-layer-map';
 import { KlEventRecorder } from '../history/kl-event-recorder';
+import { createFfdMeshForSelectionSample, TFfdLattice } from '../transform/ffd';
+import { FfdRenderer } from '../transform/ffd-renderer';
+import {
+    RENDERED_FFD_MESH_RESOLUTION,
+    transformSelection,
+} from '../transform/composed-transformation';
+import { createSelectionSample } from '../transform/selection-sample';
+import { getSelectionSampleBounds } from '../transform/get-selection-sample-bounds';
+import { getFfdMeshBoundsInArea } from '../transform/ffd-utils';
+import {
+    createHistoryEntryFromChanges,
+    TChangeListEntry,
+} from '../history/push-helpers/create-history-entry-from-changes';
 
 /**
  * The area of a layer that got selected, with where it is now. Consecutive transformations move
@@ -34,6 +47,15 @@ export type TTransformCloneViaSelectionParams = {
     targetLayer: number;
     transformation: Matrix; // relative to (0,0) of canvas
     isPixelated?: boolean; // default false
+};
+
+export type TWarpViaSelectionParams = {
+    sourceLayer: number;
+    targetLayer?: number;
+    // The lattice the selected area is drawn through: 5 × 5 control points in canvas coordinates,
+    // laid over the bounds of the selection before anything was dragged.
+    ffd: TFfdLattice;
+    backgroundIsTransparent?: boolean;
 };
 
 function getSampleBounds(sample: TMatrixSelectionSample): TIndexBounds | undefined {
@@ -63,11 +85,15 @@ function getSampleBounds(sample: TMatrixSelectionSample): TIndexBounds | undefin
  * are what the recorded events 'selection-transform' and 'selection-transform-clone' mean: a
  * recording names the matrix, so replaying an existing drawing needs exactly this operation.
  * One call = one history entry = one recorded event.
+ *
+ * warpViaSelection is the third operation, and newer: upstream's warp (klCanvasFfd), as an event
+ * of its own ('selection-warp') — a warp is a lattice, not a matrix.
  */
 export class KlCanvasSelectionTransform {
     private readonly klCanvas: KlCanvas;
     private readonly klRecorder: KlEventRecorder | undefined;
     private selectionSample: TMatrixSelectionSample | undefined;
+    private ffdRenderer: FfdRenderer | undefined; // made when the first warp needs it (WebGL)
 
     private getSelectionOrFallback(): MultiPolygon {
         const width = this.klCanvas.getWidth();
@@ -272,6 +298,100 @@ export class KlCanvasSelectionTransform {
                 }),
             });
         }
+    }
+
+    /**
+     * Warps the selected region (or, without a selection, what is on the layer) through a lattice,
+     * and the selection with it.
+     *
+     * This is upstream's klCanvasFfd, written out here for one reason: that one sets the selection
+     * through KlCanvas.setSelection, which records a 'selection' event of its own — and an undo
+     * step has to be one recorded event.
+     *
+     * The warp is drawn with WebGL. Where there is none, nothing happens at all — the selected
+     * area must not be erased for a picture that cannot be drawn. Returns whether it was applied.
+     *
+     * It ends the selection sample of the matrix transformations: a clone that follows samples
+     * the layer anew.
+     */
+    warpViaSelection(p: TWarpViaSelectionParams): boolean {
+        const klHistory = this.klCanvas.getKlHistory();
+        const layers = this.klCanvas.getLayersReference();
+        const targetLayerIndex = p.targetLayer ?? p.sourceLayer;
+        const targetLayer = layers[targetLayerIndex];
+        const width = this.klCanvas.getWidth();
+        const height = this.klCanvas.getHeight();
+
+        const sample = createSelectionSample(p.sourceLayer, this.klCanvas);
+        if (!sample) {
+            // nothing but transparent pixels
+            return false;
+        }
+        const ffdRenderer = this.getFfdRenderer();
+        ffdRenderer.render({
+            ffdLattice: p.ffd,
+            selectionSample: sample,
+            algorithm: 'smooth',
+            outputWidth: width,
+            outputHeight: height,
+        });
+        const warped = ffdRenderer.getCanvas();
+        if (!warped) {
+            BB.freeCanvas(sample.image);
+            return false;
+        }
+
+        const selection = this.klCanvas.getSelection();
+        let transformedSelection: MultiPolygon | undefined;
+        klHistory.pause(true);
+        try {
+            this.klCanvas.eraseLayer({
+                layerIndex: p.sourceLayer,
+                useSelection: true,
+                useAlphaLock: p.sourceLayer === 0 && !p.backgroundIsTransparent,
+            });
+            targetLayer.context.drawImage(warped, 0, 0);
+            if (selection) {
+                transformedSelection = transformSelection({ type: 'ffd', ffd: p.ffd }, selection);
+                this.klCanvas.setSelectionSilently(transformedSelection);
+            }
+        } finally {
+            klHistory.pause(false);
+        }
+
+        if (!klHistory.isPaused()) {
+            const ffdMesh = createFfdMeshForSelectionSample(
+                RENDERED_FFD_MESH_RESOLUTION,
+                RENDERED_FFD_MESH_RESOLUTION,
+                p.ffd,
+                sample,
+                1,
+                1,
+                true,
+            );
+            const targetBounds = getFfdMeshBoundsInArea(ffdMesh, width, height);
+            const changes: TChangeListEntry[] = [];
+            transformedSelection && changes.push({ selection: transformedSelection });
+            changes.push({
+                layerId: layers[p.sourceLayer].id,
+                bounds: getSelectionSampleBounds(sample),
+            });
+            targetBounds && changes.push({ layerId: targetLayer.id, bounds: targetBounds });
+            this.klRecorder?.record('selection-warp', [p]);
+            klHistory.push(createHistoryEntryFromChanges(layers, changes));
+        }
+
+        BB.freeCanvas(sample.image);
+        // the renderer keeps a texture of the sample that was just freed
+        ffdRenderer.freeResources();
+        this.clearSelectionSample();
+        return true;
+    }
+
+    /** Draws warps — for warpViaSelection, and for the preview of a warp that is not applied yet. */
+    getFfdRenderer(): FfdRenderer {
+        this.ffdRenderer ??= new FfdRenderer();
+        return this.ffdRenderer;
     }
 
     clearSelectionSample(): void {

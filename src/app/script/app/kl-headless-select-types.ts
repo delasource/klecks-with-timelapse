@@ -23,6 +23,10 @@ export interface IHeadlessSelectActions {
   clone(): void;
   // true (the default): dragging a corner handle keeps the proportions
   setConstrained(isConstrained: boolean): void;
+  // true (the default): the handles snap to the edges of the drawing and to every 45°
+  setSnapping(isSnapping: boolean): void;
+  // a lattice over what is transformed, to drag it out of shape. returns whether it is warping now
+  setWarping(isWarping: boolean): boolean;
 
   // Layer operations
   moveToLayer(layerIndex: number): void;
@@ -56,4 +60,9 @@ export interface IHeadlessSelectState {
   canTransform: boolean;
   isCloning: boolean;
   isConstrained: boolean;
+  isSnapping: boolean;
+  // the lattice of a warp is on the canvas and can be dragged
+  isWarping: boolean;
+  // the transformation has a warp (being dragged, or done and now moved as a whole)
+  hasWarp: boolean;
 }

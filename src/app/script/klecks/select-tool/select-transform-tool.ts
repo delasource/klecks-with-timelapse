@@ -18,6 +18,30 @@ import { BB } from '../../bb/bb';
 import { snapToPixel } from '../ui/components/free-transform-utils';
 import { TFreeTransform } from '../transform/transform-types';
 import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
+import { createFfdLattice, TFfdLattice } from '../transform/ffd';
+import { transformFfd, transformSelection } from '../transform/composed-transformation';
+import { getFfdBounds } from '../transform/ffd-utils';
+import { TRect } from '../../bb/bb-types';
+
+/** The warp of a transformation, as the temp history keeps it. */
+export type TSelectTransformWarp = {
+    // where the lattice is, before the matrix (canvas coordinates)
+    ffd: TFfdLattice;
+    // true: the lattice itself is being dragged. false: it is moved as a whole, by the matrix
+    isWarping: boolean;
+};
+
+// what the matrix of a warped transformation is told relative to: the box around the lattice
+function ffdFrame(ffd: TFfdLattice): TCoordinateBounds {
+    const bounds = getFfdBounds(ffd);
+    return {
+        type: 'coordinate',
+        x1: Math.floor(bounds.x1),
+        y1: Math.floor(bounds.y1),
+        x2: Math.max(Math.floor(bounds.x1) + 1, Math.ceil(bounds.x2)),
+        y2: Math.max(Math.floor(bounds.y1) + 1, Math.ceil(bounds.y2)),
+    };
+}
 
 /**
  * The matrix as "this rectangle, at this place, of this size, turned by this angle" — the form
@@ -95,6 +119,14 @@ function freeTransformToMatrix(transform: TFreeTransform, bounds: TCoordinateBou
  * by a matrix — see kl-canvas-selection-transform.ts. The handles of upstream's free transform
  * work on it too (get/setFreeTransform): what they do to the rectangle around the selection is
  * a matrix again, so it is recorded and replayed as the same event as before.
+ *
+ * A warp (upstream's free-form deformation: a lattice of 5 × 5 control points over the selection,
+ * transform/ffd.ts) is no matrix. With one, the transformation is "the lattice, then the matrix":
+ * - while the lattice is dragged (isWarping) the matrix stays the identity — a move, a flip or a
+ *   turn goes into the lattice at once;
+ * - afterwards the handles are back, around the box of the warped lattice, and the matrix moves
+ *   the lattice as a whole (upstream calls the two states 'ffd' and 'ffd+free').
+ * What is applied in the end is getFfd(): the lattice with the matrix in it.
  */
 export class SelectTransformTool {
     private selection: MultiPolygon = [];
@@ -103,6 +135,19 @@ export class SelectTransformTool {
     private doClone: boolean = false; // true -> draw selected area twice (original position, and transformed position)
     private selectionSample: TMatrixSelectionSample | undefined;
     private backgroundIsTransparent: boolean = false;
+    private warp: TSelectTransformWarp | undefined;
+    // what the lattice was laid over, and what its outline is made from
+    private warpSelection: MultiPolygon = [];
+
+    // the matrix goes into the lattice: what the two meant together, the lattice now means alone
+    private bakeMatrixIntoWarp(): void {
+        if (!this.warp) {
+            return;
+        }
+        this.warp = { ...this.warp, ffd: transformFfd(this.warp.ffd, this.getTransform()) };
+        this.selectionBounds = ffdFrame(this.warp.ffd);
+        this.transform = identity();
+    }
 
     // ----------------------------------- public -----------------------------------
     constructor() {}
@@ -123,9 +168,14 @@ export class SelectTransformTool {
             y2: Math.ceil(bounds.y2),
         };
         this.transform = identity();
+        this.warp = undefined;
+        this.warpSelection = [];
     }
 
     isTransformationChanged(): boolean {
+        if (this.warp) {
+            return true;
+        }
         const identityMatrix = identity();
         const keys = Object.keys(identityMatrix) as (keyof Matrix)[];
         for (let i = 0; i < keys.length; i++) {
@@ -139,6 +189,8 @@ export class SelectTransformTool {
 
     reset(): void {
         this.transform = identity();
+        this.warp = undefined;
+        this.warpSelection = [];
         this.selection = [];
         this.selectionBounds = {
             type: 'coordinate',
@@ -153,6 +205,7 @@ export class SelectTransformTool {
 
     translate(d: TVector2D): void {
         this.transform = compose(translate(d.x, d.y), this.transform);
+        this.warp?.isWarping && this.bakeMatrixIntoWarp();
     }
 
     flip(axis: 'x' | 'y'): void {
@@ -167,6 +220,7 @@ export class SelectTransformTool {
             translate(-transformedCenter.x, -transformedCenter.y),
             this.transform,
         );
+        this.warp?.isWarping && this.bakeMatrixIntoWarp();
     }
 
     rotateDeg(deg: number): void {
@@ -181,6 +235,7 @@ export class SelectTransformTool {
             translate(-transformedCenter.x, -transformedCenter.y),
             this.transform,
         );
+        this.warp?.isWarping && this.bakeMatrixIntoWarp();
     }
 
     // --------
@@ -226,7 +281,90 @@ export class SelectTransformTool {
     }
 
     getTransformedSelection(): MultiPolygon {
+        const ffd = this.getFfd();
+        if (ffd) {
+            return transformSelection({ type: 'ffd', ffd }, this.warpSelection);
+        }
         return transformMultiPolygon(this.selection, this.getTransform());
+    }
+
+    // ---- warp ----
+
+    /**
+     * The lattice may be dragged from now on. `latticeRect` is what it is laid over at first (the
+     * bounds of the selection — of upstream's selection sample, which the warp is drawn from),
+     * `selection` what its outline is made from. What the matrix did so far goes into the lattice.
+     */
+    startWarp(latticeRect: TRect, selection: MultiPolygon): void {
+        if (!this.warp) {
+            this.warp = { ffd: createFfdLattice(5, 5, latticeRect), isWarping: true };
+            this.warpSelection = selection;
+        }
+        this.warp = { ...this.warp, isWarping: true };
+        this.bakeMatrixIntoWarp();
+    }
+
+    /** The lattice stays as it is; the handles move it as a whole from now on. */
+    endWarp(): void {
+        if (!this.warp) {
+            return;
+        }
+        this.bakeMatrixIntoWarp();
+        this.warp = { ...this.warp, isWarping: false };
+    }
+
+    /** The lattice as it was dragged to. Only while warping. */
+    setWarpLattice(ffd: TFfdLattice): void {
+        if (!this.warp?.isWarping) {
+            return;
+        }
+        this.warp = { ...this.warp, ffd };
+        this.selectionBounds = ffdFrame(ffd);
+    }
+
+    hasWarp(): boolean {
+        return !!this.warp;
+    }
+
+    isWarping(): boolean {
+        return !!this.warp?.isWarping;
+    }
+
+    /**
+     * The lattice with the matrix in it — the warp as it is applied, shown and outlined.
+     * undefined: no warp, the transformation is getTransform().
+     */
+    getFfd(): TFfdLattice | undefined {
+        if (!this.warp) {
+            return undefined;
+        }
+        return this.warp.isWarping
+            ? this.warp.ffd
+            : transformFfd(this.warp.ffd, this.getTransform());
+    }
+
+    getWarp(): TSelectTransformWarp | undefined {
+        return this.warp;
+    }
+
+    /** For the temp history: the warp of an earlier state, with setTransform. */
+    setWarp(warp: TSelectTransformWarp | undefined): void {
+        if (warp) {
+            this.warp = warp;
+            this.selectionBounds = ffdFrame(warp.ffd);
+        } else {
+            // Back to the box around the selection. What the lattice was laid over is kept: a redo
+            // brings the warp back.
+            const transform = this.transform;
+            const warpSelection = this.warpSelection;
+            this.setSelection(this.selection);
+            this.transform = transform;
+            this.warpSelection = warpSelection;
+        }
+    }
+
+    getWarpSelection(): MultiPolygon {
+        return this.warpSelection;
     }
 
     setSelectionSample(selectionSample: TMatrixSelectionSample | undefined): void {

@@ -16,6 +16,7 @@ import {
   KlCanvasSelectionTransform,
   TTransformCloneViaSelectionParams,
   TTransformViaSelectionParams,
+  TWarpViaSelectionParams,
 } from '../klecks/canvas/kl-canvas-selection-transform';
 import { LineSanitizer } from '../klecks/events/line-sanitizer';
 import { LineSmoothing } from '../klecks/events/line-smoothing';
@@ -1312,6 +1313,12 @@ export class KlHeadlessApp {
         this.easelProjectUpdater.update();
       });
 
+      replayer.addReplayHandler('l-clip', event => {
+        const data = event.data as Parameters<typeof KlCanvas.prototype.setLayerHasClipping>;
+        this.klCanvas.setLayerHasClipping(...data);
+        this.easelProjectUpdater.update();
+      });
+
       replayer.addReplayHandler('l-move', event => {
         const [index, delta] = event.data as [number, number];
         // A move leaves the active layer active, wherever it ends up — as the layer controller
@@ -1400,6 +1407,15 @@ export class KlHeadlessApp {
       replayer.addReplayHandler('selection-transform', event => {
         const data = event.data as [TTransformViaSelectionParams];
         this.selectionTransform.transformViaSelection(...data);
+        this.easelProjectUpdater.update();
+      });
+
+      replayer.addReplayHandler('selection-warp', event => {
+        const data = event.data as [TWarpViaSelectionParams];
+        if (!this.selectionTransform.warpViaSelection(...data)) {
+          // No WebGL here (or nothing in the selection any more): the drawing goes on without it.
+          console.error('Failed to apply warp during replay');
+        }
         this.easelProjectUpdater.update();
       });
 

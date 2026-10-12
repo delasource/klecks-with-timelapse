@@ -3,7 +3,16 @@ import { KlCanvas } from '../klecks/canvas/kl-canvas';
 import { KlCanvasSelectionTransform } from '../klecks/canvas/kl-canvas-selection-transform';
 import { throwIfNull } from '../bb/base/base';
 import { SelectTool, TSelectShape, TBooleanOperation } from '../klecks/select-tool/select-tool';
-import { SelectTransformTool } from '../klecks/select-tool/select-transform-tool';
+import { SelectTransformTool, TSelectTransformWarp } from '../klecks/select-tool/select-transform-tool';
+import { createSelectionSample, TSelectionSample } from '../klecks/transform/selection-sample';
+import {
+  getSelectionBoundsFromSample,
+  getSelectionSampleBoundsMultiPolygon,
+} from '../klecks/transform/get-selection-sample-bounds';
+import { createTransformationComposite } from '../klecks/transform/create-transformation-composite';
+import { boundsToRect } from '../bb/math/math';
+import { BB } from '../bb/bb';
+import { MultiPolygon } from 'polygon-clipping';
 import { KlTempHistory, TTempHistoryEntry } from '../klecks/history/kl-temp-history';
 import { identity, Matrix } from 'transformation-matrix';
 import { StatusOverlay } from '../klecks/ui/components/status-overlay';
@@ -18,6 +27,8 @@ export type TSelectTransformTempEntry = {
     doClone: boolean;
     targetLayerIndex: number;
     backgroundIsTransparent: boolean;
+    // the lattice of a warp, if the transformation has one
+    warp?: TSelectTransformWarp;
   };
 };
 
@@ -78,8 +89,18 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     backgroundIsTransparent: true
   };
   private backgroundIsTransparent: boolean = true;
+  /**
+   * What a warp is drawn from, for its preview: the selected area as it is on the layer (upstream's
+   * selection sample — not the one of the matrix transformations, which KlCanvasSelectionTransform
+   * keeps). Exists from the first warp of a transformation until the transformation ends.
+   */
+  private warpSample: TSelectionSample | undefined;
+  // the selection the sample was taken with (undefined: none, the whole layer)
+  private warpSampleSelection: MultiPolygon | undefined;
   // a corner handle keeps the proportions of what is transformed
   private isConstrained: boolean = true;
+  // the handles are pulled to the edges of the drawing and to every 45°
+  private isSnapping: boolean = true;
 
   constructor(p: TKlHeadlessSelectParams) {
     this.klCanvas = p.klCanvas;
@@ -140,6 +161,11 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         this.transformTool.translate(d);
         this.propagateTransformationChange();
       },
+      onWarp: ffd => {
+        this.transformTool.setWarpLattice(ffd);
+        // The lattice on the easel is where this comes from: setting it again would end the drag.
+        this.propagateTransformationChange(false);
+      },
       onFreeTransform: freeTransform => {
         this.transformTool.setFreeTransform(freeTransform);
         // The handles are where this comes from: setting them again would fight the drag.
@@ -185,9 +211,42 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     }
   }
 
+  private freeWarpSample(): void {
+    if (this.warpSample) {
+      BB.freeCanvas(this.warpSample.image);
+      this.warpSample = undefined;
+      this.warpSampleSelection = undefined;
+      // it keeps a texture of the sample
+      this.selectionTransform.getFfdRenderer().freeResources();
+    }
+  }
+
   private updateComposites(): void {
     const srcLayerCanvas = this.getCurrentLayerCtx().canvas;
     const srcLayerIndex = throwIfNull(this.getLayerIndex(srcLayerCanvas));
+
+    const ffd = this.transformTool.getFfd();
+    if (ffd && this.warpSample) {
+      // A warp: upstream's preview, which draws the sample through the lattice (WebGL).
+      const config = {
+        klCanvasWidth: this.klCanvas.getWidth(),
+        klCanvasHeight: this.klCanvas.getHeight(),
+        transform: { type: 'ffd' as const, ffd },
+        selection: this.warpSampleSelection,
+        selectionSample: this.warpSample,
+        algorithm: 'smooth' as const,
+        backgroundIsTransparent: this.isSourceLayerBackgroundTransparent(),
+        doClone: false,
+        ffdRenderer: this.selectionTransform.getFfdRenderer(),
+      };
+      if (srcLayerIndex === this.targetLayerIndex) {
+        this.klCanvas.setComposite(srcLayerIndex, createTransformationComposite(config, 'same'));
+      } else {
+        this.klCanvas.setComposite(srcLayerIndex, createTransformationComposite(config, 'src'));
+        this.klCanvas.setComposite(this.targetLayerIndex, createTransformationComposite(config, 'dest'));
+      }
+      return;
+    }
 
     if (srcLayerIndex === this.targetLayerIndex) {
       this.klCanvas.setComposite(srcLayerIndex, this.transformTool.createComposite(srcLayerCanvas));
@@ -225,7 +284,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         transform: this.transformTool.getTransform(),
         doClone: this.transformTool.getDoClone(),
         targetLayerIndex: this.targetLayerIndex,
-        backgroundIsTransparent: this.backgroundIsTransparent
+        backgroundIsTransparent: this.backgroundIsTransparent,
+        warp: this.transformTool.getWarp()
       }
     } satisfies TSelectTransformTempEntry;
     if (this.tempHistory.getEntries().length <= 1) {
@@ -252,9 +312,11 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     this.tempHistoryReplaceTop();
   }
 
-  // the handles show the rectangle around the selection where the transformation has it now
+  // the handles show the rectangle around the selection where the transformation has it now —
+  // or, while warping, the easel shows the lattice in their place
   private updateHandles(): void {
     this.easelSelect.setFreeTransform(this.transformTool.getFreeTransform());
+    this.easelSelect.setWarp(this.transformTool.isWarping() ? this.transformTool.getFfd() : undefined);
   }
 
   private canTransform(): boolean {
@@ -273,6 +335,21 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
 
   private applyTransform(): void {
     const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
+    const ffd = this.transformTool.getFfd();
+    if (ffd) {
+      const isApplied = this.selectionTransform.warpViaSelection({
+        sourceLayer: layerIndex,
+        targetLayer: this.targetLayerIndex,
+        ffd,
+        backgroundIsTransparent: this.backgroundIsTransparent
+      });
+      if (isApplied) {
+        this.statusOverlay.out(LANG('select-transform-applied'), true);
+      } else {
+        this.notifyError('The warp could not be drawn (WebGL)');
+      }
+      return;
+    }
     if (this.transformTool.getDoClone()) {
       this.selectionTransform.transformCloneViaSelection({
         sourceLayer: layerIndex,
@@ -310,6 +387,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       ];
     }
 
+    this.freeWarpSample();
     this.transformTool.setSelection(selection);
     this.transformTool.setDoClone(false);
     this.transformTool.setSelectionSample(this.selectionTransform.getSelectionSample());
@@ -338,6 +416,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       // something changed -> apply
       this.applyTransform();
     }
+    this.freeWarpSample();
     this.selectionTransform.clearSelectionSample();
     this.klCanvas.setComposite(layerIndex, undefined);
     this.klCanvas.setComposite(this.targetLayerIndex, undefined);
@@ -431,7 +510,11 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
     // apply
     // should always apply. user might want to make something more opaque.
-    if (this.transformTool.getDoClone()) {
+    if (this.transformTool.hasWarp()) {
+      // A warp is committed as what it is; the clone that starts now samples the warped area anew.
+      this.applyTransform();
+      this.freeWarpSample();
+    } else if (this.transformTool.getDoClone()) {
       this.selectionTransform.transformCloneViaSelection({
         sourceLayer: layerIndex,
         targetLayer: this.targetLayerIndex,
@@ -465,6 +548,46 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   setConstrained(isConstrained: boolean): void {
     this.isConstrained = isConstrained;
     this.easelSelect.setIsConstrained(isConstrained);
+    this.notifyUi();
+  }
+
+  /**
+   * true: the lattice of a warp is laid over what is transformed and can be dragged (the handles
+   * are gone meanwhile). false: the warp stays as it is, and the handles move it as a whole.
+   * Not while cloning: a clone stamps the sample of the matrix transformations, a warp draws
+   * from the layer. Returns whether it is warping now.
+   */
+  setWarping(isWarping: boolean): boolean {
+    if (this.mode !== 'transform' || this.transformTool.isWarping() === isWarping) {
+      return this.transformTool.isWarping();
+    }
+    if (isWarping) {
+      if (this.transformTool.getDoClone()) {
+        return false;
+      }
+      if (!this.warpSample) {
+        const layerIndex = throwIfNull(this.getLayerIndex(this.getCurrentLayerCtx().canvas));
+        this.warpSample = createSelectionSample(layerIndex, this.klCanvas);
+        this.warpSampleSelection = this.klCanvas.getSelection();
+        if (!this.warpSample) {
+          return false; // nothing there to warp
+        }
+      }
+      this.transformTool.startWarp(
+        boundsToRect(getSelectionBoundsFromSample(this.warpSample)),
+        this.warpSampleSelection ?? getSelectionSampleBoundsMultiPolygon(this.warpSample)
+      );
+    } else {
+      this.transformTool.endWarp();
+    }
+    this.propagateTransformationChange();
+    this.notifyUi();
+    return this.transformTool.isWarping();
+  }
+
+  setSnapping(isSnapping: boolean): void {
+    this.isSnapping = isSnapping;
+    this.easelSelect.setIsSnapping(isSnapping);
     this.notifyUi();
   }
 
@@ -527,6 +650,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       this.selectTool.setSelection(this.klCanvas.getSelection());
       this.transformTool.reset();
       this.transformTool.setDoClone(false);
+      this.freeWarpSample();
       const currentCanvas = this.getCurrentLayerCtx().canvas;
       this.targetLayerIndex = throwIfNull(this.getLayerIndex(currentCanvas));
       this.mode = 'select';
@@ -559,7 +683,10 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         return canTransform();
       },
       isCloning: this.transformTool.getDoClone(),
-      isConstrained: this.isConstrained
+      isConstrained: this.isConstrained,
+      isSnapping: this.isSnapping,
+      isWarping: this.transformTool.isWarping(),
+      hasWarp: this.transformTool.hasWarp()
     };
   }
 
@@ -599,6 +726,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
         state = top.data;
       }
       this.transformTool.setTransform(state.transform);
+      this.transformTool.setWarp(state.warp);
       this.transformTool.setDoClone(state.doClone);
       this.targetLayerIndex = state.targetLayerIndex;
       this.backgroundIsTransparent = state.backgroundIsTransparent;
@@ -609,6 +737,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
       this.updateHandles();
       this.updateComposites();
       this.onUpdateProject();
+      this.notifyUi();
     }
   }
 

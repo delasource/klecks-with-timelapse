@@ -44,6 +44,7 @@ export type TEventType =
   | 'l-rm'
   | 'l-ren'
   | 'l-vis'
+  | 'l-clip'
   | 'l-move'
   | 'l-merge'
   | 'l-merge-all'
@@ -57,6 +58,7 @@ export type TEventType =
   | 'selection'
   | 'selection-transform'
   | 'selection-transform-clone'
+  | 'selection-warp'
   | 'filter';
 
 /**

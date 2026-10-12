@@ -7,6 +7,9 @@ export type TLayerInfo = {
   opacity: number;
   isVisible: boolean;
   mixModeStr: TMixMode;
+  // a clipping mask: the layer shows only where the layer it is clipped to (the next one below
+  // that is not clipped itself) has paint
+  hasClipping: boolean;
 };
 
 export type TLayerThumbnailOptions = {
@@ -21,6 +24,9 @@ export interface IHeadlessLayerControllerActions {
   setLayerOpacity(layerIndex: number, opacity: number, isTemp?: boolean): void;
 
   setLayerMixMode(layerIndex: number, mixMode: TMixMode): void;
+
+  // makes the layer a clipping mask of the layers below it, or an ordinary layer again
+  setLayerClipping(layerIndex: number, hasClipping: boolean): void;
 
   setLayerName(newName: string): void;
 

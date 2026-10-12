@@ -16,6 +16,16 @@ import { TChainElement } from '../../../../bb/input/event-chain/event-chain.type
 import { CornerPanning } from '../corner-panning';
 import { FreeTransform } from '../../components/free-transform';
 import { TFreeTransform } from '../../../transform/transform-types';
+import {
+    createFfdMesh,
+    evalFFD,
+    findParametricCoordinate,
+    TFfdLattice,
+    TFfdMesh,
+    TParametric2D,
+    warpLatticeViaPoint,
+} from '../../../transform/ffd';
+import { RENDERED_FFD_MESH_RESOLUTION } from '../../../transform/composed-transformation';
 
 const modeToCursor: Record<TSelectToolMode, string> = {
     select: 'default',
@@ -40,6 +50,8 @@ export type TEaselSelectMoveParams = {
     onTranslateTransform: (d: TVector2D) => void;
     // the handles moved, resized or turned the rectangle around the selection
     onFreeTransform: (transform: TFreeTransform) => void;
+    // the lattice of a warp was dragged somewhere
+    onWarp: (ffd: TFfdLattice) => void;
     onResetSelection: () => void;
 };
 
@@ -56,7 +68,12 @@ export type TEaselSelectMoveParams = {
  * selection with a grip in each corner and on each edge to resize it, and one above it to turn
  * it. They tell the rectangle they were dragged to (onFreeTransform) and are told the one to
  * show (setFreeTransform) whenever it changes without them: a drag on the canvas, the arrow
- * keys, a flip, an undo. The warp of upstream's tool is not here.
+ * keys, a flip, an undo.
+ *
+ * The warp is upstream's too, as its EaselSelect has it: while a lattice is set (setWarp) the
+ * handles are hidden, the lattice is drawn over the canvas, and a drag that starts inside it
+ * pulls the point it started on to where the pointer is (onWarp); a drag that starts outside
+ * moves everything, as without a warp.
  */
 export class EaselSelectMove implements TEaselTool {
     // from params
@@ -69,6 +86,7 @@ export class EaselSelectMove implements TEaselTool {
     private readonly onSelectAddPoly: (path: TVector2D[], operation: TBooleanOperation) => void;
     private readonly onTranslateTransform: TEaselSelectMoveParams['onTranslateTransform'];
     private readonly onFreeTransform: TEaselSelectMoveParams['onFreeTransform'];
+    private readonly onWarp: TEaselSelectMoveParams['onWarp'];
     private readonly onResetSelection: () => void;
 
     private readonly svgEl: SVGElement;
@@ -99,6 +117,11 @@ export class EaselSelectMove implements TEaselTool {
     private freeTransform: FreeTransform | undefined; // the handles. exists in transform mode
     private freeTransformValue: TFreeTransform | undefined; // what they show, or are to show
     private freeTransformIsConstrained: boolean = true;
+    private freeTransformIsSnapping: boolean = true;
+    private warpLattice: TFfdLattice | undefined; // set: the lattice is what is dragged
+    private warpMesh: TFfdMesh | undefined; // to find the point of the lattice under the pointer
+    private warpLatticePath: Path2D | undefined; // the lines of the lattice
+    private warpStart: { parametricCoordinate: TParametric2D; lattice: TFfdLattice } | undefined;
 
     private viewportToCanvas(p: TVector2D): TVector2D {
         const matrix = inverse(createMatrixFromTransform(this.easel.getTransform()));
@@ -259,9 +282,87 @@ export class EaselSelectMove implements TEaselTool {
         }
     }
 
+    // the lattice changed: what is found and drawn by it follows
+    private updateWarpGeometry(): void {
+        const lattice = this.warpLattice;
+        if (!lattice) {
+            this.warpMesh = undefined;
+            this.warpLatticePath = undefined;
+            return;
+        }
+        const { width, height } = this.easel.getProjectSize();
+        this.warpMesh = createFfdMesh(
+            RENDERED_FFD_MESH_RESOLUTION,
+            RENDERED_FFD_MESH_RESOLUTION,
+            lattice,
+            width,
+            height,
+            true,
+        );
+
+        const sampleCount = RENDERED_FFD_MESH_RESOLUTION;
+        const path = new Path2D();
+        const addLine = (pointAt: (position: number) => TVector2D): void => {
+            for (let e = 0; e <= sampleCount; e++) {
+                const point = pointAt(e / sampleCount);
+                e === 0 ? path.moveTo(point.x, point.y) : path.lineTo(point.x, point.y);
+            }
+        };
+        for (let i = 0; i < lattice.rows; i++) {
+            const t = i / (lattice.rows - 1);
+            addLine((s) => evalFFD(s, t, lattice));
+        }
+        for (let i = 0; i < lattice.cols; i++) {
+            const s = i / (lattice.cols - 1);
+            addLine((t) => evalFFD(s, t, lattice));
+        }
+        this.warpLatticePath = path;
+    }
+
+    /**
+     * A drag on the lattice. Returns false if this pointer is not the lattice's business (it went
+     * down outside of it): then it moves the whole, as without a warp.
+     */
+    private warpOnPointer(event: TPointerEvent): boolean {
+        if (!this.warpLattice || !this.warpMesh) {
+            return false;
+        }
+        const cursorCanvasPos = this.viewportToCanvas({ x: event.relX, y: event.relY });
+        const parametricCoordinate = findParametricCoordinate(
+            cursorCanvasPos.x,
+            cursorCanvasPos.y,
+            this.warpMesh,
+        );
+        if (event.type === 'pointerdown' && event.button === 'left' && parametricCoordinate) {
+            this.warpStart = { parametricCoordinate, lattice: this.warpLattice };
+        }
+        if (event.type === 'pointermove' && this.warpStart) {
+            this.warpLattice = warpLatticeViaPoint(
+                this.warpStart.parametricCoordinate,
+                cursorCanvasPos,
+                this.warpStart.lattice,
+            );
+            this.updateWarpGeometry();
+            this.easel.requestRender();
+            this.onWarp(this.warpLattice);
+        }
+        const isWarpDrag = !!this.warpStart;
+        if (event.type === 'pointerup') {
+            this.warpStart = undefined;
+        }
+        if (isWarpDrag || (!this.isDragging && parametricCoordinate)) {
+            this.easel.setCursor('crosshair');
+            return isWarpDrag;
+        }
+        return false;
+    }
+
     // can be repeatedly called with the same event
     private transformOnPointer(event: TPointerEvent): void {
         this.easel.setCursor('move');
+        if (this.warpOnPointer(event)) {
+            return;
+        }
         const transform = this.easel.getTransform();
         const matrix = inverse(createMatrixFromTransform(transform));
 
@@ -321,7 +422,16 @@ export class EaselSelectMove implements TEaselTool {
             onWheel: this.easel.onWheel,
             wheelParent: this.easel.getElement(),
         });
+        this.freeTransform.setSnapping(this.freeTransformIsSnapping);
         this.htmlEl.append(this.freeTransform.getElement());
+        this.updateHandlesVisibility();
+    }
+
+    // the handles and the lattice are two ways to hold the same thing: one of them at a time
+    private updateHandlesVisibility(): void {
+        this.freeTransform
+            ?.getElement()
+            .style.setProperty('display', this.warpLattice ? 'none' : '');
     }
 
     private destroyFreeTransform(): void {
@@ -348,6 +458,7 @@ export class EaselSelectMove implements TEaselTool {
     constructor(p: TEaselSelectMoveParams) {
         this.onTranslateTransform = p.onTranslateTransform;
         this.onFreeTransform = p.onFreeTransform;
+        this.onWarp = p.onWarp;
         this.mode = p.selectMode;
         this.onStartSelect = p.onStartSelect;
         this.onGoSelect = p.onGoSelect;
@@ -427,7 +538,20 @@ export class EaselSelectMove implements TEaselTool {
             this.createFreeTransform();
         } else {
             this.destroyFreeTransform();
+            this.setWarp(undefined);
         }
+    }
+
+    /**
+     * The lattice of a warp, to be shown and dragged — in place of the handles. undefined: no
+     * lattice (any more). Does not come back through onWarp.
+     */
+    setWarp(ffd: TFfdLattice | undefined): void {
+        this.warpLattice = ffd;
+        this.warpStart = undefined;
+        this.updateWarpGeometry();
+        this.updateHandlesVisibility();
+        this.easel.requestRender?.();
     }
 
     // the handles are the select tool's: another tool on the easel must not find them in its way
@@ -456,6 +580,12 @@ export class EaselSelectMove implements TEaselTool {
         if (!poppedTemp) {
             this.resetPolyShape();
         }
+    }
+
+    /** true: the rectangle is pulled to the edges of the drawing, and the angle to every 45°. */
+    setIsSnapping(isSnapping: boolean): void {
+        this.freeTransformIsSnapping = isSnapping;
+        this.freeTransform?.setSnapping(isSnapping);
     }
 
     onUpdateTransform(transform: TViewportTransform): void {
@@ -491,6 +621,15 @@ export class EaselSelectMove implements TEaselTool {
     }
 
     renderAfterViewport(ctx: CanvasRenderingContext2D, transform: TViewportTransformXY): void {
+        if (this.mode === 'transform' && this.warpLatticePath) {
+            ctx.save();
+            ctx.lineWidth = 1 / transform.scaleY;
+            // upstream's choice: 'difference' is slow in Firefox and looks no better
+            ctx.strokeStyle = 'rgb(128, 128, 128)';
+            ctx.stroke(this.warpLatticePath);
+            ctx.restore();
+        }
+
         if (this.polyShape.length < 2) {
             return;
         }

@@ -74,6 +74,7 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
         opacity: layer.opacity,
         isVisible: layerObj?.isVisible ?? true,
         mixModeStr: layer.mixModeStr,
+        hasClipping: layerObj?.hasClipping ?? false,
       };
     });
   }
@@ -224,6 +225,23 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
     }
 
     this.klCanvas.setMixMode(index, mixMode);
+
+    this.notifyLayersChange();
+  }
+
+  /**
+   * One undo step and one recorded event ('l-clip'), made by KlCanvas. The bottom layer has
+   * nothing below it to be clipped to: KlCanvas would keep the flag without any effect, so it
+   * is not set there.
+   */
+  setLayerClipping(index: number, hasClipping: boolean): void {
+    const layer = this.getLayer(index);
+    if (!layer || layer.hasClipping === hasClipping || (hasClipping && index === 0)) {
+      return;
+    }
+
+    this.applyUncommitted();
+    this.klCanvas.setLayerHasClipping(index, hasClipping);
 
     this.notifyLayersChange();
   }
