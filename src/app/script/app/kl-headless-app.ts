@@ -62,7 +62,6 @@ import { EaselRotate } from '../klecks/ui/easel/tools/easel-rotate';
 import { EaselShape } from '../klecks/ui/easel/tools/easel-shape';
 import { EaselText } from '../klecks/ui/easel/tools/easel-text';
 import { EaselZoom } from '../klecks/ui/easel/tools/easel-zoom';
-import { clipboardDialog } from '../klecks/ui/modals/clipboard-dialog';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
 import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
@@ -181,6 +180,43 @@ export type TKlFeatureConfiguration = {
   maxNumberOfLayers?: number;
 };
 
+/**
+ * What the keyboard shortcuts may reach. The UI around the engine offers tools by the rules of
+ * the game (ColorMari's ToolsConfig) — a shortcut must not reach what no button offers. Set with
+ * `setShortcutRules`; everything is allowed until then. Zoom, pan, rotating the view and the
+ * temporary tools of the easel (space, alt, r, z, the arrow keys) are the easel's and stay.
+ */
+export type TKlShortcutRules = {
+  // false: no shortcut at all (the UI is disabled: loading, replaying, handed in)
+  enabled: boolean;
+  // undo and redo — and the keys that change a whole layer at once (clear, fill), which without
+  // an undo could not be taken back
+  undo: boolean;
+  // the shape tool
+  shapes: boolean;
+  // paint bucket and gradient
+  fills: boolean;
+  // the select tool, select all, deselect
+  select: boolean;
+  // B going through the brushes (otherwise B only takes the brush)
+  brushTypes: boolean;
+  // choosing the active layer
+  layers: boolean;
+  // saving the picture to the computer, copying it to the clipboard
+  export: boolean;
+};
+
+const DEFAULT_SHORTCUT_RULES: TKlShortcutRules = {
+  enabled: true,
+  undo: true,
+  shapes: true,
+  fills: true,
+  select: true,
+  brushTypes: true,
+  layers: true,
+  export: true,
+};
+
 export type TKlHeadlessAppParams = {
   project?: TKlProject | string | undefined;
   eventStorageProvider?: IEventStorageProvider;
@@ -243,10 +279,14 @@ export class KlHeadlessApp {
   private readonly layerController: LayerHeadlessController;
   private readonly featureConfiguration: TKlFeatureConfiguration = {};
   private readonly keyListener: KeyListener;
+  private shortcutRules: TKlShortcutRules = { ...DEFAULT_SHORTCUT_RULES };
   private readonly overlay: ReferenceOverlay;
 
   private lastSavedHistoryIndex: number = 0;
-  private uiState: TKlHeadlessUiState = DEFAULT_UI_STATE;
+  // A copy of its own: the default object is shared by every instance, and a second paper (the
+  // next round) would show the tool and colours of the one before while its easel and brushes
+  // start afresh.
+  private uiState: TKlHeadlessUiState = structuredClone(DEFAULT_UI_STATE);
   private uiWidth: number; // called "ui" for compat but means "root" or "canvas" dimensions
   private uiHeight: number;
   private currentLayer: TKlCanvasLayer;
@@ -326,32 +366,20 @@ export class KlHeadlessApp {
     if (layer) this.setCurrentLayer(layer);
   }
 
-  private copyToClipboard(showCrop: boolean = false, closeOnBlur: boolean = true) {
-    clipboardDialog(
-      this.rootEl,
-      maskSelection => {
-        return this.klCanvas.getCanvas(1, maskSelection);
-      },
-      inputObj => {
-        if (inputObj.left === 0 && inputObj.right === 0 && inputObj.top === 0 && inputObj.bottom === 0) {
-          return;
-        }
-        //do a crop
-        FILTER_LIB.cropExtend.apply!({
-          layer: this.currentLayer,
-          klCanvas: this.klCanvas,
-          input: inputObj,
-          klHistory: this.klHistory,
-        });
-        // this.layersUi.update();
-        this.easelProjectUpdater.update();
-        this.easel.resetOrFitTransform(true);
-      },
-      { out: this.showStatusMessageCallback } as StatusOverlay,
-      showCrop || false,
-      closeOnBlur,
-      this.klCanvas.getSelection()
-    );
+  /**
+   * Puts the picture (all layers, as PNG) on the clipboard. Klecks' own clipboard dialog (crop,
+   * copy) is built from Klecks' DOM widgets and its crop runs a filter the headless app does not
+   * load, so it is not used here. The blob goes in as a promise: Safari takes a ClipboardItem only
+   * while the key press is still being handled.
+   */
+  private copyPictureToClipboard(): void {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+      return;
+    }
+    navigator.clipboard
+      .write([new ClipboardItem({ 'image/png': this.getPNG() })])
+      .then(() => this.showStatusMessageCallback(LANG('cropcopy-copied')))
+      .catch(e => console.warn('Copying the picture to the clipboard failed', e));
   }
 
   /**
@@ -1036,7 +1064,7 @@ export class KlHeadlessApp {
     });
 
     this.keyListener = new KeyListener({
-      onDown: (keyStr, event, comboStr) => {
+      onDown: (keyStr, event, comboStr, isRepeat) => {
         if (DIALOG_COUNTER.get() > 0 || isInputFocused(true)) {
           return;
         }
@@ -1045,52 +1073,77 @@ export class KlHeadlessApp {
           return;
         }
 
-        if (comboStr === 'home') {
+        // Selecting the text of the whole page is never what is meant over the canvas.
+        if (['ctrl+a', 'cmd+a'].includes(comboStr)) {
+          event.preventDefault();
+        }
+
+        // Every shortcut below asks the rules of the game first (`setShortcutRules`): the UI
+        // hides what a game does not allow, and a key must not reach it either.
+        const rules = this.shortcutRules;
+        if (!rules.enabled) {
+          return;
+        }
+        const isCtrl = (key: string) => comboStr === 'ctrl+' + key || comboStr === 'cmd+' + key;
+
+        // ----- view
+        if (comboStr === 'home' || isCtrl('0')) {
+          event.preventDefault(); // Ctrl+0 would reset the browser's zoom
           this.easel.fitTransform();
         }
         if (comboStr === 'end') {
           this.easel.resetTransform();
         }
-        if (['ctrl+z', 'cmd+z'].includes(comboStr)) {
+        if (comboStr === 'm' && !isRepeat) {
+          // mirrors the view only, the drawing stays as it is
           event.preventDefault();
-          this.undo();
+          this.easel.setIsMirrored(!this.easel.getIsMirrored());
+        }
+
+        // ----- history
+        if (isCtrl('z')) {
+          event.preventDefault();
+          if (rules.undo) this.undo();
         }
         if (
-          ['ctrl+y', 'cmd+y'].includes(comboStr) ||
+          isCtrl('y') ||
           ((sameKeys('ctrl+shift+z', comboStr) || sameKeys('cmd+shift+z', comboStr)) && keyStr === 'z')
         ) {
           event.preventDefault();
-          this.redo();
-        }
-        if (['ctrl+s', 'cmd+s'].includes(comboStr)) {
-          event.preventDefault();
-          this.applyUncommitted();
-          this.saveToComputer.save();
-        }
-        if (['ctrl+c', 'cmd+c'].includes(comboStr)) {
-          event.preventDefault();
-          this.applyUncommitted();
-          this.copyToClipboard(true);
+          if (rules.undo) this.redo();
         }
 
-        if (['ctrl+a', 'cmd+a'].includes(comboStr)) {
+        // ----- the picture leaves the engine
+        if (isCtrl('s')) {
+          event.preventDefault(); // never the browser's "save page"
+          if (rules.export && !isRepeat) {
+            this.applyUncommitted();
+            this.saveToComputer.save();
+          }
+        }
+        if (isCtrl('c') && rules.export && !isRepeat) {
           event.preventDefault();
+          this.applyUncommitted();
+          this.copyPictureToClipboard();
         }
 
-        if (comboStr === 'sqbr_open') {
-          if (!this.isDrawing()) {
-            const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
-            this.updateBrushConfig(old => ({ size: old.size - changeVal }));
+        // ----- selection
+        if (isCtrl('a') && rules.select && !isRepeat) {
+          this.takeSelectTool();
+          this.klAppSelect.selectAll();
+        }
+        if (isCtrl('d') && rules.select && !isRepeat) {
+          event.preventDefault(); // Ctrl+D would bookmark the page
+          this.applyUncommitted();
+          if (this.klCanvas.getSelection()) {
+            this.klAppSelect.resetSelection();
+            this.showStatusMessageCallback(LANG('select-deselect'));
           }
         }
-        if (comboStr === 'sqbr_close') {
-          if (!this.isDrawing()) {
-            const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
-            this.updateBrushConfig(old => ({ size: old.size + changeVal }));
-          }
-        }
+
+        // ----- a whole layer at once: only where an undo can take it back
         if (comboStr === 'enter') {
-          if (!this.applyUncommitted()) {
+          if (!this.applyUncommitted() && rules.fills && rules.undo) {
             this.klCanvas.layerFill(this.currentLayer.index, this.uiState.primaryColorRgb, undefined, true);
             this.showStatusMessageCallback(
               this.klCanvas.getSelection() ? LANG('filled-selected-area') : LANG('filled')
@@ -1102,29 +1155,43 @@ export class KlHeadlessApp {
             event.preventDefault();
           }
         }
-        if (['delete', 'backspace'].includes(comboStr)) {
+        if (['delete', 'backspace'].includes(comboStr) && rules.undo && !isRepeat) {
           this.clearLayer(true);
         }
-        if (comboStr === 'shift+e') {
+
+        // ----- brush
+        if (comboStr === 'sqbr_open') {
+          const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
+          this.updateBrushConfig(old => ({ size: old.size - changeVal }));
+        }
+        if (comboStr === 'sqbr_close') {
+          const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
+          this.updateBrushConfig(old => ({ size: old.size + changeVal }));
+        }
+        if (/^[0-9]$/.test(comboStr) && !isRepeat) {
+          // the brush's opacity in tens, as in most drawing programs: 1 = 10 %, … 9 = 90 %, 0 = 100 %
+          const opacity = comboStr === '0' ? 1 : Number(comboStr) / 10;
+          this.updateBrushConfig(old => ('opacity' in old ? { opacity } : null));
+          this.showStatusMessageCallback(`${LANG('opacity')}: ${Math.round(opacity * 100)} %`);
+        }
+        if (comboStr === 'shift+e' && !isRepeat) {
           event.preventDefault();
           this.updateBrushConfig(old => {
             return 'isEraser' in old ? { isEraser: !old.isEraser } : null;
           });
-        } else if (comboStr === 'e') {
+        } else if (comboStr === 'e' && !isRepeat) {
           event.preventDefault();
-          this.applyUncommitted();
-          this.easel.setTool('brush');
-          this.uiState.tool = 'brush';
+          this.setTool('brush');
           this.setCurrentBrush('EraserBrush');
-          this.updateUi();
         }
-        if (['shift+b', 'b'].includes(comboStr)) {
+        if (['shift+b', 'b'].includes(comboStr) && !isRepeat) {
           event.preventDefault();
-          this.applyUncommitted();
           const prevMode = this.easel.getTool();
-          this.easel.setTool('brush');
-          this.uiState.tool = 'brush';
-          if (prevMode === 'brush') {
+          this.setTool('brush');
+          if (!rules.brushTypes) {
+            // only back from the eraser to the brush, no other brush
+            if (this.uiState.currentBrushId === 'EraserBrush') this.setCurrentBrush(-1);
+          } else if (prevMode === 'brush') {
             if (event.shiftKey) {
               // Only toggle between Pen and Blend
               if (this.uiState.currentBrushId == 'PenBrush') this.setCurrentBrush('BlendBrush');
@@ -1133,15 +1200,31 @@ export class KlHeadlessApp {
               // Switch through
               this.setCurrentBrush(this.getNextBrushId());
             }
+          } else if (this.uiState.currentBrushId === 'EraserBrush') {
+            this.setCurrentBrush(-1);
           }
         }
-        if (comboStr === 'g') {
+
+        // ----- colours
+        if (comboStr === 'i' && !isRepeat) {
           event.preventDefault();
-          this.applyUncommitted();
-          const newMode = this.easel.getTool() === 'paintBucket' ? 'gradient' : 'paintBucket';
-          this.easel.setTool(newMode);
-          this.uiState.tool = newMode;
-          this.updateUi();
+          this.setTool('eyedropper');
+        }
+        if (comboStr === 'x' && !isRepeat) {
+          event.preventDefault();
+          // Swap primary and secondary color
+          this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
+        }
+        if (comboStr === 'd' && !isRepeat) {
+          event.preventDefault();
+          // back to black and white
+          this.setColors({ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 });
+        }
+
+        // ----- tools
+        if (comboStr === 'g' && rules.fills && !isRepeat) {
+          event.preventDefault();
+          this.setTool(this.easel.getTool() === 'paintBucket' ? 'gradient' : 'paintBucket');
         }
         /*if (comboStr === 't') {
             event.preventDefault();
@@ -1150,36 +1233,35 @@ export class KlHeadlessApp {
             this.uiState.tool = 'text';
             this.updateUi();
         }*/
-        if (comboStr === 'u') {
+        if (comboStr === 'u' && rules.shapes && !isRepeat) {
           event.preventDefault();
-          this.applyUncommitted();
-          this.easel.setTool('shape');
-          this.uiState.tool = 'shape';
-          this.updateUi();
+          this.setTool('shape');
         }
-        if (comboStr === 'l') {
+        if (comboStr === 'l' && rules.select && !isRepeat) {
+          event.preventDefault();
           if (this.uiState.tool == 'select') {
             // Toggle between select and transform
-            event.preventDefault();
             if (this.klAppSelect.getCurrentMode() == 'select' && this.klAppSelect.getState().hasSelection) {
               this.klAppSelect.setTransformMode();
             } else {
               this.klAppSelect.setSelectMode();
             }
           } else {
-            event.preventDefault();
-            this.applyUncommitted();
-            this.easel.setTool('select');
-            this.uiState.tool = 'select';
-            this.klAppSelect.setSelectMode();
-            this.updateUi();
+            this.takeSelectTool();
           }
         }
-        if (comboStr === 'x') {
-          event.preventDefault();
-          // Swap primary and secondary color
-          this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
+
+        // ----- layers: page up = the one above, page down = the one below
+        if ((comboStr === 'pageup' || comboStr === 'pagedown') && rules.layers) {
+          event.preventDefault(); // no scrolling of the page
+          const state = this.layerController.getState();
+          const index = state.activeLayerIndex + (comboStr === 'pageup' ? 1 : -1);
+          if (index >= 0 && index < state.layers.length) {
+            this.layerController.setActiveLayer(index);
+            this.showStatusMessageCallback(`${LANG('layers-active-layer')}: ${state.layers[index].name}`);
+          }
         }
+
         if (comboStr === 'alt+F13') {
           // Rotate right
           event.preventDefault();
@@ -1820,6 +1902,20 @@ export class KlHeadlessApp {
     this.easel.setTool(toolId);
     this.uiState.tool = toolId;
     this.updateUi();
+  }
+
+  /** The select tool, in its mode "select" (not "transform"). */
+  private takeSelectTool(): void {
+    this.setTool('select');
+    this.klAppSelect.setSelectMode();
+  }
+
+  /**
+   * What the keyboard shortcuts may reach (see TKlShortcutRules) — the UI sets it from the rules
+   * of the game, and again when they or its own state change. Fields left out keep their value.
+   */
+  setShortcutRules(rules: Partial<TKlShortcutRules>): void {
+    this.shortcutRules = { ...this.shortcutRules, ...rules };
   }
 
   setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
