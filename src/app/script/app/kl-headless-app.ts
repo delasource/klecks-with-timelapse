@@ -198,8 +198,11 @@ export type TKlShortcutRules = {
   fills: boolean;
   // the select tool, select all, deselect
   select: boolean;
-  // B going through the brushes (otherwise B only takes the brush)
+  // B going through the brushes (otherwise B only takes the brush), Shift+E turning the current
+  // brush into an eraser
   brushTypes: boolean;
+  // X swapping the two colours; without it D takes black only (the secondary colour stays hidden)
+  secondaryColor: boolean;
   // choosing the active layer
   layers: boolean;
   // saving the picture to the computer, copying it to the clipboard
@@ -213,6 +216,7 @@ const DEFAULT_SHORTCUT_RULES: TKlShortcutRules = {
   fills: true,
   select: true,
   brushTypes: true,
+  secondaryColor: true,
   layers: true,
   export: true,
 };
@@ -1175,6 +1179,7 @@ export class KlHeadlessApp {
           this.showStatusMessageCallback(`${LANG('opacity')}: ${Math.round(opacity * 100)} %`);
         }
         if (comboStr === 'shift+e' && !isRepeat) {
+          if (!rules.brushTypes) return; // no key matches anything below
           event.preventDefault();
           this.updateBrushConfig(old => {
             return 'isEraser' in old ? { isEraser: !old.isEraser } : null;
@@ -1210,15 +1215,18 @@ export class KlHeadlessApp {
           event.preventDefault();
           this.setTool('eyedropper');
         }
-        if (comboStr === 'x' && !isRepeat) {
+        if (comboStr === 'x' && rules.secondaryColor && !isRepeat) {
           event.preventDefault();
           // Swap primary and secondary color
           this.setColors(this.uiState.secondaryColorRgb, this.uiState.primaryColorRgb);
         }
         if (comboStr === 'd' && !isRepeat) {
           event.preventDefault();
-          // back to black and white
-          this.setColors({ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 });
+          // back to black and white - or to black only, where the secondary colour is hidden
+          this.setColors(
+            { r: 0, g: 0, b: 0 },
+            rules.secondaryColor ? { r: 255, g: 255, b: 255 } : this.uiState.secondaryColorRgb
+          );
         }
 
         // ----- tools
