@@ -209,6 +209,18 @@ export type TKlShortcutRules = {
   export: boolean;
 };
 
+/**
+ * Where ColorMari's brushes start differently from upstream's, applied after a brush is made and
+ * after its `reset()` - here, so the brush files stay upstream's. The eraser starts without pen
+ * pressure on its size. A replay is not affected: every recorded stroke carries the brush's whole
+ * config.
+ */
+function applyBrushDefaults(brush: unknown): void {
+  if (brush instanceof EraserBrush) {
+    brush.sizePressure(false);
+  }
+}
+
 const DEFAULT_SHORTCUT_RULES: TKlShortcutRules = {
   enabled: true,
   undo: true,
@@ -610,6 +622,7 @@ export class KlHeadlessApp {
     // create brushes
     Object.entries(BRUSHES).forEach(([brushId, brushType]) => {
       const brush = new brushType();
+      applyBrushDefaults(brush);
       this.brushes[brushId] = brush;
       this.uiState.brushConfig[brushId] = brush.getBrushConfig();
       if ('spacing' in this.uiState.brushConfig[brushId]) {
@@ -2039,6 +2052,7 @@ export class KlHeadlessApp {
       const brush = this.brushes[brushId];
       if ('reset' in brush && typeof brush.reset === 'function') {
         brush.reset();
+        applyBrushDefaults(brush);
         // Update the stored config to reflect the reset
         this.uiState.brushConfig[brushId] = brush.getBrushConfig();
       }
