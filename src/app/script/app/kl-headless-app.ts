@@ -970,8 +970,10 @@ export class KlHeadlessApp {
         eyedropper: new EaselEyedropper({
           onPick: p => {
             // -> pointer move event
+            // the template first, where it is pickable and has a pixel (a game whose template is the palette);
             // undefined: the canvas could not tell (its history is in a state it cannot read)
-            const color = this.klCanvas.getColorAt(p.x, p.y) ?? this.uiState.primaryColorRgb;
+            const color =
+              this.overlay.getColorAt(p.x, p.y) ?? this.klCanvas.getColorAt(p.x, p.y) ?? this.uiState.primaryColorRgb;
             this.setColors(color, undefined);
             return color;
           },

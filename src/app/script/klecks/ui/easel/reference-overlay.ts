@@ -1,4 +1,4 @@
-import { compose, Matrix, rotateDEG, scale, translate } from 'transformation-matrix';
+import { applyToPoint, compose, inverse, Matrix, rotateDEG, scale, translate } from 'transformation-matrix';
 import { TSize2D } from '../../../bb/bb-types';
 import { TProjectViewportProject } from '../project-viewport/project-viewport';
 
@@ -37,6 +37,11 @@ export interface IHeadlessOverlayActions {
   /** As large as fits into the project, centred, upright, not mirrored. */
   fit(): void;
   getState(): TOverlayState;
+  /**
+   * Whether the eyedropper takes its colour from the picture where it lies (a game whose template is a palette, too).
+   * Off by default: then the eyedropper sees only the drawing.
+   */
+  setPickable(isPickable: boolean): void;
 }
 
 /** 'transform' = only where the picture lies changed (a re-render shows it), 'other' = anything else. */
@@ -73,7 +78,8 @@ function sizeOfImage(image: CanvasImageSource): TSize2D {
  * It is a layer of the *view* only: EaselProjectUpdater adds it to the list of layers the easel
  * renders, and that is the one place it exists. KlCanvas, the history and the event recorder know
  * nothing of it — so it cannot get into an undo step, a recording, a replay, a video, an export,
- * the eyedropper or the paint bucket. Keep it that way: nothing in here may call KlCanvas or push
+ * or the paint bucket. The eyedropper sees it only when told to (`setPickable`, a template mode game),
+ * and then takes a colour, nothing else. Keep it that way: nothing in here may call KlCanvas or push
  * to the history.
  */
 export class ReferenceOverlay implements IHeadlessOverlayActions {
@@ -83,6 +89,9 @@ export class ReferenceOverlay implements IHeadlessOverlayActions {
 
   private image: CanvasImageSource | null = null;
   private isSuspended = false; // hidden for a while (an in-app replay), state kept
+  private isPickable = false;
+  /** The picture's pixels, for the eyedropper: read once per picture, when first asked. null = cannot be read. */
+  private pixels: ImageData | null | undefined = undefined;
   private state: TOverlayState = {
     hasImage: false,
     imageWidth: 0,
@@ -109,6 +118,7 @@ export class ReferenceOverlay implements IHeadlessOverlayActions {
       return;
     }
     this.image = image;
+    this.pixels = undefined;
     if (!image) {
       this.state = { ...this.state, hasImage: false, imageWidth: 0, imageHeight: 0 };
       this.onChange('other');
@@ -186,6 +196,10 @@ export class ReferenceOverlay implements IHeadlessOverlayActions {
     return { ...this.state };
   }
 
+  setPickable(isPickable: boolean): void {
+    this.isPickable = isPickable;
+  }
+
   // ----------------------------------- for the engine -----------------------------------
 
   /** Hides the overlay without forgetting it — while a replay rebuilds the canvas from nothing. */
@@ -195,6 +209,53 @@ export class ReferenceOverlay implements IHeadlessOverlayActions {
     }
     this.isSuspended = isSuspended;
     this.onChange('other');
+  }
+
+  /**
+   * The colour of the picture at a point of the project, for the eyedropper - only when it is pickable and shown,
+   * and only where the picture has a pixel that is not (nearly) transparent. Its own colour, not as mixed with the
+   * drawing on screen: the template is a palette. undefined everywhere else, and when the picture cannot be read
+   * (a picture from another origin without CORS taints a canvas).
+   *
+   * This reads the picture, never the drawing: nothing of the overlay gets into KlCanvas, the history or a
+   * recording. The colour taken is set like any other (a colour change is no event of its own).
+   */
+  getColorAt(x: number, y: number): { r: number; g: number; b: number } | undefined {
+    if (!this.isPickable || !this.image || this.isSuspended || !this.state.isVisible || !this.state.hasImage) {
+      return undefined;
+    }
+    const point = applyToPoint(inverse(this.getMatrix()), { x, y });
+    const px = Math.floor(point.x);
+    const py = Math.floor(point.y);
+    if (px < 0 || py < 0 || px >= this.state.imageWidth || py >= this.state.imageHeight) {
+      return undefined;
+    }
+    const pixels = this.readPixels();
+    if (!pixels) {
+      return undefined;
+    }
+    const i = (py * pixels.width + px) * 4;
+    if (pixels.data[i + 3] < 128) {
+      return undefined;
+    }
+    return { r: pixels.data[i], g: pixels.data[i + 1], b: pixels.data[i + 2] };
+  }
+
+  private readPixels(): ImageData | null {
+    if (this.pixels !== undefined) {
+      return this.pixels;
+    }
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = this.state.imageWidth;
+      canvas.height = this.state.imageHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+      ctx.drawImage(this.image!, 0, 0, canvas.width, canvas.height);
+      this.pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch (_) {
+      this.pixels = null;
+    }
+    return this.pixels;
   }
 
   /** Picture pixels → project pixels. */
