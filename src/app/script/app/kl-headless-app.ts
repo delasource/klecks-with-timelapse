@@ -215,6 +215,28 @@ export type TKlShortcutRules = {
  * pressure on its size. A replay is not affected: every recorded stroke carries the brush's whole
  * config.
  */
+/** Inputs that take no text: a key pressed while one has the focus is not typed into it. */
+const INPUT_TYPES_WITHOUT_TEXT = ['button', 'checkbox', 'color', 'file', 'image', 'radio', 'range', 'reset', 'submit'];
+
+/**
+ * Does the focused element take what is typed - then every key is its own, Shift and Ctrl combinations
+ * included (Ctrl+Z undoes typing in the chat, Ctrl+A selects its text), and the engine takes none.
+ *
+ * Upstream's `isInputFocused(true)` counts every input, which made a colour field, a slider or a checkbox
+ * swallow every shortcut: after the browser's colour picker closed, its input kept the focus and Ctrl+Z
+ * did nothing until the canvas was clicked. Those inputs take no text, so the engine may have the keys.
+ */
+function isTypingFocused(): boolean {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active.isContentEditable) {
+    return true;
+  }
+  if (active instanceof HTMLInputElement && INPUT_TYPES_WITHOUT_TEXT.includes(active.type)) {
+    return false;
+  }
+  return isInputFocused(true);
+}
+
 function applyBrushDefaults(brush: unknown): void {
   if (brush instanceof EraserBrush) {
     brush.sizePressure(false);
@@ -1082,7 +1104,7 @@ export class KlHeadlessApp {
 
     this.keyListener = new KeyListener({
       onDown: (keyStr, event, comboStr, isRepeat) => {
-        if (DIALOG_COUNTER.get() > 0 || isInputFocused(true)) {
+        if (DIALOG_COUNTER.get() > 0 || isTypingFocused()) {
           return;
         }
 
