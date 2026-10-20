@@ -311,6 +311,9 @@ export class KlHeadlessApp {
   private readonly unloadWarningTrigger: UnloadWarningTrigger | undefined;
   private readonly saveReminder: SaveReminder | undefined;
   private readonly lineSanitizer: LineSanitizer;
+  private readonly lineSmoothing: LineSmoothing;
+  /** The stabilizer as Klecks' dropdown names it: 0 = off, 1 (default) to 5 = strongest. */
+  private stabilizerLevel = 1;
   private readonly saveToComputer: SaveToComputer;
   private readonly klAppSelect: KlHeadlessSelect;
   private readonly klAppFilter: KlHeadlessFilter;
@@ -667,13 +670,13 @@ export class KlHeadlessApp {
     this.lineSanitizer = new LineSanitizer();
 
     // Event Chain 3:
-    const lineSmoothing = new LineSmoothing({
-      smoothing: translateSmoothing(1),
+    this.lineSmoothing = new LineSmoothing({
+      smoothing: translateSmoothing(this.stabilizerLevel),
     });
 
     const drawEventChain = new EventChain({
       // TODO replace any with proper type/interface. EventChain needs to get a change here.
-      chainArr: [this.lineSanitizer as any, lineSmoothing as any, this.chainRecorder as any].filter(c => !!c),
+      chainArr: [this.lineSanitizer as any, this.lineSmoothing as any, this.chainRecorder as any].filter(c => !!c),
     });
 
     drawEventChain.setChainOut(((event: TDrawEvent) => {
@@ -1959,6 +1962,22 @@ export class KlHeadlessApp {
    */
   setShortcutRules(rules: Partial<TKlShortcutRules>): void {
     this.shortcutRules = { ...this.shortcutRules, ...rules };
+  }
+
+  /**
+   * How strongly a stroke is smoothed while it is drawn (Klecks' stabilizer): 0 = off, 1 (default) to 5. The
+   * smoothing sits in front of the recorder, so the recording holds the smoothed points - a replay draws them as
+   * they were, whatever level it runs with, and nothing of the level is recorded.
+   */
+  setStabilizer(level: number): void {
+    const clamped = Math.max(0, Math.min(5, Math.round(level)));
+    if (!Number.isFinite(clamped)) return;
+    this.stabilizerLevel = clamped;
+    this.lineSmoothing.setSmoothing(translateSmoothing(clamped));
+  }
+
+  getStabilizer(): number {
+    return this.stabilizerLevel;
   }
 
   setShapeConfig(config: Partial<typeof this.uiState.shape>): void {
