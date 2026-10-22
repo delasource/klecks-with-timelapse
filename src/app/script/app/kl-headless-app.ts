@@ -203,6 +203,8 @@ export type TKlShortcutRules = {
   brushTypes: boolean;
   // X swapping the two colours; without it D takes black only (the secondary colour stays hidden)
   secondaryColor: boolean;
+  // [ and ] changing the brush size in small steps (the Krakel layout offers only a few fixed sizes)
+  brushSize: boolean;
   // choosing the active layer
   layers: boolean;
   // saving the picture to the computer, copying it to the clipboard
@@ -251,6 +253,7 @@ const DEFAULT_SHORTCUT_RULES: TKlShortcutRules = {
   select: true,
   brushTypes: true,
   secondaryColor: true,
+  brushSize: true,
   layers: true,
   export: true,
 };
@@ -1204,11 +1207,11 @@ export class KlHeadlessApp {
         }
 
         // ----- brush
-        if (comboStr === 'sqbr_open') {
+        if (comboStr === 'sqbr_open' && rules.brushSize) {
           const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
           this.updateBrushConfig(old => ({ size: old.size - changeVal }));
         }
-        if (comboStr === 'sqbr_close') {
+        if (comboStr === 'sqbr_close' && rules.brushSize) {
           const changeVal = Math.max(0.005, 0.03 / this.easel.getTransform().scale);
           this.updateBrushConfig(old => ({ size: old.size + changeVal }));
         }
