@@ -280,6 +280,17 @@ export class SelectTransformTool {
         );
     }
 
+    /**
+     * The size of what is transformed, before the transformation: the bounds of the selection
+     * (while warped: of the lattice). A width of 1 in getFreeTransform() / this = scale 1.
+     */
+    getUntransformedSize(): { width: number; height: number } {
+        return {
+            width: this.selectionBounds.x2 - this.selectionBounds.x1,
+            height: this.selectionBounds.y2 - this.selectionBounds.y1,
+        };
+    }
+
     getTransformedSelection(): MultiPolygon {
         const ffd = this.getFfd();
         if (ffd) {

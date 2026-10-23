@@ -315,6 +315,7 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
   // the handles show the rectangle around the selection where the transformation has it now —
   // or, while warping, the easel shows the lattice in their place
   private updateHandles(): void {
+    this.easelSelect.setScaleSnapBase(this.transformTool.getUntransformedSize());
     this.easelSelect.setFreeTransform(this.transformTool.getFreeTransform());
     this.easelSelect.setWarp(this.transformTool.isWarping() ? this.transformTool.getFfd() : undefined);
   }

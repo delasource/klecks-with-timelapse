@@ -15,6 +15,7 @@ import { DoubleTapper } from '../../../../bb/input/event-chain/double-tapper';
 import { TChainElement } from '../../../../bb/input/event-chain/event-chain.types';
 import { CornerPanning } from '../corner-panning';
 import { FreeTransform } from '../../components/free-transform';
+import { TScaleSnapBase } from '../../components/free-transform-scale-snap';
 import { TFreeTransform } from '../../../transform/transform-types';
 import {
     createFfdMesh,
@@ -118,6 +119,8 @@ export class EaselSelectMove implements TEaselTool {
     private freeTransformValue: TFreeTransform | undefined; // what they show, or are to show
     private freeTransformIsConstrained: boolean = true;
     private freeTransformIsSnapping: boolean = true;
+    // what the scale snaps to factors of: the selection, untransformed
+    private freeTransformScaleBase: TScaleSnapBase | undefined;
     private warpLattice: TFfdLattice | undefined; // set: the lattice is what is dragged
     private warpMesh: TFfdMesh | undefined; // to find the point of the lattice under the pointer
     private warpLatticePath: Path2D | undefined; // the lines of the lattice
@@ -423,6 +426,7 @@ export class EaselSelectMove implements TEaselTool {
             wheelParent: this.easel.getElement(),
         });
         this.freeTransform.setSnapping(this.freeTransformIsSnapping);
+        this.freeTransform.setScaleSnapping(this.freeTransformScaleBase);
         this.htmlEl.append(this.freeTransform.getElement());
         this.updateHandlesVisibility();
     }
@@ -567,6 +571,15 @@ export class EaselSelectMove implements TEaselTool {
         this.freeTransform?.initialise(transform);
     }
 
+    /**
+     * The size of the selection before it was transformed: while snapping, the handles pull the
+     * size to factors of it (1, 0.75, 0.5, ... - SCALE_SNAP_FACTORS).
+     */
+    setScaleSnapBase(base: TScaleSnapBase | undefined): void {
+        this.freeTransformScaleBase = base ? { ...base } : undefined;
+        this.freeTransform?.setScaleSnapping(this.freeTransformScaleBase);
+    }
+
     /** true: a corner keeps the proportions of the rectangle. */
     setIsConstrained(isConstrained: boolean): void {
         this.freeTransformIsConstrained = isConstrained;
@@ -582,7 +595,10 @@ export class EaselSelectMove implements TEaselTool {
         }
     }
 
-    /** true: the rectangle is pulled to the edges of the drawing, and the angle to every 45°. */
+    /**
+     * true: the rectangle is pulled to the edges of the drawing, its size to factors of the
+     * selection's (setScaleSnapBase), and the angle to every 45°.
+     */
     setIsSnapping(isSnapping: boolean): void {
         this.freeTransformIsSnapping = isSnapping;
         this.freeTransform?.setSnapping(isSnapping);

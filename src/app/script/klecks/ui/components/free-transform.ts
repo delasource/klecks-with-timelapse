@@ -16,6 +16,7 @@ import { applyToPoint, inverse } from 'transformation-matrix';
 import { pointsToAngleDeg } from '../../../bb/math/math';
 import { TPointerEvent, TWheelEvent } from '../../../bb/input/event.types';
 import { TFreeTransform } from '../../transform/transform-types';
+import { findScaleSnapFactor, scaledSize, TScaleSnapBase } from './free-transform-scale-snap';
 
 const gripSize = 16;
 const edgeSize = 10;
@@ -85,6 +86,10 @@ export class FreeTransform {
     private snappingEnabled: boolean;
     private snapX: number[];
     private snapY: number[];
+    // ColorMari: size the scale snaps to factors of (free-transform-scale-snap.ts). undefined: no snapping of the scale
+    private scaleSnapBase: TScaleSnapBase | undefined;
+    // ColorMari: an edge drag adds up deltas - the size it would have without snapping
+    private edgeRawSize: number = 0;
     private readonly callback: (transform: TFreeTransform) => void;
 
     private readonly rootEl: HTMLElement; // sits at origin of image
@@ -182,6 +187,87 @@ export class FreeTransform {
             x: snap.x ?? iX,
             y: snap.y ?? iY,
         };
+    }
+
+    /**
+     * ColorMari: pulls the size of the corners to a factor of scaleSnapBase (if snapping).
+     * movingX / movingY: the corners whose x / y follow the pointer - undefined: that size is not
+     * dragged. rawWidth / rawHeight: the size the drag would give without snapping (default: as
+     * the corners are). isSymmetric: the opposite side moves the other way (shift held).
+     * Updates corner positions, not their DOM.
+     */
+    private snapScaleOfCorners(p: {
+        movingX?: number[];
+        movingY?: number[];
+        rawWidth?: number;
+        rawHeight?: number;
+        isSymmetric: boolean;
+    }): void {
+        const width = this.corners[1].x - this.corners[0].x;
+        const height = this.corners[3].y - this.corners[0].y;
+        const rawWidth = p.rawWidth ?? width;
+        const rawHeight = p.rawHeight ?? height;
+        let targetWidth = rawWidth;
+        let targetHeight = rawHeight;
+        const base = this.scaleSnapBase;
+        if (base && this.snappingEnabled) {
+            const maxDist = this.minSnapDist / this.viewportTransform.scale;
+            const wholePixels = Math.abs(this.value.angleDeg) % 90 === 0;
+            const snapW = p.movingX
+                ? findScaleSnapFactor(rawWidth, base.width, maxDist)
+                : undefined;
+            const snapH = p.movingY
+                ? findScaleSnapFactor(rawHeight, base.height, maxDist)
+                : undefined;
+            if (this.isConstrained && p.movingX && p.movingY) {
+                // proportions kept: the closer of the two snaps, the other side follows the ratio
+                if (snapW && (!snapH || snapW.dist <= snapH.dist)) {
+                    targetWidth = scaledSize(rawWidth, base.width, snapW.factor, wholePixels);
+                    targetHeight = Math.sign(rawHeight) * (Math.abs(targetWidth) / this.ratio);
+                } else if (snapH) {
+                    targetHeight = scaledSize(rawHeight, base.height, snapH.factor, wholePixels);
+                    targetWidth = Math.sign(rawWidth) * Math.abs(targetHeight) * this.ratio;
+                }
+            } else {
+                if (snapW) {
+                    targetWidth = scaledSize(rawWidth, base.width, snapW.factor, wholePixels);
+                }
+                if (snapH) {
+                    targetHeight = scaledSize(rawHeight, base.height, snapH.factor, wholePixels);
+                }
+            }
+        }
+        if (p.movingX) {
+            this.resizeCorners('x', p.movingX, targetWidth - width, p.isSymmetric);
+        }
+        if (p.movingY) {
+            this.resizeCorners('y', p.movingY, targetHeight - height, p.isSymmetric);
+        }
+    }
+
+    /**
+     * ColorMari: changes the size along one axis by delta, by moving the corners in moving (and,
+     * if symmetric, the other ones the other way by as much).
+     */
+    private resizeCorners(
+        dimension: 'x' | 'y',
+        moving: number[],
+        delta: number,
+        isSymmetric: boolean,
+    ): void {
+        if (delta === 0) {
+            return;
+        }
+        // the size is right minus left (1 - 0), bottom minus top (3 - 0)
+        const isFarSide = (dimension === 'x' ? [1, 2] : [2, 3]).includes(moving[0]);
+        const move = ((isFarSide ? 1 : -1) * delta) / (isSymmetric ? 2 : 1);
+        for (let k = 0; k < 4; k++) {
+            if (moving.includes(k)) {
+                this.corners[k][dimension] += move;
+            } else if (isSymmetric) {
+                this.corners[k][dimension] -= move;
+            }
+        }
     }
 
     /**
@@ -735,6 +821,13 @@ export class FreeTransform {
                                 this.corners[indexes[1]].x = this.corners[indexes[2]].x;
                                 this.corners[indexes[0]].y = this.corners[indexes[2]].y;
                             }
+                            // ColorMari: the size snaps to factors of the original one. The corner
+                            // is placed from virtualPos on every move, so nothing to undo next time.
+                            this.snapScaleOfCorners({
+                                movingX: [i, indexes[0]],
+                                movingY: [i, indexes[1]],
+                                isSymmetric: event.shiftKey,
+                            });
 
                             this.updateTransformViaCorners();
                         }
@@ -847,6 +940,10 @@ export class FreeTransform {
                                 isInverted = this.corners[0].x >= this.corners[1].x;
                             }
                             resetRemainder();
+                            // ColorMari: see snapScaleOfCorners
+                            this.edgeRawSize = isVertical
+                                ? this.corners[3].y - this.corners[0].y
+                                : this.corners[1].x - this.corners[0].x;
                         }
                         if (event.type === 'pointermove' && event.button === 'left') {
                             const viewportMatrix = createMatrixFromTransform(
@@ -899,6 +996,12 @@ export class FreeTransform {
 
                             const dimension = isVertical ? 'y' : 'x';
                             const d = isVertical ? ti.dY : ti.dX;
+                            // ColorMari: the size before this move (see below)
+                            const sizeOf = (): number =>
+                                isVertical
+                                    ? this.corners[3].y - this.corners[0].y
+                                    : this.corners[1].x - this.corners[0].x;
+                            const sizeBefore = sizeOf();
 
                             if (isInverted) {
                                 this.corners[indexes[0]][dimension] += d;
@@ -916,6 +1019,26 @@ export class FreeTransform {
                                     this.corners[indexes[1]][dimension] -= d;
                                 }
                             }
+                            // ColorMari: the size snaps to factors of the original one. An edge
+                            // adds this move to where it was, snapped or not: the size without
+                            // snapping is kept on the side, so it neither sticks nor drifts.
+                            this.edgeRawSize += sizeOf() - sizeBefore;
+                            const movingCorners = isInverted
+                                ? [indexes[0], indexes[1]]
+                                : [indexes[2], indexes[3]];
+                            this.snapScaleOfCorners(
+                                isVertical
+                                    ? {
+                                          movingY: movingCorners,
+                                          rawHeight: this.edgeRawSize,
+                                          isSymmetric: event.shiftKey,
+                                      }
+                                    : {
+                                          movingX: movingCorners,
+                                          rawWidth: this.edgeRawSize,
+                                          isSymmetric: event.shiftKey,
+                                      },
+                            );
 
                             if (isVertical) {
                                 // top bottom
@@ -1040,6 +1163,14 @@ export class FreeTransform {
 
     setSnapping(b: boolean): void {
         this.snappingEnabled = b;
+    }
+
+    /**
+     * ColorMari: while snapping, the size snaps to factors (SCALE_SNAP_FACTORS) of base - the
+     * size of what is transformed, untransformed. undefined: the scale does not snap.
+     */
+    setScaleSnapping(base: TScaleSnapBase | undefined): void {
+        this.scaleSnapBase = base ? { ...base } : undefined;
     }
 
     setSnappingPoints(snapX: number[], snapY: number[]): void {
