@@ -31,7 +31,7 @@ import { isTransformEqual } from '../project-viewport/utils/is-transform-equal';
 import { blendTransform } from '../project-viewport/utils/blend-transform';
 import { getFitRectTransform } from '../project-viewport/utils/get-fit-rect-transform';
 import { css } from '../../../bb/base/base';
-import { TWheelEvent } from '../../../bb/input/event.types';
+import { TPointerEvent, TWheelEvent } from '../../../bb/input/event.types';
 import { getIconSvg } from '../../../icon/icon';
 import { type IconName } from '../../../../icons/icons';
 import { LANG } from '../../../language/language';
@@ -65,6 +65,9 @@ export type TEaselParams<GToolId extends string> = {
  * An interactive project viewport, that also renders the selection. You interact with it through modes (aka tools).
  * One tool is active at a time. temp trigger can overwrite it temporarily.
  */
+// ColorMari: the pointer id of `injectPointer` - far from any id a browser hands out.
+const INJECTED_POINTER_ID = 7_000_001;
+
 export class Easel<GToolId extends string> {
     private readonly rootEl: HTMLElement;
     private readonly svgEl: SVGElement; // each tool gets an element in this SVG tag, for an SVG overlay
@@ -101,6 +104,9 @@ export class Easel<GToolId extends string> {
     private cursorPos: TVector2D | undefined; // so brush cursor not top left corner after reload
     private isFrozen: boolean = false; // disable interaction with the easel whatsoever
     private readonly isReadOnly: boolean; // a viewer: no pointer, wheel or key changes anything
+    // ColorMari: a game controller is the only input (controller mode) - the DOM's pointers, wheel and keys are
+    // ignored, only `injectPointer` reaches the tools.
+    private isExternalInputOnly: boolean = false;
     private lastRenderedTransform: TViewportTransform = {} as TViewportTransform; // previously rendered viewport transformation
     private pinchInitialTransform: TViewportTransform | undefined; // when starting a pinch-to-zoom gesture
     private targetTransform: TViewportTransform;
@@ -275,7 +281,7 @@ export class Easel<GToolId extends string> {
 
     private readonly onWheel = (e: TWheelEvent): void => {
         e.event?.preventDefault();
-        if (this.isReadOnly) {
+        if (this.isReadOnly || this.isExternalInputOnly) {
             return;
         }
         let isImmediate = false;
@@ -496,11 +502,13 @@ export class Easel<GToolId extends string> {
         this.pointerListener = new PointerListener({
             target: this.viewport.getElement(),
             onPointer: (e) => {
-                if (p.isReadOnly === true) return;
+                if (p.isReadOnly === true || this.isExternalInputOnly) return;
                 this.pointerPreprocessor.chainIn(e);
             },
             onWheel: this.onWheel,
             onEnterLeave: (isOver) => {
+                // ColorMari: the mouse leaving the easel must not hide the cursor of the injected pointer.
+                if (this.isExternalInputOnly) return;
                 const tool = this.getActiveTool();
                 if (!isOver) {
                     this.cursorPos = undefined;
@@ -524,7 +532,12 @@ export class Easel<GToolId extends string> {
 
         this.keyListener = new KeyListener({
             onDown: (keyStr, e, comboStr, isRepeat) => {
-                if (this.isFrozen || this.isReadOnly || BB.isInputFocused(true)) {
+                if (
+                    this.isFrozen ||
+                    this.isReadOnly ||
+                    this.isExternalInputOnly ||
+                    BB.isInputFocused(true)
+                ) {
                     return;
                 }
 
@@ -951,6 +964,72 @@ export class Easel<GToolId extends string> {
     getIsLocked(): boolean {
         return this.getActiveTool().getIsLocked?.() ?? false;
     }
+
+    /**
+     * ColorMari: true = only `injectPointer` reaches the tools (controller mode); the DOM's pointers, wheel and the
+     * easel's keys are ignored. A stroke the mouse had started is not ended - switch while nothing is drawn.
+     */
+    setExternalInputOnly(b: boolean): void {
+        this.isExternalInputOnly = b;
+    }
+
+    /**
+     * ColorMari: a pointer event from outside the DOM (a game controller), at a point of the viewport (pixels from
+     * the easel's top left corner). It takes the way a real pointer takes after the DOM - through the gesture chain
+     * into the active tool - so every tool works with it and a stroke is recorded as a mouse stroke would be.
+     * `pointerdown`/`pointermove` with `isDown` carry the left button, `pointerup` none (as the DOM's do).
+     */
+    injectPointer(p: {
+        type: 'pointerdown' | 'pointermove' | 'pointerup';
+        relX: number;
+        relY: number;
+        pressure: number;
+        isDown: boolean;
+    }): void {
+        if (this.isFrozen || this.isReadOnly) {
+            return;
+        }
+        const rect = this.rootEl.getBoundingClientRect();
+        const time = performance.now();
+        const last = this.injectedLast ?? { x: p.relX, y: p.relY };
+        if (p.type === 'pointerdown') {
+            this.injectedDown = { x: p.relX + rect.left, y: p.relY + rect.top };
+        }
+        const e: TPointerEvent = {
+            type: p.type,
+            pointerId: INJECTED_POINTER_ID,
+            pointerType: 'pen',
+            altKey: false,
+            ctrlKey: false,
+            metaKey: false,
+            shiftKey: false,
+            pageX: p.relX + rect.left,
+            pageY: p.relY + rect.top,
+            clientX: p.relX + rect.left,
+            clientY: p.relY + rect.top,
+            relX: p.relX,
+            relY: p.relY,
+            dX: p.relX - last.x,
+            dY: p.relY - last.y,
+            time,
+            button: p.type !== 'pointerup' && p.isDown ? 'left' : undefined,
+            pressure: p.pressure,
+            downPageX: this.injectedDown?.x,
+            downPageY: this.injectedDown?.y,
+            eventPreventDefault: () => {},
+            eventStopPropagation: () => {},
+            target: this.rootEl,
+        };
+        this.injectedLast = { x: p.relX, y: p.relY };
+        if (p.type === 'pointerup') {
+            this.injectedDown = undefined;
+        }
+        this.pointerPreprocessor.chainIn(e);
+    }
+
+    // ColorMari: what `injectPointer` remembers between two events (its dX/dY, where the button went down).
+    private injectedLast: TVector2D | undefined;
+    private injectedDown: TVector2D | undefined;
 
     setIsFrozen(b: boolean): void {
         this.isFrozen = b;

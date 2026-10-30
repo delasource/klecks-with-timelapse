@@ -52,6 +52,8 @@ import { SaveReminder } from '../klecks/ui/components/save-reminder';
 import { StatusOverlay } from '../klecks/ui/components/status-overlay';
 import { UnloadWarningTrigger } from '../klecks/ui/components/unload-warning-trigger';
 import { Easel } from '../klecks/ui/easel/easel';
+import { createMatrixFromTransform } from '../bb/transform/create-matrix-from-transform';
+import { applyToPoint, inverse } from 'transformation-matrix';
 import { EaselProjectUpdater } from '../klecks/ui/easel/easel-project-updater';
 import { EaselBrush } from '../klecks/ui/easel/tools/easel-brush';
 import { EaselEyedropper } from '../klecks/ui/easel/tools/easel-eyedropper';
@@ -317,6 +319,8 @@ export class KlHeadlessApp {
   private readonly lineSmoothing: LineSmoothing;
   /** The stabilizer as Klecks' dropdown names it: 0 = off, 1 (default) to 5 = strongest. */
   private stabilizerLevel = 1;
+  // Controller mode: a game controller is the only input (`setExternalInputOnly`).
+  private isExternalInputOnly = false;
   private readonly saveToComputer: SaveToComputer;
   private readonly klAppSelect: KlHeadlessSelect;
   private readonly klAppFilter: KlHeadlessFilter;
@@ -1116,7 +1120,7 @@ export class KlHeadlessApp {
           return;
         }
 
-        if (this.isDrawing() || p.isReadOnly === true) {
+        if (this.isDrawing() || p.isReadOnly === true || this.isExternalInputOnly) {
           return;
         }
 
@@ -2047,6 +2051,79 @@ export class KlHeadlessApp {
         }
       }
     }
+  }
+
+  // ----------------------------------- controller mode -----------------------------------
+
+  /**
+   * Controller mode: true = the canvas takes no input of mouse, pen, touch, wheel or keyboard - only what
+   * `injectPointer` sends (a game controller, driven by the UI). A setting of the UI, not a protection.
+   */
+  setExternalInputOnly(b: boolean): void {
+    this.isExternalInputOnly = b;
+    this.easel.setExternalInputOnly(b);
+  }
+
+  /**
+   * A pointer event at a point of the drawing (canvas pixels), as a game controller's crosshair sends it. Converted
+   * to the easel's viewport and handed to its active tool the way a real pointer is - a stroke made so is recorded
+   * like any other. `isDown` = the "button" is held (a stroke is drawn).
+   */
+  injectPointer(p: {
+    type: 'pointerdown' | 'pointermove' | 'pointerup';
+    x: number;
+    y: number;
+    pressure: number;
+    isDown: boolean;
+  }): void {
+    const view = this.canvasToViewport(p.x, p.y);
+    this.easel.injectPointer({
+      type: p.type,
+      relX: view.x,
+      relY: view.y,
+      pressure: p.pressure,
+      isDown: p.isDown,
+    });
+  }
+
+  /** A point of the drawing (canvas pixels) in the easel's viewport (pixels from its top left corner). */
+  canvasToViewport(x: number, y: number): { x: number; y: number } {
+    return applyToPoint(createMatrixFromTransform(this.easel.getTransform()), { x, y });
+  }
+
+  /** A point of the easel's viewport in the drawing (canvas pixels). */
+  viewportToCanvas(x: number, y: number): { x: number; y: number } {
+    return applyToPoint(inverse(createMatrixFromTransform(this.easel.getTransform())), { x, y });
+  }
+
+  /** The size of the easel's viewport on the screen. */
+  getViewportSize(): { width: number; height: number } {
+    const el = this.easel.getElement();
+    return { width: el.clientWidth, height: el.clientHeight };
+  }
+
+  /** The view's scale: screen pixels per canvas pixel. */
+  getViewScale(): number {
+    return this.easel.getTransform().scale;
+  }
+
+  /** Moves the view by screen pixels, at once (a stick moves it a little on every frame). */
+  panView(dX: number, dY: number): void {
+    const transform = this.easel.getTransform();
+    this.easel.setTransform({ ...transform, x: transform.x + dX, y: transform.y + dY });
+    this.notifyUi('transformChanged', { transform: this.easel.getTransform(), isScaleOrAngleChanged: false });
+  }
+
+  /** Zooms the view by a factor around a point of the viewport. */
+  zoomView(factor: number, viewportX: number, viewportY: number): void {
+    this.easel.scale(factor, viewportX, viewportY);
+    this.notifyUi('transformChanged', { transform: this.easel.getTransform(), isScaleOrAngleChanged: true });
+  }
+
+  /** The whole drawing in view. */
+  fitView(): void {
+    this.easel.fitTransform(false);
+    this.notifyUi('transformChanged', { transform: this.easel.getTransform(), isScaleOrAngleChanged: true });
   }
 
   resetView(): void {
