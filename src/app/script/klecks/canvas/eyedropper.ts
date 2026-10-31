@@ -31,6 +31,11 @@ export class Eyedropper {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, 1, 1);
         ctx.imageSmoothingEnabled = false;
+        // ColorMari: compose onto white paper, as the easel and the rendered video show the drawing. On a
+        // transparent pixel the picked colour would otherwise be black (an empty pixel has rgb 0), and a soft edge
+        // would give its full colour instead of the lighter one the player sees.
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, 1, 1);
 
         this.compositor.draw(
             ctx,
