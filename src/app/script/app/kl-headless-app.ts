@@ -65,7 +65,6 @@ import { EaselShape } from '../klecks/ui/easel/tools/easel-shape';
 import { EaselText } from '../klecks/ui/easel/tools/easel-text';
 import { EaselZoom } from '../klecks/ui/easel/tools/easel-zoom';
 import { DIALOG_COUNTER } from '../klecks/ui/modals/modal-count';
-import { translateSmoothing } from '../klecks/utils/translate-smoothing';
 import { LANG } from '../language/language';
 import { IHeadlessLayerControllerActions } from './kl-headless-layer-types';
 import { IHeadlessFilterActions, KlHeadlessFilter } from './kl-headless-filter';
@@ -300,6 +299,21 @@ export type TUiEventType =
   | 'overlayChanged'; // the reference overlay: TOverlayState
 export type TUiEventHandler = (obj: TKlHeadlessUiState | any) => void;
 
+/** The strongest stabilizer level: as strong as Klecks' strongest (its 5), in twice the steps. */
+export const MAX_STABILIZER = 10;
+
+/**
+ * Stabilizer level -> `LineSmoothing` value (how much of the last position each new pen position keeps). Klecks'
+ * own `translateSmoothing` knows five levels; ours has ten: level 1 is Klecks' 1 (the part a new position moves the
+ * line, `1 - smoothing`, is 0.5), level 10 is Klecks' 5 (0.00875), and every step between multiplies that part by the
+ * same factor, so each step feels as large as the one before.
+ */
+function stabilizerToSmoothing(level: number): number {
+  if (level <= 0) return 0;
+  const follow = 0.5 * Math.pow(0.00875 / 0.5, (level - 1) / (MAX_STABILIZER - 1));
+  return 1 - follow;
+}
+
 export class KlHeadlessApp {
   private readonly rootEl: HTMLElement;
   private readonly klCanvas: KlCanvas;
@@ -317,7 +331,7 @@ export class KlHeadlessApp {
   private readonly saveReminder: SaveReminder | undefined;
   private readonly lineSanitizer: LineSanitizer;
   private readonly lineSmoothing: LineSmoothing;
-  /** The stabilizer as Klecks' dropdown names it: 0 = off, 1 (default) to 5 = strongest. */
+  /** The stabilizer: 0 = off, 1 (default, Klecks' 1) to `MAX_STABILIZER` (Klecks' 5) = strongest. */
   private stabilizerLevel = 1;
   // Controller mode: a game controller is the only input (`setExternalInputOnly`).
   private isExternalInputOnly = false;
@@ -678,7 +692,7 @@ export class KlHeadlessApp {
 
     // Event Chain 3:
     this.lineSmoothing = new LineSmoothing({
-      smoothing: translateSmoothing(this.stabilizerLevel),
+      smoothing: stabilizerToSmoothing(this.stabilizerLevel),
     });
 
     const drawEventChain = new EventChain({
@@ -1974,15 +1988,16 @@ export class KlHeadlessApp {
   }
 
   /**
-   * How strongly a stroke is smoothed while it is drawn (Klecks' stabilizer): 0 = off, 1 (default) to 5. The
-   * smoothing sits in front of the recorder, so the recording holds the smoothed points - a replay draws them as
-   * they were, whatever level it runs with, and nothing of the level is recorded.
+   * How strongly a stroke is smoothed while it is drawn (Klecks' stabilizer, in finer steps): 0 = off, 1 (default)
+   * to `MAX_STABILIZER`, see `stabilizerToSmoothing`. The smoothing sits in front of the recorder, so the
+   * recording holds the smoothed points - a replay draws them as they were, whatever level it runs with, and
+   * nothing of the level is recorded.
    */
   setStabilizer(level: number): void {
-    const clamped = Math.max(0, Math.min(5, Math.round(level)));
+    const clamped = Math.max(0, Math.min(MAX_STABILIZER, Math.round(level)));
     if (!Number.isFinite(clamped)) return;
     this.stabilizerLevel = clamped;
-    this.lineSmoothing.setSmoothing(translateSmoothing(clamped));
+    this.lineSmoothing.setSmoothing(stabilizerToSmoothing(clamped));
   }
 
   getStabilizer(): number {
