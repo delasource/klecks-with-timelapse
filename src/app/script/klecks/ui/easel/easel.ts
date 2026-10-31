@@ -107,6 +107,9 @@ export class Easel<GToolId extends string> {
     // ColorMari: a game controller is the only input (controller mode) - the DOM's pointers, wheel and keys are
     // ignored, only `injectPointer` reaches the tools.
     private isExternalInputOnly: boolean = false;
+    // ColorMari: false = a finger does not reach the tools (pen only); gestures of the chain (pinch, n-finger taps,
+    // double tap) still work, they are handled before the chain's end.
+    private isTouchInputAllowed: boolean = true;
     private lastRenderedTransform: TViewportTransform = {} as TViewportTransform; // previously rendered viewport transformation
     private pinchInitialTransform: TViewportTransform | undefined; // when starting a pinch-to-zoom gesture
     private targetTransform: TViewportTransform;
@@ -434,6 +437,10 @@ export class Easel<GToolId extends string> {
                 }
             },
             onChainOut: (e) => {
+                // ColorMari: pen only - a single finger neither draws nor uses any other tool
+                if (!this.isTouchInputAllowed && e.pointerType === 'touch') {
+                    return;
+                }
                 this.cursorPos = {
                     x: e.relX,
                     y: e.relY,
@@ -971,6 +978,14 @@ export class Easel<GToolId extends string> {
      */
     setExternalInputOnly(b: boolean): void {
         this.isExternalInputOnly = b;
+    }
+
+    /**
+     * ColorMari: false = touch input does not reach the tools (pen and mouse do). Pinch zoom and the finger taps
+     * (undo, redo, double tap) stay, they are gestures of the easel, not of a tool. Switch while nothing is drawn.
+     */
+    setTouchInputAllowed(b: boolean): void {
+        this.isTouchInputAllowed = b;
     }
 
     /**

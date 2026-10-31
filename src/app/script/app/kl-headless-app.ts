@@ -2065,6 +2065,14 @@ export class KlHeadlessApp {
   }
 
   /**
+   * false = a finger does not draw (nor use any other tool) - only pen and mouse do; pinch zoom and the finger taps
+   * stay. The player's setting of this browser, nothing recorded.
+   */
+  setTouchInputAllowed(b: boolean): void {
+    this.easel.setTouchInputAllowed(b);
+  }
+
+  /**
    * A pointer event at a point of the drawing (canvas pixels), as a game controller's crosshair sends it. Converted
    * to the easel's viewport and handed to its active tool the way a real pointer is - a stroke made so is recorded
    * like any other. `isDown` = the "button" is held (a stroke is drawn).
