@@ -293,6 +293,11 @@ export type TKlHeadlessAppParams = {
    * keys save and copy the bare canvas, as Klecks does.
    */
   stampPicture?: (png: Blob) => Promise<Blob>;
+  /**
+   * ColorMari: the name Ctrl+S gives the file, with its extension - the app names its pictures itself. Without it
+   * Klecks' own (`<date>Klecks.png`).
+   */
+  pictureFileName?: (extension: string) => string;
 };
 
 const exportType: TExportType = 'png';
@@ -354,6 +359,7 @@ export class KlHeadlessApp {
   private readonly overlay: ReferenceOverlay;
 
   private readonly stampPicture: ((png: Blob) => Promise<Blob>) | undefined;
+  private readonly pictureFileName: ((extension: string) => string) | undefined;
   private lastSavedHistoryIndex: number = 0;
   // A copy of its own: the default object is shared by every instance, and a second paper (the
   // next round) would show the tool and colours of the one before while its easel and brushes
@@ -454,15 +460,19 @@ export class KlHeadlessApp {
       .catch(e => console.warn('Copying the picture to the clipboard failed', e));
   }
 
-  /** Ctrl+S: the picture as a PNG file - stamped by the app when it hands over `stampPicture`. */
+  /**
+   * Ctrl+S: the picture as a PNG file - stamped and named by the app when it hands over `stampPicture` and
+   * `pictureFileName`.
+   */
   private savePictureToComputer(): void {
-    if (!this.stampPicture) {
+    if (!this.stampPicture && !this.pictureFileName) {
       this.saveToComputer.save();
       return;
     }
-    // Klecks' `SaveToComputer` encodes the canvas itself, with no way in between: the same file
-    // name and save dialog, with the stamped picture.
-    saveAs(`${getFilenameDate()}${KL_CONFIG.filenameBase}.png`, 'image/png', () => this.getExportPNG(), true)
+    // Klecks' `SaveToComputer` encodes and names the file itself, with no way in between: the same
+    // save dialog, with the app's picture and name.
+    const fileName = this.pictureFileName?.('png') ?? `${getFilenameDate()}${KL_CONFIG.filenameBase}.png`;
+    saveAs(fileName, 'image/png', () => this.getExportPNG(), true)
       .then(result => {
         if (result === 'saved') this.updateLastSaved();
         if (result === 'error') this.showStatusMessageCallback('failed PNG export');
@@ -605,6 +615,7 @@ export class KlHeadlessApp {
   constructor(p: TKlHeadlessAppParams) {
     this.featureConfiguration = { ...p.featureConfiguration };
     this.stampPicture = p.stampPicture;
+    this.pictureFileName = p.pictureFileName;
 
     // Register parameter
     this.on('statusMessage', p.showStatusMessageCallback);
