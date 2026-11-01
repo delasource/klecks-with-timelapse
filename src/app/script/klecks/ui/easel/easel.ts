@@ -30,6 +30,7 @@ import {
 import { isTransformEqual } from '../project-viewport/utils/is-transform-equal';
 import { blendTransform } from '../project-viewport/utils/blend-transform';
 import { getFitRectTransform } from '../project-viewport/utils/get-fit-rect-transform';
+import { EaselUpLabel } from './easel-up-label';
 import { css } from '../../../bb/base/base';
 import { TPointerEvent, TWheelEvent } from '../../../bb/input/event.types';
 import { getIconSvg } from '../../../icon/icon';
@@ -80,6 +81,8 @@ export class Easel<GToolId extends string> {
     private readonly windowPointerListener: (e: PointerEvent) => void;
     private readonly keyListener: KeyListener;
     private readonly selectionRenderer: SelectionRenderer;
+    // ColorMari: "This side up" over the drawing's top edge while the view is turned (`easel-up-label.ts`).
+    private readonly upLabel: EaselUpLabel;
 
     // from params
     private readonly toolsMap: TEaselParams<GToolId>['tools'];
@@ -212,6 +215,7 @@ export class Easel<GToolId extends string> {
         if (isPositionChanged || isScaleOrAngleChanged || isMirroredChanged) {
             tool.onUpdateTransform?.(newTransform);
             this.selectionRenderer.setTransform(newTransform);
+            this.upLabel.update(newTransform, this.project.width, this.project.height); // ColorMari
             this.onTransformChange(this.targetTransform, isScaleOrAngleChanged);
             this.lastRenderedTransform = newTransform;
         }
@@ -660,6 +664,7 @@ export class Easel<GToolId extends string> {
                 .filter((item) => item !== undefined),
         );
         this.updateToolSvgs();
+        this.upLabel = new EaselUpLabel(); // ColorMari
 
         const createIndicator = (icon: IconName, title: string, onClick: () => void) => {
             const el = BB.el({
@@ -712,7 +717,13 @@ export class Easel<GToolId extends string> {
                     overscrollBehaviorX: 'none',
                 },
             },
-            [this.viewport.getElement(), this.svgEl, this.htmlOverlayEl, indicatorsEl],
+            [
+                this.viewport.getElement(),
+                this.upLabel.getElement(), // ColorMari
+                this.svgEl,
+                this.htmlOverlayEl,
+                indicatorsEl,
+            ],
         );
 
         // prevent contextmenu
@@ -756,6 +767,8 @@ export class Easel<GToolId extends string> {
             layers: this.project.layers,
         });
         this.selectionRenderer.setSelection(this.project.selection);
+        // ColorMari: a new size moves the top edge without a change of the view
+        this.upLabel.update(this.viewport.getTransform(), this.project.width, this.project.height);
         this.selectionIndicatorEl.style.display = this.project.selection ? '' : 'none';
         this.getActiveTool().onUpdateSelection?.(this.project.selection);
         this.requestRender();
