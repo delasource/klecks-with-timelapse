@@ -47,6 +47,9 @@ import {
 } from '../klecks/kl-types';
 import { klCanvasToPsdBlob } from '../klecks/storage/kl-canvas-to-psd-blob';
 import { SaveToComputer } from '../klecks/storage/save-to-computer';
+import { saveAs } from '../bb/base/save-as';
+import { getFilenameDate } from '../bb/base/base';
+import { KL_CONFIG } from '../klecks/kl-config';
 import { PinchZoomWatcher } from '../klecks/ui/components/pinch-zoom-watcher';
 import { SaveReminder } from '../klecks/ui/components/save-reminder';
 import { StatusOverlay } from '../klecks/ui/components/status-overlay';
@@ -284,6 +287,12 @@ export type TKlHeadlessAppParams = {
   isReadOnly?: boolean;
   isControlledReplaying?: boolean;
   replayingConfig?: TReplayConfig;
+  /**
+   * ColorMari: the picture leaving the engine by its keys (Ctrl+S, Ctrl+C) goes through this first - the app puts
+   * its watermark on it. Gets the PNG of `getPNG()`, gives back the picture to save or copy (a PNG). Without it the
+   * keys save and copy the bare canvas, as Klecks does.
+   */
+  stampPicture?: (png: Blob) => Promise<Blob>;
 };
 
 const exportType: TExportType = 'png';
@@ -344,6 +353,7 @@ export class KlHeadlessApp {
   private shortcutRules: TKlShortcutRules = { ...DEFAULT_SHORTCUT_RULES };
   private readonly overlay: ReferenceOverlay;
 
+  private readonly stampPicture: ((png: Blob) => Promise<Blob>) | undefined;
   private lastSavedHistoryIndex: number = 0;
   // A copy of its own: the default object is shared by every instance, and a second paper (the
   // next round) would show the tool and colours of the one before while its easel and brushes
@@ -439,9 +449,31 @@ export class KlHeadlessApp {
       return;
     }
     navigator.clipboard
-      .write([new ClipboardItem({ 'image/png': this.getPNG() })])
+      .write([new ClipboardItem({ 'image/png': this.getExportPNG() })])
       .then(() => this.showStatusMessageCallback(LANG('cropcopy-copied')))
       .catch(e => console.warn('Copying the picture to the clipboard failed', e));
+  }
+
+  /** Ctrl+S: the picture as a PNG file - stamped by the app when it hands over `stampPicture`. */
+  private savePictureToComputer(): void {
+    if (!this.stampPicture) {
+      this.saveToComputer.save();
+      return;
+    }
+    // Klecks' `SaveToComputer` encodes the canvas itself, with no way in between: the same file
+    // name and save dialog, with the stamped picture.
+    saveAs(`${getFilenameDate()}${KL_CONFIG.filenameBase}.png`, 'image/png', () => this.getExportPNG(), true)
+      .then(result => {
+        if (result === 'saved') this.updateLastSaved();
+        if (result === 'error') this.showStatusMessageCallback('failed PNG export');
+      })
+      .catch(e => console.warn('Saving the picture failed', e));
+  }
+
+  /** The picture as it leaves the engine by its keys: `getPNG()`, stamped by the app if it asks to. */
+  private async getExportPNG(): Promise<Blob> {
+    const png = await this.getPNG();
+    return this.stampPicture ? this.stampPicture(png) : png;
   }
 
   /**
@@ -572,6 +604,7 @@ export class KlHeadlessApp {
 
   constructor(p: TKlHeadlessAppParams) {
     this.featureConfiguration = { ...p.featureConfiguration };
+    this.stampPicture = p.stampPicture;
 
     // Register parameter
     this.on('statusMessage', p.showStatusMessageCallback);
@@ -1183,7 +1216,7 @@ export class KlHeadlessApp {
           event.preventDefault(); // never the browser's "save page"
           if (rules.export && !isRepeat) {
             this.applyUncommitted();
-            this.saveToComputer.save();
+            this.savePictureToComputer();
           }
         }
         if (isCtrl('c') && rules.export && !isRepeat) {
