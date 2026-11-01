@@ -48,6 +48,7 @@ import { translateMultiPolygon } from '../../bb/multi-polygon/translate-multi-po
 import { getBinaryMask } from '../select-tool/get-binary-mask';
 import { TIndexBounds } from '../../bb/bb-types';
 import { LayerCompositor } from './layer-compositor';
+import { canMergeKeepingLook, mergeKeepingLook } from './kl-canvas-merge-keep-look';
 import { getMixModeStr } from './get-mix-mode';
 
 export const MAX_LAYERS = 16;
@@ -652,24 +653,37 @@ export class KlCanvas {
         return targetIndex;
     }
 
-    mergeLayer(layerIndex: number, mixModeStr?: TMixMode): number | undefined {
+    // ColorMari: keepLook = merge so that the picture looks the same afterwards, also where the
+    // lower layer is not painted (kl-canvas-merge-keep-look.ts). Recorded as a fourth element of
+    // 'l-merge'; an event without it replays upstream's merge, as it was drawn.
+    mergeLayer(
+        layerIndex: number,
+        mixModeStr?: TMixMode,
+        keepLook: boolean = false,
+    ): number | undefined {
         const topLayer = this.layers[layerIndex];
         const bottomLayer = this.layers[layerIndex - 1];
         if (!bottomLayer || !topLayer) {
             return;
         }
 
-        const compositor = new LayerCompositor();
+        const usedMixMode = mixModeStr ?? topLayer.mixModeStr;
+        const isLookKept = keepLook && canMergeKeepingLook(bottomLayer, topLayer, usedMixMode);
         let hasChanges: boolean;
-        try {
-            hasChanges = compositor.merge(
-                bottomLayer.context,
-                bottomLayer,
-                { ...topLayer, mixModeStr: mixModeStr ?? topLayer.mixModeStr },
-                (ctx, layer) => ctx.drawImage(layer.canvas, 0, 0),
-            );
-        } finally {
-            compositor.destroy();
+        if (isLookKept) {
+            hasChanges = mergeKeepingLook(this.layers, layerIndex, usedMixMode);
+        } else {
+            const compositor = new LayerCompositor();
+            try {
+                hasChanges = compositor.merge(
+                    bottomLayer.context,
+                    bottomLayer,
+                    { ...topLayer, mixModeStr: usedMixMode },
+                    (ctx, layer) => ctx.drawImage(layer.canvas, 0, 0),
+                );
+            } finally {
+                compositor.destroy();
+            }
         }
 
         this.klHistory.pause(true);
@@ -682,10 +696,12 @@ export class KlCanvas {
             // Recorded as [bottom index, top index, mix mode], the arguments of mergeLayers() before
             // Klecks 0.11 — recordings are made of them. The mix mode is the one that was used: an
             // event without one comes from before, where that meant 'source-over'.
+            // ColorMari: a fourth element `true` = the look-keeping merge was asked for.
             this.klRecorder?.record('l-merge', [
                 layerIndex - 1,
                 layerIndex,
-                mixModeStr ?? topLayer.mixModeStr,
+                usedMixMode,
+                ...(keepLook ? [true] : []),
             ]);
             this.klHistory.push({
                 activeLayerId: bottomLayer.id,

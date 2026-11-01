@@ -1524,9 +1524,15 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('l-merge', event => {
-        // [bottom index, top index, mix mode] — see KlCanvas.mergeLayer
-        const [bottomIndex, topIndex, mixModeStr] = event.data as [number, number, TMixMode | undefined];
-        this.klCanvas.mergeLayer(Math.max(bottomIndex, topIndex), mixModeStr ?? 'source-over');
+        // [bottom index, top index, mix mode, keep look] - see KlCanvas.mergeLayer. Without the fourth
+        // element the event is from before the look-keeping merge and replays the plain one.
+        const [bottomIndex, topIndex, mixModeStr, keepLook] = event.data as [
+          number,
+          number,
+          TMixMode | undefined,
+          boolean | undefined,
+        ];
+        this.klCanvas.mergeLayer(Math.max(bottomIndex, topIndex), mixModeStr ?? 'source-over', keepLook === true);
         this.followActiveLayerOfHistory();
         this.easelProjectUpdater.update();
       });

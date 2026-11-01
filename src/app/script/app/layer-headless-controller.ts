@@ -305,9 +305,9 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
       return false; // Cannot merge background layer down
     }
 
-    // Merged with the upper layer's own mix mode (no mode = the top layer's), so the picture
-    // looks the same afterwards - as upstream's layer panel merges.
-    const result = this.klCanvas.mergeLayer(targetIndex);
+    // Merged with the upper layer's own mix mode, so that the picture looks exactly the same
+    // afterwards - also where the layer below has no paint (KlCanvas.mergeLayer, keepLook).
+    const result = this.klCanvas.mergeLayer(targetIndex, undefined, true);
 
     if (result === undefined) {
       return false;
@@ -329,8 +329,8 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
       return false; // Cannot merge top layer up
     }
 
-    // Merge the layer above into the current layer, with the mix mode of the layer above
-    const result = this.klCanvas.mergeLayer(targetIndex + 1);
+    // Merge the layer above into the current layer, keeping the look (see mergeWithLayerBelow)
+    const result = this.klCanvas.mergeLayer(targetIndex + 1, undefined, true);
 
     if (result === undefined) {
       return false;
