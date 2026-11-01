@@ -305,8 +305,9 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
       return false; // Cannot merge background layer down
     }
 
-    // Default merge mode is normal
-    const result = this.klCanvas.mergeLayer(targetIndex, 'source-over');
+    // Merged with the upper layer's own mix mode (no mode = the top layer's), so the picture
+    // looks the same afterwards - as upstream's layer panel merges.
+    const result = this.klCanvas.mergeLayer(targetIndex);
 
     if (result === undefined) {
       return false;
@@ -328,8 +329,8 @@ export class LayerHeadlessController implements IHeadlessLayerControllerActions 
       return false; // Cannot merge top layer up
     }
 
-    // Merge the layer above into the current layer
-    const result = this.klCanvas.mergeLayer(targetIndex + 1, 'source-over');
+    // Merge the layer above into the current layer, with the mix mode of the layer above
+    const result = this.klCanvas.mergeLayer(targetIndex + 1);
 
     if (result === undefined) {
       return false;
