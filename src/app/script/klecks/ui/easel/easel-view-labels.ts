@@ -34,7 +34,7 @@ function createLabel(text: string): HTMLElement {
  * ColorMari: small labels over the drawing's top edge that turn with the view, so a player who turned or mirrored
  * the drawing still knows how it really lies:
  * - "This side up" at the top edge's corner that looks left, while the view is turned by more than 45 degrees
- * - "Gespiegelt", itself mirrored, at the corner that looks right, while the view is mirrored (key M)
+ * - "Gespiegelt (M)", itself mirrored, at the corner that looks right, while the view is mirrored (key M)
  *
  * DOM elements of the easel only: not drawn into the canvas, never recorded, rendered or exported. Their size stays
  * the same at every zoom.
@@ -46,7 +46,7 @@ export class EaselViewLabels {
 
   constructor() {
     this.upEl = createLabel('This side up');
-    this.mirroredEl = createLabel('Gespiegelt');
+    this.mirroredEl = createLabel('Gespiegelt (M)');
     // A wrapper without a size at the easel's top left corner: the labels are placed from there.
     this.rootEl = BB.el({
       css: {
