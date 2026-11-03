@@ -14,7 +14,7 @@
         "src/app/script/app/layer-headless-controller.ts",
         "src/app/script/klecks/history/kl-chain-recorder.ts",
         "src/app/script/klecks/history/kl-event-*.ts",
-        "src/app/script/klecks/ui/easel/easel-up-label.ts",
+        "src/app/script/klecks/ui/easel/easel-view-labels.ts",
         "src/app/script/klecks/ui/easel/reference-overlay.ts",
         "src/app/script/klecks/ui/easel/tools/easel-overlay.ts"
       ],
