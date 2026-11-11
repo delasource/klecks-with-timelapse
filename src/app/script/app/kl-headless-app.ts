@@ -349,6 +349,11 @@ export class KlHeadlessApp {
   private stabilizerLevel = 1;
   // Controller mode: a game controller is the only input (`setExternalInputOnly`).
   private isExternalInputOnly = false;
+  /**
+   * ColorMari: a replay engine never put on the page (renderer, `PaperViewer`): it must not scroll the page it is
+   * made in (`resize`).
+   */
+  private readonly isOffPage: boolean;
   private readonly saveToComputer: SaveToComputer;
   private readonly klAppSelect: KlHeadlessSelect;
   private readonly klAppFilter: KlHeadlessFilter;
@@ -613,6 +618,7 @@ export class KlHeadlessApp {
   }
 
   constructor(p: TKlHeadlessAppParams) {
+    this.isOffPage = p.isControlledReplaying === true;
     this.featureConfiguration = { ...p.featureConfiguration };
     this.stampPicture = p.stampPicture;
     this.pictureFileName = p.pictureFileName;
@@ -1876,7 +1882,9 @@ export class KlHeadlessApp {
 
   resize(w: number, h: number): void {
     // iPad scrolls down when increasing text zoom
-    if (window.scrollY > 0) {
+    // ColorMari: not for an engine off the page - the admin's event viewer replays one per step, and each sent the
+    // page back to the top
+    if (window.scrollY > 0 && !this.isOffPage) {
       window.scrollTo(0, 0);
     }
 
