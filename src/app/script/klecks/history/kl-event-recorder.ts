@@ -155,6 +155,7 @@ export class KlEventRecorder {
       }
 
       this.removePreviousFromStorage();
+      this.releaseNumberOfPrevious();
       this.previousEvent = this.eventBeforePrevious;
       this.eventBeforePrevious = null;
       return;
@@ -164,12 +165,15 @@ export class KlEventRecorder {
       }
 
       this.removePreviousFromStorage();
+      this.releaseNumberOfPrevious();
       this.previousEvent = this.eventBeforePrevious;
       // continue.
     }
 
     // Increase counter
     this.sequenceNumber++;
+    // (the number may have been given back above: the new event takes the place of the one taken out)
+    event.sequenceNumber = this.sequenceNumber;
 
     // Update previous event reference
     this.eventBeforePrevious = this.previousEvent;
@@ -188,6 +192,15 @@ export class KlEventRecorder {
         console.error('%c[REC]', LOG_STYLE_RECORDER, 'Failed to notify listeners. Error:', error);
       }
     }
+  }
+
+  /**
+   * The previous event is taken out of the storage: its number is given back, so that the next event takes it.
+   * The numbering of a paper stays without gaps, and a gap means an event that got lost on its way to the storage
+   * (the event viewer of the administration reports them) - not one the recorder took back on purpose.
+   */
+  private releaseNumberOfPrevious() {
+    if (this.previousEvent) this.sequenceNumber = this.previousEvent.sequenceNumber - 1;
   }
 
   /**
