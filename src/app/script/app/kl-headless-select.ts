@@ -389,6 +389,8 @@ export class KlHeadlessSelect implements IHeadlessSelectActions {
     }
 
     this.freeWarpSample();
+    // A transformation starts without a sample; one left by a replay on the same canvas is not its.
+    this.selectionTransform.clearSelectionSample();
     this.transformTool.setSelection(selection);
     this.transformTool.setDoClone(false);
     this.transformTool.setSelectionSample(this.selectionTransform.getSelectionSample());

@@ -47,6 +47,12 @@ export type TTransformCloneViaSelectionParams = {
     targetLayer: number;
     transformation: Matrix; // relative to (0,0) of canvas
     isPixelated?: boolean; // default false
+    // ColorMari: whether this clone picked up the layer anew (the first one of a transformation)
+    // or went on with the selection sample of the step before (a clone after a clone). Written into
+    // the recorded event: the sample lives between two events, and a replay cannot tell from the
+    // events alone where a transformation ended. Missing in recordings made before it; left out by
+    // a live caller, it is worked out from whether there is a sample.
+    isNewSample?: boolean;
 };
 
 export type TWarpViaSelectionParams = {
@@ -93,6 +99,8 @@ export class KlCanvasSelectionTransform {
     private readonly klCanvas: KlCanvas;
     private readonly klRecorder: KlEventRecorder | undefined;
     private selectionSample: TMatrixSelectionSample | undefined;
+    // history's change count right after the last transformation left the sample where it is
+    private sampleChangeCount: number | undefined;
     private ffdRenderer: FfdRenderer | undefined; // made when the first warp needs it (WebGL)
 
     private getSelectionOrFallback(): MultiPolygon {
@@ -256,6 +264,7 @@ export class KlCanvasSelectionTransform {
                 ),
             });
         }
+        this.sampleChangeCount = klHistory.getChangeCount();
     }
 
     /**
@@ -268,6 +277,11 @@ export class KlCanvasSelectionTransform {
         const layers = this.klCanvas.getLayersReference();
         let hasImage = false;
         let targetBounds: TIndexBounds | undefined;
+        const isNewSample = p.isNewSample ?? !this.selectionSample;
+        if (isNewSample) {
+            // A sample still here belongs to a transformation that has ended.
+            this.clearSelectionSample();
+        }
         klHistory.pause(true);
         try {
             if (!this.selectionSample) {
@@ -286,7 +300,7 @@ export class KlCanvasSelectionTransform {
 
         if (!klHistory.isPaused() && hasImage) {
             const targetLayer = layers[p.targetLayer];
-            this.klRecorder?.record('selection-transform-clone', [p]);
+            this.klRecorder?.record('selection-transform-clone', [{ ...p, isNewSample }]);
             klHistory.push({
                 selection: {
                     value: this.klCanvas.getSelection(),
@@ -298,6 +312,7 @@ export class KlCanvasSelectionTransform {
                 }),
             });
         }
+        this.sampleChangeCount = klHistory.getChangeCount();
     }
 
     /**
@@ -392,6 +407,19 @@ export class KlCanvasSelectionTransform {
     getFfdRenderer(): FfdRenderer {
         this.ffdRenderer ??= new FfdRenderer();
         return this.ffdRenderer;
+    }
+
+    /**
+     * ColorMari: whether the selection sample is still the one the last transformation left, with
+     * nothing changed in the history since - i.e. whether a clone now would go on with it. For
+     * replaying recordings whose clones do not say so (isNewSample): live, a transformation that
+     * ends forgets its sample, and every other step of the drawing is a change of the history.
+     */
+    continuesSample(): boolean {
+        return (
+            !!this.selectionSample &&
+            this.sampleChangeCount === this.klCanvas.getKlHistory().getChangeCount()
+        );
     }
 
     clearSelectionSample(): void {

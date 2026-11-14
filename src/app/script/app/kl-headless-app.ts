@@ -1627,8 +1627,13 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('selection-transform-clone', event => {
-        const data = event.data as [TTransformCloneViaSelectionParams];
-        this.selectionTransform.transformCloneViaSelection(...data);
+        const [params] = event.data as [TTransformCloneViaSelectionParams];
+        // Recordings from before isNewSample: a sample anything happened after is not this
+        // clone's - live, its transformation had ended and the clone picked up the layer anew.
+        this.selectionTransform.transformCloneViaSelection({
+          ...params,
+          isNewSample: params.isNewSample ?? !this.selectionTransform.continuesSample()
+        });
         this.easelProjectUpdater.update();
       });
 
