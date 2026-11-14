@@ -24,6 +24,14 @@ export class KlChainRecorder {
     this.onLineEnded = onLineEnded;
   }
 
+  /**
+   * Records the event and passes on what it recorded - not the event it was given. A replay draws
+   * the stroke from the recording, so the brush has to draw it from the same points live: rounded
+   * as they are stored, and without the coalesced in-between points, which are not stored. A brush
+   * that turns a coordinate into a whole pixel (sketchy, pixel) or that fills the shape of its
+   * path (chemy) drew a visibly different stroke from the unrounded points and the in-between
+   * points than every replay drew from the recording.
+   */
   chainIn(event: TDrawEvent): TDrawEvent | null {
     if (this.isChainDisabled) return null; // While replaying animation is active, do not process new events
 
@@ -42,7 +50,9 @@ export class KlChainRecorder {
       this.drawEventCache = [];
     }
 
-    return event;
+    // A coalesced point is not recorded, so it is not drawn either.
+    if (!event2) return null;
+    return this.translateStringToEvent(event2);
   }
 
   setChainOut(func: (event: TDrawEvent) => void): void {

@@ -53,6 +53,9 @@ export class ChemyBrush {
     private selectionPath: Path2D | undefined;
     private selectionBounds: TIndexBounds | undefined;
 
+    // ColorMari: the distortion's dice, so that a replay rolls the same (see stroke-random.ts)
+    private random: () => number = Math.random;
+
     private updateCompleteRedrawBounds(x: number, y: number): void {
         let bounds: TIndexBounds = { type: 'index', x1: x, y1: y, x2: x, y2: y };
         if (this.settingXSymmetry) {
@@ -206,6 +209,11 @@ export class ChemyBrush {
 
     // ----------------------------------- public -----------------------------------
     constructor() {}
+
+    // ColorMari: the dice of the next stroke (see stroke-random.ts)
+    setRandom(random: () => number): void {
+        this.random = random;
+    }
 
     setHistory(klHistory: KlHistory): void {
         this.klHistory = klHistory;
@@ -382,8 +390,8 @@ export class ChemyBrush {
 
         const pos = { x, y };
         if (this.settingDistort > 0) {
-            pos.x += (Math.random() - 0.5) * this.settingDistort * 80;
-            pos.y += (Math.random() - 0.5) * this.settingDistort * 80;
+            pos.x += (this.random() - 0.5) * this.settingDistort * 80;
+            pos.y += (this.random() - 0.5) * this.settingDistort * 80;
         }
 
         this.minY = Math.min(this.minY, pos.y);

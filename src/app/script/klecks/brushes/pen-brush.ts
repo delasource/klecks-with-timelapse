@@ -77,6 +77,9 @@ export class PenBrush {
     private selectionPath: Path2D | undefined;
     private selectionBounds: TIndexBounds | undefined;
 
+    // ColorMari: the scatter's dice, so that a replay rolls the same (see stroke-random.ts)
+    private random: () => number = Math.random;
+
     private updateChangedTiles(bounds: TIndexBounds) {
         const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
@@ -186,8 +189,8 @@ export class PenBrush {
 
         if (scatter > 0) {
             // scatter equally distributed over area of a circle
-            const scatterAngleRad = Math.random() * 2 * Math.PI;
-            const distance = Math.sqrt(Math.random()) * scatter;
+            const scatterAngleRad = this.random() * 2 * Math.PI;
+            const distance = Math.sqrt(this.random()) * scatter;
             x += Math.cos(scatterAngleRad) * distance;
             y += Math.sin(scatterAngleRad) * distance;
         }
@@ -476,6 +479,11 @@ export class PenBrush {
 
     setContext(c: CanvasRenderingContext2D): void {
         this.context = c;
+    }
+
+    // ColorMari: the dice of the next stroke (see stroke-random.ts)
+    setRandom(random: () => number): void {
+        this.random = random;
     }
 
     setHistory(klHistory: KlHistory): void {

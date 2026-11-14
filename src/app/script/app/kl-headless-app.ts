@@ -10,6 +10,8 @@ import { TPixelBrushConfig } from '../klecks/brushes/pixel-brush';
 import { DEFAULT_PIXEL_PATTERNS } from '../klecks/brushes/pixel-brush-patterns';
 import { ERASE_COLOR } from '../klecks/brushes/erase-color';
 import { EraserBrush } from '../klecks/brushes/eraser-brush';
+import { SketchyBrush } from '../klecks/brushes/sketchy-brush';
+import { createStrokeSeed, seededRandom } from '../klecks/brushes/stroke-random';
 import { drawProject } from '../klecks/canvas/draw-project';
 import { KlCanvas, TKlCanvasLayer } from '../klecks/canvas/kl-canvas';
 import {
@@ -345,6 +347,8 @@ export class KlHeadlessApp {
   private readonly saveReminder: SaveReminder | undefined;
   private readonly lineSanitizer: LineSanitizer;
   private readonly lineSmoothing: LineSmoothing;
+  /** The seed of the stroke being drawn (see `seedStroke`), recorded with it. */
+  private strokeSeed: number | undefined;
   /** The stabilizer: 0 = off, 1 (default, Klecks' 1) to `MAX_STABILIZER` (Klecks' 5) = strongest. */
   private stabilizerLevel = 1;
   // Controller mode: a game controller is the only input (`setExternalInputOnly`).
@@ -511,6 +515,24 @@ export class KlHeadlessApp {
       return this.klAppSelect.discardTransform();
     }
     return false;
+  }
+
+  /**
+   * Gives the brush the dice of the stroke it starts (see `stroke-random.ts`): `strokeSeed`, which
+   * the stroke records. Live it is rolled where the input enters (`onLineStart`, `onLine`), not
+   * here: a straight line is recorded before it reaches the brush. A replay sets the recorded one.
+   *
+   * The sketchy brush has dice of its own, a counter: it goes on counting from the seed. A stroke
+   * recorded before strokes had a seed (`strokeSeed` undefined) leaves the counter alone - such
+   * recordings were drawn, and are replayed, with the counter running on from stroke to stroke -
+   * and gives the other brushes new dice, as every replay of it did.
+   */
+  private seedStroke(): void {
+    const brush = this.getCurrentBrush();
+    if ('setRandom' in brush) brush.setRandom(seededRandom(this.strokeSeed ?? createStrokeSeed()));
+    if (brush instanceof SketchyBrush && this.strokeSeed !== undefined) {
+      brush.setSeed(this.strokeSeed);
+    }
   }
 
   /**
@@ -734,6 +756,7 @@ export class KlHeadlessApp {
       return {
         id: this.uiState.currentBrushId,
         cfg: this.getCurrentBrush().getBrushConfig(),
+        seed: this.strokeSeed,
       };
     });
 
@@ -753,6 +776,7 @@ export class KlHeadlessApp {
     drawEventChain.setChainOut(((event: TDrawEvent) => {
       if (event.type === 'down') {
         this.notifyUi('isDrawing', true);
+        this.seedStroke();
         this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
         this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
         this.easel.requestRender();
@@ -768,6 +792,7 @@ export class KlHeadlessApp {
         this.easel.requestRender();
       }
       if (event.type === 'line' && event.x0 && event.y0) {
+        this.seedStroke();
         this.getCurrentBrush().drawLineSegment(event.x0, event.y0, event.x1, event.y1);
         this.easelBrush.setLastDrawEvent({ x: event.x1, y: event.y1 });
         this.easel.requestRender();
@@ -837,6 +862,7 @@ export class KlHeadlessApp {
     this.easelBrush = new EaselBrush({
       radius: 5,
       onLineStart: e => {
+        this.strokeSeed = createStrokeSeed();
         // expects TDrawEvent
         isEraserPen = e.isEraserPen || false;
         if (isEraserPen) {
@@ -885,6 +911,7 @@ export class KlHeadlessApp {
         }
       },
       onLine: (p1, p2) => {
+        this.strokeSeed = createStrokeSeed();
         // expects TDrawEvent
         drawEventChain.chainIn({
           type: 'line',
@@ -1425,6 +1452,7 @@ export class KlHeadlessApp {
           console.log('Unknown brush during replay:', brushData);
         }
 
+        this.strokeSeed = typeof brushData?.seed === 'number' ? brushData.seed : undefined;
         this.chainRecorder?.emitReplayedEvent(drawEvents);
       });
 
@@ -1627,7 +1655,7 @@ export class KlHeadlessApp {
         // clone's - live, its transformation had ended and the clone picked up the layer anew.
         this.selectionTransform.transformCloneViaSelection({
           ...params,
-          isNewSample: params.isNewSample ?? !this.selectionTransform.continuesSample()
+          isNewSample: params.isNewSample ?? !this.selectionTransform.continuesSample(),
         });
         this.easelProjectUpdater.update();
       });
