@@ -178,7 +178,7 @@ export class KlEventReplayer {
       else if (event.type == 'redo') consoleStyle = 'color: lightcoral';
       else if (undoStack.indexOf(event) === -1)
         consoleStyle = 'color: orangered'; // removed
-      else if (redoStack.indexOf(event) === -1) consoleStyle = 'color: cyan'; // normal
+      else consoleStyle = 'color: cyan'; // normal (an event on the undo stack is never on the redo stack)
 
       consoleStyles.push(consoleStyle);
     }
@@ -194,17 +194,14 @@ export class KlEventReplayer {
    * @private
    */
   private processUndo(finalEvents: TRecordedEvent[], undoStack: TRecordedEvent[], redoStack: TRecordedEvent[]): void {
-    while (undoStack.length > 0) {
-      const eventToUndo = undoStack.pop()!;
-
-      // Remove from final events
-      const index = finalEvents.lastIndexOf(eventToUndo);
-      if (index > -1) {
-        finalEvents.splice(index, 1);
-        redoStack.push(eventToUndo);
-        break; // Only undo one event
-      }
+    const eventToUndo = undoStack.pop();
+    if (!eventToUndo) {
+      return; // nothing left to undo
     }
+    // Remove from final events. Every event on the undo stack is among them: both lists gain an
+    // event together and lose it together.
+    finalEvents.splice(finalEvents.lastIndexOf(eventToUndo), 1);
+    redoStack.push(eventToUndo);
   }
 
   /**
@@ -228,6 +225,7 @@ export class KlEventReplayer {
   private calculateTimingParams(eventCount: number, config: TReplayConfig) {
     if (!config.replayTimeInMs || config.replayTimeInMs <= 0) {
       // Replay instantly
+      /* istanbul ignore else -- @preserve: DEBUG_REPLAYER is a constant, its other branch is not in this build */
       if (DEBUG_REPLAYER) {
         console.log('%c[REPLAY]', LOG_STYLE_REPLAYER, `Timings: instant`);
       }
@@ -244,6 +242,8 @@ export class KlEventReplayer {
     const totalFrameCount = Math.ceil((replayTime / 1000) * targetFps) + 1;
     const timePerFrame = 1000 / targetFps;
     const eventsPerFrame = Math.max(1, Math.ceil(eventCount / totalFrameCount));
+
+    /* istanbul ignore else -- @preserve: DEBUG_REPLAYER is a constant, its other branch is not in this build */
 
     if (DEBUG_REPLAYER) {
       console.log(
@@ -276,7 +276,7 @@ export class KlEventReplayer {
     events: TRecordedEvent[],
     timingParams: ReturnType<typeof this.calculateTimingParams>,
     signal: AbortSignal,
-    config?: TReplayConfig
+    config: TReplayConfig
   ): Promise<void> {
     const { frameTime, eventsPerFrame } = timingParams;
     let currentIndex = 0;
@@ -307,12 +307,10 @@ export class KlEventReplayer {
       currentIndex += eventsToProcess;
 
       // Call frame callback
-      if (config) {
-        //console.log('[REPLAY DEBUG] BEFORE config.onFrame?.() call');
-        //debugTimer = performance.now();
-        await config.onFrame?.(currentIndex, events.length);
-        //console.log('[REPLAY DEBUG] AFTER config.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
-      }
+      //console.log('[REPLAY DEBUG] BEFORE config.onFrame?.() call');
+      //debugTimer = performance.now();
+      await config.onFrame?.(currentIndex, events.length);
+      //console.log('[REPLAY DEBUG] AFTER config.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
 
       if (this.onFrame) {
         console.log('[REPLAY DEBUG] BEFORE this.onFrame?.() call');
@@ -321,7 +319,7 @@ export class KlEventReplayer {
         console.log('[REPLAY DEBUG] AFTER this.onFrame?.() call - time taken:', (performance.now() - debugTimer).toFixed(2), 'ms');
       }
 
-      if (frameTime <= 0 || config?.noSleep === true) {
+      if (frameTime <= 0 || config.noSleep === true) {
         // No animation
         continue;
       }
@@ -345,6 +343,8 @@ export class KlEventReplayer {
         sleepTime = 1;
         accumulatedDelay += -thisFrameDelay;
 
+        /* istanbul ignore else -- @preserve: DEBUG_REPLAYER is a constant, its other branch is not in this build */
+
         if (DEBUG_REPLAYER) {
           console.warn(
             '%c[REPLAY]',
@@ -360,14 +360,13 @@ export class KlEventReplayer {
         accumulatedDelay = 0;
       }
 
-      if (sleepTime > 0) {
-        if (sleepTime <= 2) {
-          // Use requestAnimationFrame to immediatly run on the next render cycle
-          await this.sleepOneFrame();
-        } else {
-          // Wait for next frame
-          await this.sleep(sleepTime);
-        }
+      // (A frame that took exactly its budget leaves 0 ms: it waits for the next animation frame too.)
+      if (sleepTime <= 2) {
+        // Use requestAnimationFrame to immediatly run on the next render cycle
+        await this.sleepOneFrame();
+      } else {
+        // Wait for next frame
+        await this.sleep(sleepTime);
       }
     }
 
@@ -377,6 +376,7 @@ export class KlEventReplayer {
   private async executeEventHandlers(event: TRecordedEvent): Promise<void> {
     const handlers = this.eventHandlers.get(event.type);
     if (!handlers || handlers.length === 0) {
+      /* istanbul ignore else -- @preserve: DEBUG_REPLAYER is a constant, its other branch is not in this build */
       if (DEBUG_REPLAYER) {
         console.warn('%c[REPLAY]', LOG_STYLE_REPLAYER, `No handlers registered for event type: ${event.type}`);
       }
@@ -416,23 +416,13 @@ export class KlEventReplayer {
   }
 
   /**
-   * Sleep helper function with timeout safeguard
+   * Sleep helper function.
+   * No safeguard of a second, longer timer: where a timer is late (a tab in the background), the
+   * longer one is later still - it could never fire first.
    * @private
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => {
-      const timeoutId = setTimeout(() => {
-        clearTimeout(safeguardId);
-        resolve();
-      }, ms);
-
-      // Safeguard: if setTimeout doesn't fire within 2x the requested time, force resolve
-      const safeguardId = setTimeout(() => {
-        clearTimeout(timeoutId);
-        console.warn('[REPLAY] sleep timeout fallback used');
-        resolve();
-      }, ms * 2);
-    });
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -441,31 +431,17 @@ export class KlEventReplayer {
    */
   private sleepOneFrame(): Promise<void> {
     return new Promise(resolve => {
-      let rafId: number | null = null;
-      let timeoutId: NodeJS.Timeout | null = null;
-
-      const cleanup = () => {
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        if (timeoutId !== null) clearTimeout(timeoutId);
-      };
-
-      const wrappedResolve = () => {
-        cleanup();
+      // Safeguard: a page in the background gets no animation frames - fall back after 100ms.
+      // Whichever comes first resolves and calls the other off.
+      const timeoutId = setTimeout(() => {
+        cancelAnimationFrame(rafId);
+        console.warn('[REPLAY] sleepOneFrame timeout fallback used');
         resolve();
-      };
-
-      // Try requestAnimationFrame first
-      rafId = requestAnimationFrame(() => wrappedResolve());
-
-      // Safeguard: if rAF doesn't fire within 100ms, fall back to setTimeout
-      timeoutId = setTimeout(() => {
-        if (rafId !== null) {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-          console.warn('[REPLAY] sleepOneFrame timeout fallback used');
-          wrappedResolve();
-        }
       }, 100);
+      const rafId = requestAnimationFrame(() => {
+        clearTimeout(timeoutId);
+        resolve();
+      });
     });
   }
 }

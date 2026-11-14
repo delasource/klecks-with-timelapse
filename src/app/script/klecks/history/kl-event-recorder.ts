@@ -144,12 +144,14 @@ export class KlEventRecorder {
     const sanitizeDuplicateEventsStrategy =
       duplicates === 'auto' ? this.sanitizeDuplicateEvents(event) : duplicates === 'keep' ? false : duplicates;
     if (sanitizeDuplicateEventsStrategy == 'discard') {
+      /* istanbul ignore else -- @preserve: DEBUG_RECORDER is a constant, its other branch is not in this build */
       if (DEBUG_RECORDER) {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring event (${type})`);
       }
 
       return;
     } else if (sanitizeDuplicateEventsStrategy == 'discard-both') {
+      /* istanbul ignore else -- @preserve: DEBUG_RECORDER is a constant, its other branch is not in this build */
       if (DEBUG_RECORDER) {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Ignoring both events (${type})`);
       }
@@ -160,6 +162,7 @@ export class KlEventRecorder {
       this.eventBeforePrevious = null;
       return;
     } else if (sanitizeDuplicateEventsStrategy == 'replace') {
+      /* istanbul ignore else -- @preserve: DEBUG_RECORDER is a constant, its other branch is not in this build */
       if (DEBUG_RECORDER) {
         console.log('%c[REC]', LOG_STYLE_RECORDER, `Replacing event (${type})`);
       }
@@ -179,6 +182,8 @@ export class KlEventRecorder {
     this.eventBeforePrevious = this.previousEvent;
     this.previousEvent = event;
     this.hasSkippedSelectionOfMove = false;
+
+    /* istanbul ignore else -- @preserve: DEBUG_RECORDER is a constant, its other branch is not in this build */
 
     if (DEBUG_RECORDER) {
       console.log('%c[REC]', LOG_STYLE_RECORDER, 'Recording event', event);
@@ -317,19 +322,16 @@ export class KlEventRecorder {
       // event with the number 1 would sort to an arbitrary place in every later replay.
       return 'empty-storage';
     }
-    this.totalTimeTaken =
-      events.length > 0
-        ? events.reduce((acc, evnt, index) => {
-            // Recalculate the time drawn. The following code is semantically equivalent to calculateTimeTaken()
-            if (index === 0) return acc;
-            const prevEvent = events[index - 1];
-            const timeDiff = evnt.timestamp - prevEvent.timestamp;
-            if (timeDiff <= TIMESPAN_ACCUMULATION_MS) {
-              return acc + timeDiff;
-            }
-            return acc + 100;
-          }, 0)
-        : 0;
+    this.totalTimeTaken = events.reduce((acc, evnt, index) => {
+      // Recalculate the time drawn. The following code is semantically equivalent to calculateTimeTaken()
+      if (index === 0) return acc;
+      const prevEvent = events[index - 1];
+      const timeDiff = evnt.timestamp - prevEvent.timestamp;
+      if (timeDiff <= TIMESPAN_ACCUMULATION_MS) {
+        return acc + timeDiff;
+      }
+      return acc + 100;
+    }, 0);
 
     // Start the replaying
     const returnResult = await this.replayer.startReplay(events, config ?? {});

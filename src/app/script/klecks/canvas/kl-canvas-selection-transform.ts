@@ -123,8 +123,9 @@ export class KlCanvasSelectionTransform {
 
     /**
      * Create selection sample from the current selection. If none, will create of entire layer.
+     * Kept as the current sample, and returned.
      */
-    private createSelectionSample(layerIndex: number): void {
+    private createSelectionSample(layerIndex: number): TMatrixSelectionSample {
         const sampleBounds = this.getSelectionArea(layerIndex);
 
         // empty
@@ -133,7 +134,7 @@ export class KlCanvasSelectionTransform {
                 image: undefined,
                 transformation: identity(),
             };
-            return;
+            return this.selectionSample;
         }
 
         const srcLayer = this.klCanvas.getLayersReference()[layerIndex];
@@ -148,31 +149,29 @@ export class KlCanvasSelectionTransform {
             image: sampleCanvas,
             transformation: translate(sampleBounds.x, sampleBounds.y),
         };
+        return this.selectionSample;
     }
 
     /**
      * transforms selection and selectionSample
      */
-    private transformSelectionAndSample(transformation: Matrix): void {
-        if (!this.selectionSample) {
-            throw new Error('no selection sample');
-        }
+    private transformSelectionAndSample(
+        sample: TMatrixSelectionSample,
+        transformation: Matrix,
+    ): void {
         const selection = this.klCanvas.getSelection();
         if (selection) {
             this.klCanvas.setSelectionSilently(transformMultiPolygon(selection, transformation));
         }
-        this.selectionSample.transformation = compose([
-            transformation,
-            this.selectionSample.transformation,
-        ]);
+        sample.transformation = compose([transformation, sample.transformation]);
     }
 
-    private drawSelectionSample(layerIndex: number, isPixelated: boolean): void {
-        if (!this.selectionSample) {
-            throw new Error('no selection sample');
-        }
-
-        if (!this.selectionSample.image) {
+    private drawSelectionSample(
+        sample: TMatrixSelectionSample,
+        layerIndex: number,
+        isPixelated: boolean,
+    ): void {
+        if (!sample.image) {
             // selection sample, but it's empty. noop
             return;
         }
@@ -184,11 +183,11 @@ export class KlCanvasSelectionTransform {
 
         targetCtx.save();
         targetCtx.clip(selectionPath);
-        targetCtx.setTransform(...matrixToTuple(this.selectionSample.transformation));
+        targetCtx.setTransform(...matrixToTuple(sample.transformation));
         if (isPixelated) {
             targetCtx.imageSmoothingEnabled = false;
         }
-        targetCtx.drawImage(this.selectionSample.image, 0, 0);
+        targetCtx.drawImage(sample.image, 0, 0);
         targetCtx.restore();
     }
 
@@ -217,16 +216,16 @@ export class KlCanvasSelectionTransform {
         let targetBounds: TIndexBounds | undefined;
         klHistory.pause(true);
         try {
-            this.createSelectionSample(p.sourceLayer);
-            srcBounds = this.inCanvas(getSampleBounds(this.selectionSample!));
+            const sample = this.createSelectionSample(p.sourceLayer);
+            srcBounds = this.inCanvas(getSampleBounds(sample));
             this.klCanvas.eraseLayer({
                 layerIndex: p.sourceLayer,
                 useSelection: true,
                 useAlphaLock: p.sourceLayer === 0 && !p.backgroundIsTransparent,
             });
-            this.transformSelectionAndSample(p.transformation);
-            targetBounds = this.inCanvas(getSampleBounds(this.selectionSample!));
-            this.drawSelectionSample(p.targetLayer ?? p.sourceLayer, p.isPixelated ?? false);
+            this.transformSelectionAndSample(sample, p.transformation);
+            targetBounds = this.inCanvas(getSampleBounds(sample));
+            this.drawSelectionSample(sample, p.targetLayer ?? p.sourceLayer, p.isPixelated ?? false);
         } finally {
             klHistory.pause(false);
         }
@@ -284,16 +283,14 @@ export class KlCanvasSelectionTransform {
         }
         klHistory.pause(true);
         try {
-            if (!this.selectionSample) {
-                if (p.sourceLayer === undefined) {
-                    throw new Error('no source layer');
-                }
-                this.createSelectionSample(p.sourceLayer);
+            if (!this.selectionSample && p.sourceLayer === undefined) {
+                throw new Error('no source layer');
             }
-            this.transformSelectionAndSample(p.transformation);
-            this.drawSelectionSample(p.targetLayer, p.isPixelated ?? false);
-            hasImage = !!this.selectionSample!.image;
-            targetBounds = this.inCanvas(getSampleBounds(this.selectionSample!));
+            const sample = this.selectionSample ?? this.createSelectionSample(p.sourceLayer!);
+            this.transformSelectionAndSample(sample, p.transformation);
+            this.drawSelectionSample(sample, p.targetLayer, p.isPixelated ?? false);
+            hasImage = !!sample.image;
+            targetBounds = this.inCanvas(getSampleBounds(sample));
         } finally {
             klHistory.pause(false);
         }

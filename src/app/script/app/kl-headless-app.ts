@@ -1428,19 +1428,14 @@ export class KlHeadlessApp {
         this.chainRecorder?.emitReplayedEvent(drawEvents);
       });
 
-      replayer.addReplayHandler('undo', event => {
-        this.undo(false); // Don't show message during replay
-      });
-
-      replayer.addReplayHandler('redo', event => {
-        this.redo(false); // Don't show message during replay
-      });
+      // No handler for 'undo' and 'redo': the replayer resolves them before it plays anything
+      // (KlEventReplayer.resolveUndoRedoEvents) - an undone event is left out, a redone one put
+      // back. Neither ever reaches a handler.
 
       replayer.addReplayHandler('l-select', event => {
+        // getLayer throws for an index the canvas does not have: the replayer logs it and goes on.
         const layer = this.klCanvas.getLayer((event.data as number[])[0]);
-        if (layer) {
-          this.layerController.setActiveLayer(layer.index);
-        }
+        this.layerController.setActiveLayer(layer.index);
       });
 
       replayer.addReplayHandler('reset', event => {
