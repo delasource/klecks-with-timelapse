@@ -1526,14 +1526,16 @@ export class KlHeadlessApp {
       });
 
       replayer.addReplayHandler('l-opac', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.setOpacity>;
-        this.klCanvas.setOpacity(...data);
+        // [index, opacity, own step] - the third element only matters to the undo (joinUndoStep).
+        const [index, opacity] = event.data as Parameters<typeof KlCanvas.prototype.setOpacity>;
+        this.klCanvas.setOpacity(index, opacity);
         this.easelProjectUpdater.update();
       });
 
       replayer.addReplayHandler('l-vis', event => {
-        const data = event.data as Parameters<typeof KlCanvas.prototype.setLayerIsVisible>;
-        this.klCanvas.setLayerIsVisible(...data);
+        // [index, visible, own step] - the third element only matters to the undo (joinUndoStep).
+        const [index, isVisible] = event.data as Parameters<typeof KlCanvas.prototype.setLayerIsVisible>;
+        this.klCanvas.setLayerIsVisible(index, isVisible);
         this.easelProjectUpdater.update();
       });
 

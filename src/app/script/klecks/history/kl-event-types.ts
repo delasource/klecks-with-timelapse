@@ -76,6 +76,39 @@ export const UNDO_IGNORED_EVENTS: TEventType[] = [
 ];
 
 /**
+ * How a regular event joins the undo steps before it, `topStep` being the events of the last step
+ * (`undefined` if there is none):
+ * - 'own': it is a step of its own - an undo takes it alone
+ * - 'joins': it is part of the last step - an undo takes both (and a redo brings both back)
+ * - 'cancels': it undid the last step - neither is a step any more; their events stay in the
+ *   replay (together they change nothing), the next undo takes the step before
+ *
+ * Klecks lets an opacity or visibility change replace the history entry before it when that
+ * changed the same thing of the same layer: two moves of the opacity slider are one undo step, a
+ * layer hidden and shown again is none. The recorder recorded every one of them as an event of
+ * its own until it learned to follow (KlCanvas.pushReplacingStep): papers from before carry the
+ * events, and the replay has to take the steps the history took. An event recorded since says
+ * so with a third element `true` - it is a step of its own, whatever comes before.
+ *
+ * (Repeated nowhere: the replayer and the administration's event viewer both ask this.)
+ */
+export function joinUndoStep(
+  topStep: readonly Pick<TRecordedEvent, 'type' | 'data'>[] | undefined,
+  event: Pick<TRecordedEvent, 'type' | 'data'>
+): 'own' | 'joins' | 'cancels' {
+  if (event.type !== 'l-opac' && event.type !== 'l-vis') return 'own';
+  const isOlderEvent = (e: Pick<TRecordedEvent, 'type' | 'data'>) =>
+    e.type === event.type && Array.isArray(e.data) && e.data[2] !== true;
+  const first = topStep?.[0];
+  if (!first || !isOlderEvent(event) || !isOlderEvent(first) || first.data[0] !== event.data[0]) return 'own';
+  // Hiding or showing is only recorded as a change: the second of two on one layer goes back to
+  // where the first started, which the history found to be no change at all. (An opacity slider
+  // moved back to where it started did the same - the events do not say where that was.)
+  if (event.type === 'l-vis' && event.data[1] !== first.data[1]) return 'cancels';
+  return 'joins';
+}
+
+/**
  * Event structure
  */
 export type TRecordedEvent = {

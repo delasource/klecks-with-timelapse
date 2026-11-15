@@ -1,5 +1,6 @@
 import {
   DEBUG_REPLAYER,
+  joinUndoStep,
   LOG_STYLE_REPLAYER,
   UNDO_IGNORED_EVENTS,
   TEventReplayingHandler,
@@ -144,8 +145,10 @@ export class KlEventReplayer {
    */
   private resolveUndoRedoEvents(events: TRecordedEvent[]): TRecordedEvent[] {
     const finalEvents: TRecordedEvent[] = []; // All events except undo/redo
-    const undoStack: TRecordedEvent[] = []; // Events that can be undone (excludes ignored types)
-    const redoStack: TRecordedEvent[] = []; // Events that were undone and can be redone
+    // Steps that can be undone (excludes ignored types). A step is one event, or several where the
+    // history took them as one (joinUndoStep).
+    const undoStack: TRecordedEvent[][] = [];
+    const redoStack: TRecordedEvent[][] = []; // Steps that were undone and can be redone
 
     for (const event of events) {
       switch (event.type) {
@@ -160,7 +163,10 @@ export class KlEventReplayer {
           finalEvents.push(event);
           // Add to undo stack only if it's not an ignored type
           if (!UNDO_IGNORED_EVENTS.includes(event.type)) {
-            undoStack.push(event);
+            const join = joinUndoStep(undoStack.at(-1), event);
+            if (join === 'joins') undoStack.at(-1)!.push(event);
+            else if (join === 'cancels') undoStack.pop();
+            else undoStack.push([event]);
           }
           // Clear redo stack when new action is performed
           redoStack.length = 0;
@@ -176,9 +182,9 @@ export class KlEventReplayer {
       if (UNDO_IGNORED_EVENTS.includes(event.type)) consoleStyle = 'color: grey';
       else if (event.type == 'undo') consoleStyle = 'color: lightblue';
       else if (event.type == 'redo') consoleStyle = 'color: lightcoral';
-      else if (undoStack.indexOf(event) === -1)
+      else if (!finalEvents.includes(event))
         consoleStyle = 'color: orangered'; // removed
-      else consoleStyle = 'color: cyan'; // normal (an event on the undo stack is never on the redo stack)
+      else consoleStyle = 'color: cyan'; // normal
 
       consoleStyles.push(consoleStyle);
     }
@@ -190,31 +196,33 @@ export class KlEventReplayer {
   }
 
   /**
-   * Process an undo event by removing the most recent undoable event
+   * Process an undo event by removing the most recent undoable step
    * @private
    */
-  private processUndo(finalEvents: TRecordedEvent[], undoStack: TRecordedEvent[], redoStack: TRecordedEvent[]): void {
-    const eventToUndo = undoStack.pop();
-    if (!eventToUndo) {
+  private processUndo(finalEvents: TRecordedEvent[], undoStack: TRecordedEvent[][], redoStack: TRecordedEvent[][]): void {
+    const stepToUndo = undoStack.pop();
+    if (!stepToUndo) {
       return; // nothing left to undo
     }
-    // Remove from final events. Every event on the undo stack is among them: both lists gain an
-    // event together and lose it together.
-    finalEvents.splice(finalEvents.lastIndexOf(eventToUndo), 1);
-    redoStack.push(eventToUndo);
+    // Remove from final events. Every event of a step on the undo stack is among them: both lists
+    // gain an event together and lose it together.
+    for (const eventToUndo of stepToUndo) {
+      finalEvents.splice(finalEvents.lastIndexOf(eventToUndo), 1);
+    }
+    redoStack.push(stepToUndo);
   }
 
   /**
-   * Process a redo event by restoring the most recently undone event
+   * Process a redo event by restoring the most recently undone step
    * @private
    */
-  private processRedo(finalEvents: TRecordedEvent[], undoStack: TRecordedEvent[], redoStack: TRecordedEvent[]): void {
+  private processRedo(finalEvents: TRecordedEvent[], undoStack: TRecordedEvent[][], redoStack: TRecordedEvent[][]): void {
     if (redoStack.length > 0) {
-      const eventToRedo = redoStack.pop()!;
+      const stepToRedo = redoStack.pop()!;
 
       // Add back to final events and undo stack
-      finalEvents.push(eventToRedo);
-      undoStack.push(eventToRedo);
+      finalEvents.push(...stepToRedo);
+      undoStack.push(stepToRedo);
     }
   }
 

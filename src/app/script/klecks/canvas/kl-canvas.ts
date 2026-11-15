@@ -31,6 +31,7 @@ import { getEraseColor } from '../brushes/erase-color';
 import { HISTORY_TILE_SIZE, KlHistory } from '../history/kl-history';
 import { getNextLayerId } from '../history/get-next-layer-id';
 import {
+    THistoryEntryData,
     THistoryEntryDataComposed,
     THistoryEntryLayerComposed,
     TLayerId,
@@ -566,8 +567,10 @@ export class KlCanvas {
             const layerId = this.layers[layerIndex].id;
             const topEntry = this.klHistory.getEntries().at(-1)!.data;
             const replaceTop = isHistoryEntryOpacityChange(topEntry, layerId);
-            this.klRecorder?.record('l-opac', [layerIndex, opacity]);
-            this.klHistory.push(
+            // ColorMari: history and recording take the same steps (see pushReplacingStep).
+            this.pushReplacingStep(
+                'l-opac',
+                [layerIndex, opacity, true],
                 {
                     layerMap: createLayerMap(this.layers, {
                         layerId,
@@ -590,8 +593,10 @@ export class KlCanvas {
             const layerId = this.layers[layerIndex].id;
             const topEntry = this.klHistory.getEntries().at(-1)!.data;
             const replaceTop = isHistoryEntryVisibilityChange(topEntry, layerId);
-            this.klRecorder?.record('l-vis', [layerIndex, isVisible]);
-            this.klHistory.push(
+            // ColorMari: history and recording take the same steps (see pushReplacingStep).
+            this.pushReplacingStep(
+                'l-vis',
+                [layerIndex, isVisible, true],
                 {
                     layerMap: createLayerMap(this.layers, {
                         layerId,
@@ -601,6 +606,39 @@ export class KlCanvas {
                 replaceTop,
             );
         }
+    }
+
+    /**
+     * ColorMari: records an opacity or visibility change and pushes its history entry, which
+     * upstream lets replace the entry before when that changed the same thing of the same layer
+     * (two moves of the opacity slider are one undo step; a layer hidden and shown again is no
+     * step at all). The recording has to take the same steps, or every later undo means two
+     * different things: live it went back past both changes (or past the step before the two
+     * that cancelled out), the replay took only the last event out. So the entry is replaced
+     * only where the recording can replace the event before as well - the event before is of
+     * the same kind, which it is not after an undo or in a replay - and the event replaces it,
+     * or both go when the history dropped the entry.
+     *
+     * Recorded with a third element `true`: papers from before recorded every change as an event
+     * of its own while the history took some as one step, and their replay has to tell the two
+     * apart (joinUndoStep in kl-event-types.ts).
+     */
+    private pushReplacingStep(
+        type: 'l-opac' | 'l-vis',
+        data: unknown[],
+        entry: THistoryEntryData,
+        canReplaceTop: boolean,
+    ): void {
+        const replaceTop =
+            canReplaceTop && (!this.klRecorder || this.klRecorder.continuesPreviousEvent(type));
+        const entriesBefore = this.klHistory.getEntries().length;
+        this.klHistory.push(entry, replaceTop);
+        const cancelledOut = replaceTop && this.klHistory.getEntries().length < entriesBefore;
+        this.klRecorder?.record(
+            type,
+            data,
+            !replaceTop ? 'keep' : cancelledOut ? 'discard-both' : 'replace',
+        );
     }
 
     setLayerHasClipping(layerIndex: number, hasClipping: boolean): void {

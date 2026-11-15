@@ -216,6 +216,15 @@ export class KlEventRecorder {
   }
 
   /**
+   * Whether an event of this type, recorded now, would follow one of its own kind - so that it
+   * may replace that one ('replace', 'discard-both'). Never while paused or replaying: then
+   * nothing is recorded, and nothing may be replaced either.
+   */
+  continuesPreviousEvent(type: TEventType): boolean {
+    return this.previousEvent?.type === type && !this.isPaused && !this.replayer?.isCurrentlyReplaying();
+  }
+
+  /**
    * Gets the total time taken for all recorded events, aka the "total drawing time"
    * in ms
    */
