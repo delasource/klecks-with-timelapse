@@ -225,6 +225,19 @@ export class KlEventRecorder {
   }
 
   /**
+   * Takes the event recorded last out of the recording again, if it is of this type - one that
+   * turned out to be no step of the undo history after all. Nothing while paused or replaying
+   * (then nothing was recorded).
+   */
+  takeBackPrevious(type: TEventType): void {
+    if (this.previousEvent?.type !== type || this.isPaused || this.replayer?.isCurrentlyReplaying()) return;
+    this.removePreviousFromStorage();
+    this.releaseNumberOfPrevious();
+    this.previousEvent = this.eventBeforePrevious;
+    this.eventBeforePrevious = null;
+  }
+
+  /**
    * Gets the total time taken for all recorded events, aka the "total drawing time"
    * in ms
    */

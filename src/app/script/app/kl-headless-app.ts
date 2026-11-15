@@ -349,6 +349,8 @@ export class KlHeadlessApp {
   private readonly lineSmoothing: LineSmoothing;
   /** The seed of the stroke being drawn (see `seedStroke`), recorded with it. */
   private strokeSeed: number | undefined;
+  /** How many entries the history had pushed when the stroke began (forgetStrokeWithoutStep). */
+  private historyPushesAtStrokeStart = 0;
   /** The stabilizer: 0 = off, 1 (default, Klecks' 1) to `MAX_STABILIZER` (Klecks' 5) = strongest. */
   private stabilizerLevel = 1;
   // Controller mode: a game controller is the only input (`setExternalInputOnly`).
@@ -527,6 +529,19 @@ export class KlHeadlessApp {
    * recordings were drawn, and are replayed, with the counter running on from stroke to stroke -
    * and gives the other brushes new dice, as every replay of it did.
    */
+  /**
+   * A stroke that changed no pixel - drawn outside the selection, or outside the canvas - is no
+   * step of the undo history: the brush pushes nothing. Its 'draw' event (recorded when the line
+   * ended, before the brush finished it) is taken back, or the recording counts one step more
+   * than the history: the next undo took back the step before live, and the empty stroke in every
+   * replay.
+   */
+  private forgetStrokeWithoutStep(): void {
+    if (this.klHistory.getTotalIndex() === this.historyPushesAtStrokeStart) {
+      this.klRecorder?.takeBackPrevious('draw');
+    }
+  }
+
   private seedStroke(): void {
     const brush = this.getCurrentBrush();
     if ('setRandom' in brush) brush.setRandom(seededRandom(this.strokeSeed ?? createStrokeSeed()));
@@ -776,6 +791,7 @@ export class KlHeadlessApp {
     drawEventChain.setChainOut(((event: TDrawEvent) => {
       if (event.type === 'down') {
         this.notifyUi('isDrawing', true);
+        this.historyPushesAtStrokeStart = this.klHistory.getTotalIndex();
         this.seedStroke();
         this.getCurrentBrush().startLine(event.x, event.y, event.pressure);
         this.easelBrush.setLastDrawEvent({ x: event.x, y: event.y });
@@ -789,11 +805,14 @@ export class KlHeadlessApp {
       if (event.type === 'up') {
         this.notifyUi('isDrawing', false);
         this.getCurrentBrush().endLine();
+        this.forgetStrokeWithoutStep();
         this.easel.requestRender();
       }
       if (event.type === 'line' && event.x0 && event.y0) {
+        this.historyPushesAtStrokeStart = this.klHistory.getTotalIndex();
         this.seedStroke();
         this.getCurrentBrush().drawLineSegment(event.x0, event.y0, event.x1, event.y1);
+        this.forgetStrokeWithoutStep();
         this.easelBrush.setLastDrawEvent({ x: event.x1, y: event.y1 });
         this.easel.requestRender();
       }
