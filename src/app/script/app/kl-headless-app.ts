@@ -359,6 +359,8 @@ export class KlHeadlessApp {
   private stabilizerLevel = 1;
   // Controller mode: a game controller is the only input (`setExternalInputOnly`).
   private isExternalInputOnly = false;
+  // ColorMari: nothing can be drawn (`setDrawingLocked`) - a game's drawing handed in, its time up.
+  private isDrawingLocked = false;
   /**
    * ColorMari: a replay engine never put on the page (renderer, `PaperViewer`): it must not scroll the page it is
    * made in (`resize`).
@@ -1182,10 +1184,13 @@ export class KlHeadlessApp {
       onTransformChange: (transform, isScaleOrAngleChanged) => {
         this.notifyUi('transformChanged', { transform, isScaleOrAngleChanged });
       },
+      // ColorMari: the finger taps are no way past a lock (`setDrawingLocked`)
       onUndo: () => {
+        if (this.isDrawingLocked) return;
         this.undo(true);
       },
       onRedo: () => {
+        if (this.isDrawingLocked) return;
         this.redo(true);
       },
       useWhiteBackdrop: USE_WHITE_BACKDROP_INSTEAD_OF_WHITE_LAYER0,
@@ -2208,6 +2213,17 @@ export class KlHeadlessApp {
   setExternalInputOnly(b: boolean): void {
     this.isExternalInputOnly = b;
     this.easel.setExternalInputOnly(b);
+  }
+
+  /**
+   * ColorMari: true = nothing can be drawn on the paper: no tool takes a pointer, click or key, and the undo/redo
+   * gestures do nothing (a game's drawing handed in, or its time up - the buttons are disabled by the layout, the
+   * keyboard shortcuts by `setShortcutRules`). The view still moves: pinch, wheel, hand, zoom, rotate and the easel's
+   * keys. A stroke begun before the lock ends as it would. A setting of the UI, not a protection.
+   */
+  setDrawingLocked(b: boolean): void {
+    this.isDrawingLocked = b;
+    this.easel.setToolInputLocked(b, ['hand', 'zoom', 'rotate']);
   }
 
   /**

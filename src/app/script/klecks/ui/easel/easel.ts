@@ -113,6 +113,13 @@ export class Easel<GToolId extends string> {
     // ColorMari: false = a finger does not reach the tools (pen only); gestures of the chain (pinch, n-finger taps,
     // double tap) still work, they are handled before the chain's end.
     private isTouchInputAllowed: boolean = true;
+    // ColorMari: true = no tool takes a new stroke, click or key (a game's drawing handed in, its time up); the view
+    // still moves (pinch, wheel, the easel's keys). A stroke begun before the lock ends as it would.
+    private isToolInputLocked: boolean = false;
+    // ColorMari: a pointer went down while locked - its moves and its up are not the tool's either.
+    private isSkippingLockedPointer: boolean = false;
+    // ColorMari: tools that only move the view (hand, zoom, rotate) - they still take a pointer while locked.
+    private lockPassThroughToolIds: GToolId[] = [];
     private lastRenderedTransform: TViewportTransform = {} as TViewportTransform; // previously rendered viewport transformation
     private pinchInitialTransform: TViewportTransform | undefined; // when starting a pinch-to-zoom gesture
     private targetTransform: TViewportTransform;
@@ -445,6 +452,25 @@ export class Easel<GToolId extends string> {
                 if (!this.isTouchInputAllowed && e.pointerType === 'touch') {
                     return;
                 }
+                // ColorMari: locked - a pointer going down now reaches no tool, nor do its moves and its up. A hover
+                // (no button) still moves the cursor.
+                if (e.type === 'pointerdown' && this.isToolInputLocked) {
+                    const receiver =
+                        e.button === 'middle'
+                            ? this.tempTools['mouse-middle']
+                            : e.button === 'right'
+                              ? this.tempTools['mouse-right']
+                              : (this.tempToolId ?? this.toolId);
+                    if (!receiver || !this.lockPassThroughToolIds.includes(receiver)) {
+                        this.isSkippingLockedPointer = true;
+                    }
+                }
+                if (this.isSkippingLockedPointer) {
+                    if (e.type === 'pointerup') {
+                        this.isSkippingLockedPointer = false;
+                    }
+                    return;
+                }
                 this.cursorPos = {
                     x: e.relX,
                     y: e.relY,
@@ -532,7 +558,7 @@ export class Easel<GToolId extends string> {
         });
 
         this.windowPointerListener = (e: PointerEvent) => {
-            if (this.isFrozen) {
+            if (this.isFrozen || this.isToolInputLocked) {
                 return;
             }
             if (!(e.target instanceof Node && this.rootEl.contains(e.target))) {
@@ -576,7 +602,8 @@ export class Easel<GToolId extends string> {
                         .split('+')
                         .find((item) => item !== 'shift')! as TArrowKey;
                     const activeTool = this.getActiveTool();
-                    if (!activeTool.onArrowKeys?.(arrowKey)) {
+                    // ColorMari: locked - the arrows move the view, never a selection
+                    if (this.isToolInputLocked || !activeTool.onArrowKeys?.(arrowKey)) {
                         const stepSize = 40;
                         if (arrowKey === 'left') {
                             this.translate(stepSize, 0);
@@ -603,6 +630,7 @@ export class Easel<GToolId extends string> {
                     }
                 });
                 const tool = this.toolsMap[this.tempToolId ?? this.toolId];
+                if (this.isToolInputLocked) return; // ColorMari
                 tool.onKeyDown?.(keyStr, e, comboStr, isRepeat);
             },
             onUp: (keyStr, e, oldComboStr) => {
@@ -1003,6 +1031,17 @@ export class Easel<GToolId extends string> {
      */
     setTouchInputAllowed(b: boolean): void {
         this.isTouchInputAllowed = b;
+    }
+
+    /**
+     * ColorMari: true = no tool takes a new stroke, click or key - nothing can be drawn (a game's drawing handed in,
+     * its time up). The view still moves: pinch, wheel, the easel's zoom and arrow keys. A stroke already begun ends
+     * as it would; undo/redo gestures are the app's to refuse (`KlHeadlessApp.setDrawingLocked`).
+     * `passThroughToolIds` = tools that only move the view (hand, zoom): they still take a pointer.
+     */
+    setToolInputLocked(b: boolean, passThroughToolIds: GToolId[] = []): void {
+        this.isToolInputLocked = b;
+        this.lockPassThroughToolIds = passThroughToolIds;
     }
 
     /**
