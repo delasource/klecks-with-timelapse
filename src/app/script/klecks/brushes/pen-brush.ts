@@ -11,6 +11,7 @@ import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d
 import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 import { TIndexBounds } from '../../bb/bb-types';
+import { ERASE_COLOR } from './erase-color';
 
 const ALPHA_CIRCLE = 0;
 const ALPHA_CHALK = 1;
@@ -39,6 +40,9 @@ export type TPenBrushConfig = {
     color: TRgb;
     alphaId: number;
     lockLayerAlpha: boolean;
+    // ColorMari: the pen erases instead of paints, as the chemy brush can (a config recorded
+    // before has none = paints)
+    isEraser: boolean;
 };
 
 export class PenBrush {
@@ -56,6 +60,7 @@ export class PenBrush {
     private settingColorStr: string = '';
     private settingAlphaId: number = ALPHA_CIRCLE;
     private settingLockLayerAlpha: boolean = false;
+    private settingIsEraser: boolean = false; // ColorMari
 
     private hasDrawnDot: boolean = false;
     private lineToolLastDot: number = 0;
@@ -114,13 +119,14 @@ export class PenBrush {
             ctx.save();
             ctx.clearRect(0, 0, instructionArr[i][1], instructionArr[i][1]);
 
+            const paintColor = this.getPaintColor(); // ColorMari: white when erasing
             ctx.fillStyle =
                 'rgba(' +
-                this.settingColor.r +
+                paintColor.r +
                 ', ' +
-                this.settingColor.g +
+                paintColor.g +
                 ', ' +
-                this.settingColor.b +
+                paintColor.b +
                 ', ' +
                 this.alphaOpacityArr[this.settingAlphaId] +
                 ')';
@@ -172,8 +178,12 @@ export class PenBrush {
             return;
         }
 
+        // ColorMari: an eraser takes away what is there; with the layer's alpha locked it paints
+        // the erase colour onto it instead (as the chemy brush and the eraser do)
         if (this.settingLockLayerAlpha) {
             this.context.globalCompositeOperation = 'source-atop';
+        } else if (this.settingIsEraser) {
+            this.context.globalCompositeOperation = 'destination-out';
         }
 
         if (!before || before[3] !== opacity) {
@@ -466,15 +476,35 @@ export class PenBrush {
             return;
         }
         this.settingColor = { r: c.r, g: c.g, b: c.b };
-        this.settingColorStr =
-            'rgb(' +
-            this.settingColor.r +
-            ',' +
-            this.settingColor.g +
-            ',' +
-            this.settingColor.b +
-            ')';
+        this.updatePaintColor();
+    }
+
+    // ColorMari: the colour the dots are drawn in - the erase colour while erasing (what an
+    // eraser draws with `destination-out` only needs to be opaque; with the layer's alpha locked
+    // it is what is painted)
+    private getPaintColor(): TRgb {
+        return this.settingIsEraser
+            ? { r: ERASE_COLOR, g: ERASE_COLOR, b: ERASE_COLOR }
+            : this.settingColor;
+    }
+
+    private updatePaintColor(): void {
+        const c = this.getPaintColor();
+        this.settingColorStr = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
         this.updateAlphaCanvas();
+    }
+
+    // ColorMari
+    setIsEraser(b: boolean): void {
+        if (this.settingIsEraser === b) {
+            return;
+        }
+        this.settingIsEraser = b;
+        this.updatePaintColor();
+    }
+
+    getIsEraser(): boolean {
+        return this.settingIsEraser;
     }
 
     setContext(c: CanvasRenderingContext2D): void {
@@ -566,6 +596,7 @@ export class PenBrush {
             scatter: this.settingScatter,
             alphaId: this.settingAlphaId,
             lockLayerAlpha: this.settingLockLayerAlpha,
+            isEraser: this.settingIsEraser,
             sizePressure: this.settingHasSizePressure,
             opacityPressure: this.settingHasOpacityPressure,
             scatterPressure: this.settingHasScatterPressure,
@@ -592,6 +623,9 @@ export class PenBrush {
         }
         if (config.lockLayerAlpha !== undefined) {
             this.setLockAlpha(config.lockLayerAlpha);
+        }
+        if (config.isEraser !== undefined) {
+            this.setIsEraser(config.isEraser);
         }
         if (config.sizePressure !== undefined) {
             this.sizePressure(config.sizePressure);
@@ -622,6 +656,7 @@ export class PenBrush {
             color: { r: 0, g: 0, b: 0 },
             alphaId: ALPHA_CIRCLE,
             lockLayerAlpha: false,
+            isEraser: false,
         });
     }
 }

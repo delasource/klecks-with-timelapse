@@ -14,6 +14,7 @@ import { getBinaryMask } from '../select-tool/get-binary-mask';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 import { getChangedTiles } from '../history/push-helpers/changed-tiles';
 import { freeCanvas } from '../../bb/base/canvas';
+import { ERASE_COLOR } from './erase-color';
 
 type TDrawBufferItem = {
     x: number;
@@ -40,6 +41,9 @@ export type TBlendBrushConfig = {
     blending: number;
     lockLayerAlpha: boolean;
     color: TRgb;
+    // ColorMari: the brush erases instead of paints, as the chemy brush can (a config recorded
+    // before has none = paints). Erasing mixes nothing: `blending` is not used then.
+    isEraser: boolean;
 };
 
 export class BlendBrush {
@@ -51,6 +55,7 @@ export class BlendBrush {
     private blending: number = 0.65; // 0-1
 
     private settingLockLayerAlpha: boolean = false;
+    private settingIsEraser: boolean = false; // ColorMari
     private settingSizePressure: boolean = true;
     private settingOpacityPressure: boolean = false;
 
@@ -409,6 +414,10 @@ export class BlendBrush {
                             data[e2 + 1] = Math.floor(underG + randArr[randI]);
                             data[e2 + 2] = Math.floor(underB + randArr[randI]);
                         }
+                    } else if (this.settingIsEraser) {
+                        // ColorMari: erasing takes alpha away, the colour stays (as
+                        // `destination-out` does)
+                        data[e2 + 3] = Math.floor(alphaU * invAlphaO * 255 + 0.5);
                     } else {
                         const underR = params.r * alphaO + data[e2] * alphaU * invAlphaO;
                         const underG = params.g * alphaO + data[e2 + 1] * alphaU * invAlphaO;
@@ -442,6 +451,11 @@ export class BlendBrush {
         p: number,
         isCoalesced: boolean,
     ): void {
+        // ColorMari: an eraser mixes nothing and paints the erase colour (seen only with the
+        // layer's alpha locked; otherwise drawDot takes alpha away and leaves the colour)
+        const blending = this.settingIsEraser ? 0 : this.blending;
+        const color = this.getPaintColor();
+
         this.drawBuffer = [];
 
         let localPressure;
@@ -457,10 +471,10 @@ export class BlendBrush {
 
         let localColNew: TRgba;
 
-        if (this.blending === 0) {
-            this.mixCol.r = this.color.r;
-            this.mixCol.g = this.color.g;
-            this.mixCol.b = this.color.b;
+        if (blending === 0) {
+            this.mixCol.r = color.r;
+            this.mixCol.g = color.g;
+            this.mixCol.b = color.b;
         } else {
             let average;
             if (isCoalesced) {
@@ -497,10 +511,10 @@ export class BlendBrush {
                 localColNew.a = this.blendCol.a;
             } else {
                 if (average.a === 0) {
-                    average.r = this.color.r;
-                    average.g = this.color.g;
-                    average.b = this.color.b;
-                    average.a = 1 - this.blending;
+                    average.r = color.r;
+                    average.g = color.g;
+                    average.b = color.b;
+                    average.a = 1 - blending;
                 }
 
                 this.blendCol.r = BB.mix(
@@ -527,7 +541,7 @@ export class BlendBrush {
         }
 
         const dotCallback: TBezierLineCallback = (val) => {
-            if (this.blending >= 1 && this.blendCol.a <= 0) {
+            if (blending >= 1 && this.blendCol.a <= 0) {
                 return;
             }
             const factor = val.t;
@@ -538,12 +552,12 @@ export class BlendBrush {
             localSize = this.settingSizePressure
                 ? Math.max(0.1, localPressure * this.size)
                 : Math.max(0.1, this.size);
-            if (this.blending !== 0) {
+            if (blending !== 0) {
                 this.mixCol.r = BB.mix(this.localColOld.r, localColNew.r, factor);
                 this.mixCol.g = BB.mix(this.localColOld.g, localColNew.g, factor);
                 this.mixCol.b = BB.mix(this.localColOld.b, localColNew.b, factor);
             }
-            if (this.blending === 1 && this.localColOld.a === 0) {
+            if (blending === 1 && this.localColOld.a === 0) {
                 this.mixCol.r = localColNew.r;
                 this.mixCol.g = localColNew.g;
                 this.mixCol.b = localColNew.b;
@@ -560,9 +574,9 @@ export class BlendBrush {
                     y1: bounds.y1,
                     x2: bounds.x2,
                     y2: bounds.y2,
-                    r: BB.mix(this.color.r, this.mixCol.r, this.blending),
-                    g: BB.mix(this.color.g, this.mixCol.g, this.blending),
-                    b: BB.mix(this.color.b, this.mixCol.b, this.blending),
+                    r: BB.mix(color.r, this.mixCol.r, blending),
+                    g: BB.mix(color.g, this.mixCol.g, blending),
+                    b: BB.mix(color.b, this.mixCol.b, blending),
                 });
             }
         };
@@ -579,7 +593,7 @@ export class BlendBrush {
         });
         this.drawBuffer = [];
 
-        if (this.blending !== 0) {
+        if (blending !== 0) {
             this.localColOld = localColNew!;
         }
     }
@@ -636,6 +650,22 @@ export class BlendBrush {
         return this.settingLockLayerAlpha;
     }
 
+    // ColorMari
+    getIsEraser(): boolean {
+        return this.settingIsEraser;
+    }
+
+    setIsEraser(b: boolean): void {
+        this.settingIsEraser = b;
+    }
+
+    // ColorMari: the colour a dot is drawn in - the erase colour while erasing
+    private getPaintColor(): TRgb {
+        return this.settingIsEraser
+            ? { r: ERASE_COLOR, g: ERASE_COLOR, b: ERASE_COLOR }
+            : this.color;
+    }
+
     setLockAlpha(b: boolean): void {
         this.settingLockLayerAlpha = b;
     }
@@ -656,6 +686,7 @@ export class BlendBrush {
             opacityPressure: this.settingOpacityPressure,
             blending: this.blending,
             lockLayerAlpha: this.settingLockLayerAlpha,
+            isEraser: this.settingIsEraser,
             color: this.color,
         };
     }
@@ -676,6 +707,9 @@ export class BlendBrush {
         if (config.lockLayerAlpha !== undefined) {
             this.setLockAlpha(config.lockLayerAlpha);
         }
+        if (config.isEraser !== undefined) {
+            this.setIsEraser(config.isEraser);
+        }
         if (config.sizePressure !== undefined) {
             this.setSizePressure(config.sizePressure);
         }
@@ -692,6 +726,7 @@ export class BlendBrush {
             opacityPressure: false,
             blending: 0.65,
             lockLayerAlpha: false,
+            isEraser: false,
             color: { r: 0, g: 0, b: 0 },
         });
     }
@@ -701,6 +736,11 @@ export class BlendBrush {
     }
 
     startLine(x: number, y: number, p: number): void {
+        // ColorMari: an eraser mixes nothing and paints the erase colour (seen only with the
+        // layer's alpha locked; otherwise drawDot takes alpha away and leaves the colour)
+        const blending = this.settingIsEraser ? 0 : this.blending;
+        const color = this.getPaintColor();
+
         const selection = this.klHistory.getComposed().selection.value;
         this.selectionBounds = selection ? getMultiPolyBounds(selection, 'index') : undefined;
         this.mask = selection
@@ -718,10 +758,10 @@ export class BlendBrush {
         const localSize = this.settingSizePressure
             ? Math.max(0.1, p * this.size)
             : Math.max(0.1, this.size);
-        if (this.blending === 0) {
-            this.mixCol.r = this.color.r;
-            this.mixCol.g = this.color.g;
-            this.mixCol.b = this.color.b;
+        if (blending === 0) {
+            this.mixCol.r = color.r;
+            this.mixCol.g = color.g;
+            this.mixCol.b = color.b;
         } else {
             this.copyFromCanvas(this.getDotBounds(x, y, localSize));
 
@@ -732,10 +772,10 @@ export class BlendBrush {
             );
             if (average.a === 0) {
                 this.blendCol = {
-                    r: this.color.r,
-                    g: this.color.g,
-                    b: this.color.b,
-                    a: 1 - this.blending,
+                    r: color.r,
+                    g: color.g,
+                    b: color.b,
+                    a: 1 - blending,
                 };
             } else {
                 this.blendCol = {
@@ -761,7 +801,7 @@ export class BlendBrush {
         this.redrawBounds = undefined;
         this.drawBuffer = [];
 
-        if (this.blending < 1 || this.blendCol.a > 0) {
+        if (blending < 1 || this.blendCol.a > 0) {
             const bounds = this.getDotBounds(x, y, localSize);
             if (bounds) {
                 this.updateRedrawBounds(bounds);
@@ -774,9 +814,9 @@ export class BlendBrush {
                     y1: bounds.y1,
                     x2: bounds.x2,
                     y2: bounds.y2,
-                    r: BB.mix(this.color.r, this.mixCol.r, this.blending),
-                    g: BB.mix(this.color.g, this.mixCol.g, this.blending),
-                    b: BB.mix(this.color.b, this.mixCol.b, this.blending),
+                    r: BB.mix(color.r, this.mixCol.r, blending),
+                    g: BB.mix(color.g, this.mixCol.g, blending),
+                    b: BB.mix(color.b, this.mixCol.b, blending),
                 });
             }
         }

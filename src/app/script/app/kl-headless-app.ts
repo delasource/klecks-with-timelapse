@@ -1461,6 +1461,11 @@ export class KlHeadlessApp {
             // that, and the drawing would come out rounder and paler than it was drawn.
             cfg = { ...cfg, tip: 'square', pattern: DEFAULT_PIXEL_PATTERNS[0], opacityPerDot: true };
           }
+          if ((brushData.id === 'PenBrush' || brushData.id === 'BlendBrush') && cfg && cfg.isEraser === undefined) {
+            // ColorMari: recorded before these two brushes could erase - they painted. Said
+            // explicitly, or an erasing stroke replayed before would leave the brush erasing.
+            cfg = { ...cfg, isEraser: false };
+          }
           this.setCurrentBrush(brushData.id, cfg);
           // if (brushData.cfg) {
           // console.log("PUSH ", brushData.cfg, "to", brushData.id);
