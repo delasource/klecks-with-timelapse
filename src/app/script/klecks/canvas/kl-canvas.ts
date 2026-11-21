@@ -973,6 +973,10 @@ export class KlCanvas {
         }
     }
 
+    // ColorMari: isPremultiplied = the tolerance compares premultiplied colours (flood-fill.ts,
+    // premultipliedToleranceTest), so that a faint anti-aliased pixel no longer decides where a fill
+    // stops. Recorded as a tenth element of 'flood-fill'; an event without it replays upstream's
+    // comparison, as it was drawn.
     floodFill(
         layerIndex: number, // index of layer to be filled
         x: number, // starting point
@@ -983,6 +987,7 @@ export class KlCanvas {
         sampleStr: TFillSampling,
         grow: number, // int >= 0 - radius around filled area that is to be filled too
         isContiguous: boolean,
+        isPremultiplied: boolean = false,
     ): void {
         if (x < 0 || y < 0 || x >= this.width || y >= this.height || opacity === 0) {
             return;
@@ -1022,6 +1027,7 @@ export class KlCanvas {
                 tolerance,
                 Math.round(grow),
                 isContiguous,
+                isPremultiplied,
             );
 
             targetCtx = targetLayer.context;
@@ -1046,6 +1052,7 @@ export class KlCanvas {
                 tolerance,
                 Math.round(grow),
                 isContiguous,
+                isPremultiplied,
             );
 
             targetCtx = layerIndex === srcIndex ? srcCtx : targetLayer.context;
@@ -1116,6 +1123,7 @@ export class KlCanvas {
                 sampleStr,
                 grow,
                 isContiguous,
+                ...(isPremultiplied ? [true] : []),
             ]);
             this.klHistory.push({
                 layerMap: createLayerMap(this.layers, {

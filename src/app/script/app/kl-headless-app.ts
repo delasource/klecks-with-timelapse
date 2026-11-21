@@ -132,6 +132,10 @@ export type TKlHeadlessUiState = {
   };
   fill: {
     opacity: number;
+    /**
+     * 0 - 1, as the slider shows it (a share). `KlCanvas.floodFill` takes 0 - 255 (upstream's slider):
+     * `fillAt` converts.
+     */
     tolerance: number;
     mode: TFillSampling;
     grow: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -1103,17 +1107,7 @@ export class KlHeadlessApp {
         }),
         paintBucket: new EaselPaintBucket({
           onFill: p => {
-            this.klCanvas.floodFill(
-              this.currentLayer.index,
-              p.x,
-              p.y,
-              this.uiState.fill.isEraser ? null : this.uiState.primaryColorRgb,
-              this.uiState.fill.opacity,
-              this.uiState.fill.tolerance,
-              this.uiState.fill.mode,
-              this.uiState.fill.grow,
-              this.uiState.fill.isContiguous
-            );
+            this.fillAt(p.x, p.y);
             this.easel.requestRender();
           },
         }),
@@ -2125,6 +2119,36 @@ export class KlHeadlessApp {
       ...config,
     };
     this.updateUi();
+  }
+
+  /**
+   * The paint bucket, clicked at a point of the active layer (canvas pixels), with the bucket's
+   * settings of the UI - what the easel's paint bucket does on a click.
+   *
+   * A fill must not be decided by the faintest pixels of an anti-aliased edge: those are what
+   * another browser, GPU or zoom renders a step differently, and a replay there ran through a
+   * thin line the live fill had stopped at (or the other way round). Two things see to that:
+   * - the tolerance is converted from the UI's share (0 - 1) to `KlCanvas.floodFill`'s 0 - 255,
+   *   which is also what is recorded. Handed over as a share, `floodFill` rounded everything below
+   *   100 % to 0, and each fill took only pixels exactly like the clicked one.
+   * - colours are compared premultiplied (`isPremultiplied`): a paper is transparent, and a faint
+   *   edge pixel's own colour is noise, far from transparent black at any tolerance.
+   * Papers recorded before carry a tolerance of 0 (or 1) and no flag, and replay as they were drawn.
+   */
+  fillAt(x: number, y: number): void {
+    const fill = this.uiState.fill;
+    this.klCanvas.floodFill(
+      this.currentLayer.index,
+      x,
+      y,
+      fill.isEraser ? null : this.uiState.primaryColorRgb,
+      fill.opacity,
+      Math.round(Math.min(1, Math.max(0, fill.tolerance)) * 255),
+      fill.mode,
+      fill.grow,
+      fill.isContiguous,
+      true
+    );
   }
 
   setFillConfig(config: Partial<typeof this.uiState.fill>): void {

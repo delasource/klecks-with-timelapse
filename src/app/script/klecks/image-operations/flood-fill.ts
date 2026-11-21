@@ -46,6 +46,30 @@ function toleranceTest(
     );
 }
 
+// ColorMari: the same test on premultiplied colours - what the pixel adds to the picture.
+// Unpremultiplied, a faint pixel's colour is noise: an anti-aliased edge pixel of a red line with
+// alpha 1 reads as about (255, 0, 0, 1), far from transparent black, and stops the fill - while
+// the same pixel rendered by another browser or GPU with alpha 0 lets it through. Premultiplied, it
+// is (1, 0, 0, 1): within the tolerance of "nothing", wherever it was rendered.
+function premultipliedToleranceTest(
+    srcArr: Uint8ClampedArray,
+    initR: number, // premultiplied (0 - 255, not rounded)
+    initG: number,
+    initB: number,
+    initA: number,
+    toleranceSquared: number,
+    i: number,
+): boolean {
+    const a = srcArr[i * 4 + 3];
+    const f = a / 255;
+    return (
+        (a - initA) ** 2 <= toleranceSquared &&
+        (srcArr[i * 4] * f - initR) ** 2 <= toleranceSquared &&
+        (srcArr[i * 4 + 1] * f - initG) ** 2 <= toleranceSquared &&
+        (srcArr[i * 4 + 2] * f - initB) ** 2 <= toleranceSquared
+    );
+}
+
 // check is within selection
 function selectionMaskTest(selectionMaskArr: Uint8Array | undefined, i: number): boolean {
     return !selectionMaskArr || !!selectionMaskArr[i];
@@ -63,6 +87,7 @@ function selectionMaskTest(selectionMaskArr: Uint8Array | undefined, i: number):
  * @param tolerance int 0 - 255
  * @param grow int >= 0
  * @param isContiguous boolean
+ * @param isPremultiplied boolean - ColorMari: tolerance compares premultiplied colours
  */
 function floodFill(
     srcArr: Uint8ClampedArray,
@@ -75,11 +100,15 @@ function floodFill(
     tolerance: number,
     grow: number,
     isContiguous: boolean,
+    isPremultiplied: boolean,
 ): TIndexBounds {
-    const initR = srcArr[(py * width + px) * 4];
-    const initG = srcArr[(py * width + px) * 4 + 1];
-    const initB = srcArr[(py * width + px) * 4 + 2];
+    // ColorMari: premultiplied, the start colour is compared premultiplied too.
+    const initF = isPremultiplied ? srcArr[(py * width + px) * 4 + 3] / 255 : 1;
+    const initR = srcArr[(py * width + px) * 4] * initF;
+    const initG = srcArr[(py * width + px) * 4 + 1] * initF;
+    const initB = srcArr[(py * width + px) * 4 + 2] * initF;
     const initA = srcArr[(py * width + px) * 4 + 3];
+    const isWithinTolerance = isPremultiplied ? premultipliedToleranceTest : toleranceTest;
     const view = new DataView(srcArr.buffer);
     const init = view.getUint32((py * width + px) * 4, true);
     const toleranceSquared = tolerance ** 2;
@@ -109,7 +138,7 @@ function floodFill(
                     selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
-                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
+                            isWithinTolerance(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
                 ) {
                     bounds.x1 = Math.min(bounds.x1, x - 1);
                     targetArr[e] = 255;
@@ -124,7 +153,7 @@ function floodFill(
                     selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
-                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
+                            isWithinTolerance(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
                 ) {
                     bounds.x2 = Math.max(bounds.x2, x + 1);
                     targetArr[e] = 255;
@@ -139,7 +168,7 @@ function floodFill(
                     selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
-                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
+                            isWithinTolerance(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
                 ) {
                     bounds.y1 = Math.min(bounds.y1, y - 1);
                     targetArr[e] = 255;
@@ -154,7 +183,7 @@ function floodFill(
                     selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
-                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
+                            isWithinTolerance(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
                 ) {
                     bounds.y2 = Math.max(bounds.y2, y + 1);
                     targetArr[e] = 255;
@@ -170,7 +199,7 @@ function floodFill(
                     selectionMaskTest(selectionMaskArr, i) &&
                     (view.getUint32(i * 4, true) === init ||
                         (tolerance > 0 &&
-                            toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, i)))
+                            isWithinTolerance(srcArr, initR, initG, initB, initA, toleranceSquared, i)))
                 ) {
                     targetArr[i] = 255;
                     if (x < bounds.x1) {
@@ -302,6 +331,9 @@ export function floodFillBits(
     tolerance: number, // 0 - 255
     grow: number, // int >= 0
     isContiguous: boolean,
+    // ColorMari: compare premultiplied colours (see premultipliedToleranceTest). Upstream compares
+    // them as stored, which papers recorded before replay with.
+    isPremultiplied: boolean = false,
 ): {
     data: Uint8Array;
     bounds: TIndexBounds; // what area changed
@@ -322,6 +354,7 @@ export function floodFillBits(
         tolerance,
         grow,
         isContiguous,
+        isPremultiplied,
     );
 
     return {
